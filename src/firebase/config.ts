@@ -3,12 +3,12 @@ import { getApps, initializeApp, type FirebaseOptions } from 'firebase/app';
 
 // Firebase config is now hardcoded to prevent environment variable issues.
 const firebaseConfig: FirebaseOptions = {
-  "apiKey": "mock-api-key",
-  "authDomain": "mock-auth-domain-35510.firebaseapp.com",
-  "projectId": "mock-project-id-35510",
-  "storageBucket": "mock-storage-bucket-35510.appspot.com",
-  "messagingSenderId": "mock-messaging-sender-id",
-  "appId": "mock-app-id"
+  "projectId": "studio-1000335014-1d7fa",
+  "appId": "1:777808779830:web:4e84823e117d607e935697",
+  "apiKey": "AIzaSyCT6BGe3pn3G2UBKw3sZiOkfz3C4GwvtZs",
+  "authDomain": "studio-1000335014-1d7fa.firebaseapp.com",
+  "measurementId": "",
+  "messagingSenderId": "777808779830"
 };
 
 // This function is not 'use client' and can be used on the server.
