@@ -1,94 +1,40 @@
-/**
- * @fileoverview Firestore Security Rules for VideoKoleks application.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model. Each user has complete
- * control over their own categories and videos, and no access to others' data.
- *
- * Data Structure:
- * All data is nested under /users/{userId}, creating a clear ownership hierarchy.
- * - /users/{userId}: Stores public profile information for each user.
- * - /users/{userId}/categories/{categoryId}: Stores category data owned by the user.
- * - /users/{userId}/videos/{videoId}: Stores video data owned by the user.
- *
- * Key Security Decisions:
- * - No global roles or administrative overrides are implemented.
- * - List operations are restricted to the owner of the data.
- * - The rules prioritize simplicity and clarity, leveraging path-based ownership
- *   to minimize the need for complex data validation or external lookups.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Checks if the request is authenticated.
-     * @returns {boolean} True if the user is signed in, false otherwise.
-     */
+    // Helper function to check if the user is signed in
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * @description Checks if the authenticated user ID matches the provided user ID.
-     * @param {string} userId The user ID to compare against.
-     * @returns {boolean} True if the user is the owner, false otherwise.
-     */
+    // Helper function to check if the user is the owner of the document
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * @description Checks if the authenticated user is the owner of an existing resource.
-     * @param {string} userId The user ID to compare against.
-     * @returns {boolean} True if the user is the owner and the resource exists, false otherwise.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Rules for the user document itself.
-     * @path /users/{userId}
-     * @allow (get, update) A signed-in user can read and update their own user document.
-     * @deny (get, update) A signed-in user cannot read or update another user's document.
-     * @principle Enforces self-service profile management.
-     */
+    // Rule for user's own profile document
     match /users/{userId} {
       allow get, update: if isOwner(userId);
+    }
 
-       /**
-       * @description Rules for listing categories under a user's document.
-       * @path /users/{userId}/categories
-       * @allow (list) Signed-in user can list their own categories.
-       * @principle Enforces collection ownership for list queries.
-       */
-      match /categories/{categoryId} {
-        allow get, create, update, delete: if isOwner(userId);
-      }
-      match /categories {
-         allow list: if isOwner(userId);
-      }
-
-      /**
-       * @description Rules for listing videos under a user's document.
-       * @path /users/{userId}/videos
-       * @allow (list) Signed-in user can list their own videos.
-       * @principle Enforces collection ownership for list queries.
-       */
-       match /videos {
+    // Rules for the categories sub-collection
+    match /users/{userId}/categories/{categoryId} {
+      allow get, create, update, delete: if isOwner(userId);
+    }
+    
+    // Explicitly allow listing the categories collection for the owner
+    match /users/{userId}/categories {
         allow list: if isOwner(userId);
-      }
+    }
 
-      /**
-       * @description Rules for individual video documents under a user's document.
-       * @path /users/{userId}/videos/{videoId}
-       * @allow (get, create, update, delete) Signed-in user can perform CRUD on their own video documents.
-       * @principle Enforces document ownership for single-document operations.
-       */
-      match /videos/{videoId} {
-        allow get, create, update, delete: if isOwner(userId);
-      }
+    // Rules for the videos sub-collection
+    match /users/{userId}/videos/{videoId} {
+      allow get, create, update, delete: if isOwner(userId);
+    }
+
+    // Explicitly allow listing the videos collection for the owner
+    match /users/{userId}/videos {
+        allow list: if isOwner(userId);
     }
   }
 }
