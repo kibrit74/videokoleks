@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { onIdTokenChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { onIdTokenChanged, signInWithPopup, GoogleAuthProvider, signOut, type Auth } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 
 import { useAuth, useFirestore } from '@/firebase';
@@ -59,8 +59,7 @@ export function useUser() {
 }
 
 
-export async function signInWithGoogle() {
-  const auth = useAuth();
+export async function signInWithGoogle(auth: Auth) {
   if (!auth) return;
   const provider = new GoogleAuthProvider();
   try {
@@ -70,8 +69,7 @@ export async function signInWithGoogle() {
   }
 }
 
-export async function signOutUser() {
-    const auth = useAuth();
+export async function signOutUser(auth: Auth) {
     if (!auth) return;
     try {
         await signOut(auth);

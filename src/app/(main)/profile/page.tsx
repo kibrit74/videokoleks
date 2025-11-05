@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { videos, categories } from '@/lib/data';
 import { useUser, signInWithGoogle, signOutUser } from '@/firebase/auth/use-user';
+import { useAuth } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -60,6 +61,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const { user, loading: userLoading } = useUser();
+  const auth = useAuth();
 
   const videoCount = videos.length;
   const categoryCount = categories.length;
@@ -106,11 +108,12 @@ export default function ProfilePage() {
   };
 
   const handleAuthAction = async () => {
+    if (!auth) return;
     if (user) {
-      await signOutUser();
+      await signOutUser(auth);
       toast({ title: 'Başarıyla çıkış yaptınız.' });
     } else {
-      await signInWithGoogle();
+      await signInWithGoogle(auth);
       toast({ title: 'Başarıyla giriş yaptınız.' });
     }
   };
