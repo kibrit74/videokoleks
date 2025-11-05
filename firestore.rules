@@ -56,54 +56,39 @@ service cloud.firestore {
      */
     match /users/{userId} {
       allow get, update: if isOwner(userId);
-    }
 
-    /**
-     * @description Rules for categories under a user's document.
-     * @path /users/{userId}/categories/{categoryId}
-     * @allow (create) Signed-in user with UID 'user123' can create a new category under /users/user123/categories/newCategory.
-     * @allow (get) Signed-in user with UID 'user123' can read the category under /users/user123/categories/existingCategory.
-     * @allow (update) Signed-in user with UID 'user123' can update the category under /users/user123/categories/existingCategory.
-     * @allow (delete) Signed-in user with UID 'user123' can delete the category under /users/user123/categories/existingCategory.
-     * @deny (create) Signed-in user with UID 'user456' cannot create a category under /users/user123/categories/newCategory.
-     * @deny (get) Signed-in user with UID 'user456' cannot read the category under /users/user123/categories/existingCategory.
-     * @deny (update) Signed-in user with UID 'user456' cannot update the category under /users/user123/categories/existingCategory.
-     * @deny (delete) Signed-in user with UID 'user456' cannot delete the category under /users/user123/categories/existingCategory.
-     * @principle Enforces document ownership for writes, restricts access to a user's own data tree.
-     */
-    match /users/{userId}/categories/{categoryId} {
-      // Read rules: Only the owner can read the category.
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+       /**
+       * @description Rules for listing categories under a user's document.
+       * @path /users/{userId}/categories
+       * @allow (list) Signed-in user can list their own categories.
+       * @principle Enforces collection ownership for list queries.
+       */
+      match /categories/{categoryId} {
+        allow get, create, update, delete: if isOwner(userId);
+      }
+      match /categories {
+         allow list: if isOwner(userId);
+      }
 
-      // Write rules: Only the owner can create, update, or delete the category.
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
-    }
+      /**
+       * @description Rules for listing videos under a user's document.
+       * @path /users/{userId}/videos
+       * @allow (list) Signed-in user can list their own videos.
+       * @principle Enforces collection ownership for list queries.
+       */
+       match /videos {
+        allow list: if isOwner(userId);
+      }
 
-    /**
-     * @description Rules for videos under a user's document.
-     * @path /users/{userId}/videos/{videoId}
-     * @allow (create) Signed-in user with UID 'user123' can create a new video under /users/user123/videos/newVideo.
-     * @allow (get) Signed-in user with UID 'user123' can read the video under /users/user123/videos/existingVideo.
-     * @allow (update) Signed-in user with UID 'user123' can update the video under /users/user123/videos/existingVideo.
-     * @allow (delete) Signed-in user with UID 'user123' can delete the video under /users/user123/videos/existingVideo.
-     * @deny (create) Signed-in user with UID 'user456' cannot create a video under /users/user123/videos/newVideo.
-     * @deny (get) Signed-in user with UID 'user456' cannot read the video under /users/user123/videos/existingVideo.
-     * @deny (update) Signed-in user with UID 'user456' cannot update the video under /users/user123/videos/existingVideo.
-     * @deny (delete) Signed-in user with UID 'user456' cannot delete the video under /users/user123/videos/existingVideo.
-     * @principle Enforces document ownership for writes, restricts access to a user's own data tree.
-     */
-    match /users/{userId}/videos/{videoId} {
-      // Read rules: Only the owner can read the video.
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
-      // Write rules: Only the owner can create, update, or delete the video.
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      /**
+       * @description Rules for individual video documents under a user's document.
+       * @path /users/{userId}/videos/{videoId}
+       * @allow (get, create, update, delete) Signed-in user can perform CRUD on their own video documents.
+       * @principle Enforces document ownership for single-document operations.
+       */
+      match /videos/{videoId} {
+        allow get, create, update, delete: if isOwner(userId);
+      }
     }
   }
 }
