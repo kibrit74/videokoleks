@@ -26,8 +26,10 @@ export default function HomePage() {
     if (storedNewVideos) {
       try {
         const newVideos: Video[] = JSON.parse(storedNewVideos);
-        // Combine new videos with initial videos, ensuring no duplicates
-        setVideos(prevVideos => [...newVideos, ...prevVideos.filter(v => !newVideos.some(nv => nv.id === v.id))]);
+        // Create a new array with unique videos, giving preference to newVideos
+        const allVideoIds = new Set(newVideos.map(v => v.id));
+        const uniqueInitialVideos = initialVideos.filter(v => !allVideoIds.has(v.id));
+        setVideos([...newVideos, ...uniqueInitialVideos]);
       } catch (e) {
         console.error("Failed to parse new videos from localStorage", e);
         localStorage.removeItem(NEW_VIDEOS_STORAGE_KEY);
@@ -45,13 +47,22 @@ export default function HomePage() {
     };
 
     setVideos(prevVideos => {
+        // Prevent adding duplicates to the state
+        if (prevVideos.some(v => v.id === newVideo.id)) {
+            return prevVideos;
+        }
         const updatedVideos = [newVideo, ...prevVideos];
-        // Add to localStorage
+        
+        // Update localStorage
         const storedNewVideos = localStorage.getItem(NEW_VIDEOS_STORAGE_KEY);
-        const existingNewVideos = storedNewVideos ? JSON.parse(storedNewVideos) : [];
+        const existingNewVideos: Video[] = storedNewVideos ? JSON.parse(storedNewVideos) : [];
+        
         // Prevent duplicates in localStorage as well
-        const finalNewVideos = [newVideo, ...existingNewVideos.filter(v => v.id !== newVideo.id)];
-        localStorage.setItem(NEW_VIDEOS_STORAGE_KEY, JSON.stringify(finalNewVideos));
+        if (!existingNewVideos.some(v => v.id === newVideo.id)) {
+            const finalNewVideos = [newVideo, ...existingNewVideos];
+            localStorage.setItem(NEW_VIDEOS_STORAGE_KEY, JSON.stringify(finalNewVideos));
+        }
+        
         return updatedVideos;
     });
   };
