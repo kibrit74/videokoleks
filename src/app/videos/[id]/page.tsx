@@ -3,7 +3,6 @@
 import { notFound, useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { videos as initialVideos } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
@@ -28,61 +27,41 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
   tiktok: TiktokIcon,
 };
 
-// A global state to hold videos, including newly added ones.
-// This is a workaround for sharing state between pages without a proper state manager.
-let allVideos: Video[] = [...initialVideos];
-
-// Function to update the global video state from other components
-export function updateVideos(newVideos: Video[]) {
-  allVideos = newVideos;
-}
-
 export default function VideoDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [videos, setVideos] = useState(initialVideos);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [currentVideo, setCurrentVideo] = useState<Video | undefined>(undefined);
 
   useEffect(() => {
-    // This is a trick to get the updated video list from the home page state
-    // In a real app, this would be handled by a state management library (Zustand, Redux) or context
     const videosParam = searchParams.get('videos');
     if (videosParam) {
       try {
-        const parsedVideos = JSON.parse(videosParam);
+        const parsedVideos: Video[] = JSON.parse(videosParam);
         setVideos(parsedVideos);
+        const foundVideo = parsedVideos.find((v) => v.id === params.id);
+        setCurrentVideo(foundVideo);
       } catch (e) {
         console.error("Failed to parse videos from query params", e);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, params.id]);
 
-  const video = videos.find((v) => v.id === params.id);
-
-  if (!video) {
-    // Give it a moment for the videos to be passed via query param
-    const globalVideo = allVideos.find(v => v.id === params.id);
-    if(globalVideo) {
-        // found it, but state isn't updated yet. This is fragile.
-    } else {
-        return (
-            <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white">
-                <h1 className="text-2xl font-bold">Video yükleniyor...</h1>
-                <p className="text-muted-foreground">Eğer video görünmezse, ana sayfaya dönüp tekrar deneyin.</p>
-                <Button asChild variant="ghost" size="lg" className="mt-4 text-white">
-                    <Link href="/">
-                        <ArrowLeft className="mr-2" /> Ana Sayfaya Dön
-                    </Link>
-                </Button>
-            </div>
-        )
-    }
-    // Fallback to notFound if it's really not there after a bit.
-    // notFound();
+  if (currentVideo === undefined) {
+    return (
+        <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white">
+            <h1 className="text-2xl font-bold">Video yükleniyor...</h1>
+            <p className="text-muted-foreground">Eğer video görünmezse, ana sayfaya dönüp tekrar deneyin.</p>
+            <Button asChild variant="ghost" size="lg" className="mt-4 text-white">
+                <Link href="/">
+                    <ArrowLeft className="mr-2" /> Ana Sayfaya Dön
+                </Link>
+            </Button>
+        </div>
+    )
   }
 
-  const currentVideo = video || allVideos.find(v => v.id === params.id);
-  if (!currentVideo) {
-    // still not found.
+  if (currentVideo === null) {
     notFound();
   }
 
