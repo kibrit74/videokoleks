@@ -1,3 +1,5 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Video, Platform } from '@/lib/types';
@@ -5,6 +7,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { updateVideos } from '@/app/videos/[id]/page';
+import { videos as initialVideos } from '@/lib/data';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -20,9 +26,21 @@ const platformColors: Record<Platform, string> = {
 
 export function VideoCard({ video }: { video: Video }) {
   const PlatformIcon = platformIcons[video.platform];
+  const router = useRouter();
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    
+    // This is a workaround to pass state. In a real app, use a state manager.
+    const videosFromState = (window as any).__VIDEOS_STATE__ || initialVideos;
+    updateVideos(videosFromState);
+    const videosQuery = encodeURIComponent(JSON.stringify(videosFromState));
+
+    router.push(`/videos/${video.id}?videos=${videosQuery}`);
+  };
 
   return (
-    <Link href={`/videos/${video.id}`} className="group block">
+    <Link href={`/videos/${video.id}`} onClick={handleClick} className="group block">
       <Card className="overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1">
         <CardContent className="p-0">
           <div className="relative aspect-[9/16] w-full">
@@ -54,4 +72,19 @@ export function VideoCard({ video }: { video: Video }) {
       </Card>
     </Link>
   );
+}
+
+// Hack to get the state from the home page
+if (typeof window !== 'undefined') {
+  const originalSetState = (window as any).React.useState;
+  if (originalSetState && !(window as any).__VIDEOS_STATE_PATCHED__) {
+      (window as any).__VIDEOS_STATE_PATCHED__ = true;
+      (window as any).React.useState = function<S>(...args: any[]) {
+          const [state, setState] = originalSetState(...args);
+          if (Array.isArray(state) && state[0] && 'thumbnailUrl' in state[0] && state[0].thumbnailUrl.includes('picsum')) {
+              (window as any).__VIDEOS_STATE__ = state;
+          }
+          return [state, setState];
+      };
+  }
 }

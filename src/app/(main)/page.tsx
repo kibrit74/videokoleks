@@ -20,7 +20,7 @@ export default function HomePage() {
   const handleAddVideo = (newVideoData: Omit<Video, 'id' | 'dateAdded' | 'isFavorite' | 'imageHint' | 'thumbnailUrl'>) => {
     const newVideo: Video = {
       ...newVideoData,
-      id: (videos.length + 2).toString(),
+      id: `new-${Date.now()}`,
       dateAdded: 'şimdi',
       isFavorite: false,
       thumbnailUrl: `https://picsum.photos/seed/${videos.length + 2}/400/711`,

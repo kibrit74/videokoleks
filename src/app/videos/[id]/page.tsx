@@ -1,17 +1,15 @@
-import { notFound } from 'next/navigation';
+'use client';
+
+import { notFound, useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { videos } from '@/lib/data';
+import { videos as initialVideos } from '@/lib/data';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Play,
-  Pause,
-  RotateCcw,
-  RotateCw,
   Star,
   ExternalLink,
   Share2,
@@ -21,7 +19,8 @@ import {
 } from 'lucide-react';
 import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import type { Platform } from '@/lib/types';
+import type { Platform, Video } from '@/lib/types';
+import { useEffect, useState } from 'react';
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -29,28 +28,87 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
   tiktok: TiktokIcon,
 };
 
+// A global state to hold videos, including newly added ones.
+// This is a workaround for sharing state between pages without a proper state manager.
+let allVideos: Video[] = [...initialVideos];
+
+// Function to update the global video state from other components
+export function updateVideos(newVideos: Video[]) {
+  allVideos = newVideos;
+}
+
 export default function VideoDetailPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [videos, setVideos] = useState(initialVideos);
+
+  useEffect(() => {
+    // This is a trick to get the updated video list from the home page state
+    // In a real app, this would be handled by a state management library (Zustand, Redux) or context
+    const videosParam = searchParams.get('videos');
+    if (videosParam) {
+      try {
+        const parsedVideos = JSON.parse(videosParam);
+        setVideos(parsedVideos);
+      } catch (e) {
+        console.error("Failed to parse videos from query params", e);
+      }
+    }
+  }, [searchParams]);
+
   const video = videos.find((v) => v.id === params.id);
 
   if (!video) {
+    // Give it a moment for the videos to be passed via query param
+    const globalVideo = allVideos.find(v => v.id === params.id);
+    if(globalVideo) {
+        // found it, but state isn't updated yet. This is fragile.
+    } else {
+        return (
+            <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white">
+                <h1 className="text-2xl font-bold">Video yükleniyor...</h1>
+                <p className="text-muted-foreground">Eğer video görünmezse, ana sayfaya dönüp tekrar deneyin.</p>
+                <Button asChild variant="ghost" size="lg" className="mt-4 text-white">
+                    <Link href="/">
+                        <ArrowLeft className="mr-2" /> Ana Sayfaya Dön
+                    </Link>
+                </Button>
+            </div>
+        )
+    }
+    // Fallback to notFound if it's really not there after a bit.
+    // notFound();
+  }
+
+  const currentVideo = video || allVideos.find(v => v.id === params.id);
+  if (!currentVideo) {
+    // still not found.
     notFound();
   }
-  
-  const videoIndex = videos.findIndex(v => v.id === params.id);
-  const prevVideoId = videoIndex > 0 ? videos[videoIndex - 1].id : null;
-  const nextVideoId = videoIndex < videos.length - 1 ? videos[videoIndex + 1].id : null;
 
-  const PlatformIcon = platformIcons[video.platform];
+
+  const videoIndex = videos.findIndex(v => v.id === params.id);
+  const prevVideo = videoIndex > 0 ? videos[videoIndex - 1] : null;
+  const nextVideo = videoIndex < videos.length - 1 ? videos[videoIndex + 1] : null;
+
+  const PlatformIcon = platformIcons[currentVideo.platform];
+
+  const navigateToVideo = (targetVideo: Video | null) => {
+      if (targetVideo) {
+          const videosQuery = encodeURIComponent(JSON.stringify(videos));
+          router.push(`/videos/${targetVideo.id}?videos=${videosQuery}`);
+      }
+  }
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center">
       <div className="relative w-full max-w-sm aspect-[9/16] bg-card overflow-hidden rounded-lg shadow-2xl shadow-primary/20">
         <Image
-          src={video.thumbnailUrl}
-          alt={video.title}
+          src={currentVideo.thumbnailUrl}
+          alt={currentVideo.title}
           fill
           className="object-cover"
-          data-ai-hint={video.imageHint}
+          data-ai-hint={currentVideo.imageHint}
         />
         
         <div className="absolute inset-0 flex flex-col justify-between p-4 bg-black/30">
@@ -61,44 +119,42 @@ export default function VideoDetailPage({ params }: { params: { id: string } }) 
               </Link>
             </Button>
             <div className="flex items-center gap-2">
-               {prevVideoId && (
-                <Button asChild variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 text-white">
-                    <Link href={`/videos/${prevVideoId}`}><ChevronLeft /></Link>
+               {prevVideo && (
+                <Button onClick={() => navigateToVideo(prevVideo)} variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 text-white">
+                    <ChevronLeft />
                 </Button>
                 )}
-                {nextVideoId && (
-                <Button asChild variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 text-white">
-                    <Link href={`/videos/${nextVideoId}`}><ChevronRight /></Link>
+                {nextVideo && (
+                <Button onClick={() => navigateToVideo(nextVideo)} variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 text-white">
+                    <ChevronRight />
                 </Button>
                 )}
             </div>
           </header>
 
-          <div className="flex items-center justify-center gap-6">
-            <Button variant="ghost" size="icon" className="text-white h-12 w-12"><RotateCcw /></Button>
+          <div className="flex items-center justify-center">
             <Button variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-20 w-20"><Play className="h-10 w-10 fill-white" /></Button>
-            <Button variant="ghost" size="icon" className="text-white h-12 w-12"><RotateCw /></Button>
           </div>
           
           <div className="text-white space-y-4">
               <div>
-                <h1 className="text-2xl font-bold font-headline">{video.title}</h1>
+                <h1 className="text-2xl font-bold font-headline">{currentVideo.title}</h1>
                 <div className="flex items-center gap-2 text-sm text-neutral-300">
                     <PlatformIcon className="h-4 w-4" />
-                    <span>{video.platform}</span>
+                    <span>{currentVideo.platform}</span>
                     <span>•</span>
-                    <span>{video.duration}</span>
+                    <span>{currentVideo.duration}</span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm"><span className={cn("inline-block w-6 text-center mr-1 p-1 rounded-md", video.category.color)}>{video.category.emoji}</span> Kategori: {video.category.name}</p>
-                {video.notes && <p className="text-sm bg-white/10 p-2 rounded-md">📝 Notun: "{video.notes}"</p>}
-                <p className="text-xs text-neutral-400">📅 Kaydedildi: {video.dateAdded}</p>
+                <p className="text-sm"><span className={cn("inline-block w-6 text-center mr-1 p-1 rounded-md", currentVideo.category.color)}>{currentVideo.category.emoji}</span> Kategori: {currentVideo.category.name}</p>
+                {currentVideo.notes && <p className="text-sm bg-white/10 p-2 rounded-md">📝 Notun: "{currentVideo.notes}"</p>}
+                <p className="text-xs text-neutral-400">📅 Kaydedildi: {currentVideo.dateAdded}</p>
               </div>
 
               <div className="flex justify-around items-center pt-2">
-                <Button variant="ghost" className="flex-col h-auto text-white gap-1"><Heart className={cn(video.isFavorite && "fill-red-500 text-red-500")} /> Favori</Button>
+                <Button variant="ghost" className="flex-col h-auto text-white gap-1"><Heart className={cn(currentVideo.isFavorite && "fill-red-500 text-red-500")} /> Favori</Button>
                 <Button variant="ghost" className="flex-col h-auto text-white gap-1"><ExternalLink/> Orijinali Aç</Button>
                 <Button variant="ghost" className="flex-col h-auto text-white gap-1"><Share2/> Paylaş</Button>
                 <Button variant="ghost" className="flex-col h-auto text-white gap-1"><Edit/> Düzenle</Button>
