@@ -12,7 +12,7 @@
         "photoURL": { "type": "string", "format": "uri", "description": "URL of the user's profile picture." },
         "lastLogin": { "type": "string", "format": "date-time", "description": "Timestamp of the user's last login." }
       },
-      "required": ["uid", "email", "displayName", "lastLogin"]
+      "required": ["uid", "email", "lastLogin"]
     },
     "Video": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -49,7 +49,7 @@
   },
   "auth": {
     "providers": [
-      "google.com"
+      "password"
     ]
   },
   "firestore": {

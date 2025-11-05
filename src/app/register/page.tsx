@@ -1,13 +1,15 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useUser, signInWithGoogle } from '@/firebase/auth/use-user';
+import { useUser, createUserWithEmail } from '@/firebase/auth/use-user';
 import { useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useEffect } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { FcGoogle } from 'react-icons/fc';
 import Link from 'next/link';
 
 
@@ -15,6 +17,10 @@ export default function RegisterPage() {
     const { user, isUserLoading: loading } = useUser();
     const auth = useAuth();
     const router = useRouter();
+    const { toast } = useToast();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isSigningUp, setIsSigningUp] = useState(false);
 
     useEffect(() => {
         if (!loading && user) {
@@ -22,14 +28,30 @@ export default function RegisterPage() {
         }
     }, [user, loading, router]);
 
-    const handleGoogleSignIn = async () => {
+    const handleSignUp = async (e: React.FormEvent) => {
+        e.preventDefault();
         if (!auth) return;
+        if (password.length < 6) {
+            toast({ variant: 'destructive', title: 'Zayıf Şifre', description: 'Şifreniz en az 6 karakter olmalıdır.' });
+            return;
+        }
+
+        setIsSigningUp(true);
         try {
-            await signInWithGoogle(auth);
+            await createUserWithEmail(auth, email, password);
+            toast({ title: 'Hesap oluşturuldu!', description: 'Başarıyla kaydoldunuz.' });
             // The onAuthStateChanged listener in useUser will handle the redirect
-        } catch (error) {
-            console.error("Google Sign-In failed", error);
-            // Optionally, show a toast message to the user
+        } catch (error: any) {
+            console.error("Sign-Up failed", error);
+            let description = 'Kayıt olurken bir hata oluştu.';
+            if (error.code === 'auth/email-already-in-use') {
+                description = 'Bu e-posta adresi zaten kullanılıyor.';
+            } else if (error.code === 'auth/invalid-email') {
+                description = 'Lütfen geçerli bir e-posta adresi girin.';
+            }
+            toast({ variant: 'destructive', title: 'Kayıt Başarısız', description });
+        } finally {
+            setIsSigningUp(false);
         }
     };
 
@@ -38,17 +60,41 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex items-center justify-center min-h-screen bg-background p-4">
             <Card className="w-full max-w-sm">
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl font-headline">Hesap Oluştur</CardTitle>
-                    <CardDescription>Başlamak için Google hesabınızı kullanın.</CardDescription>
+                    <CardDescription>Başlamak için bir hesap oluşturun.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center gap-4">
-                     <Button onClick={handleGoogleSignIn} size="lg" className="w-full">
-                        <FcGoogle className="mr-2 h-5 w-5" /> Google ile Kaydol
-                    </Button>
-                    <p className="text-xs text-muted-foreground">
+                <CardContent>
+                    <form onSubmit={handleSignUp} className="flex flex-col gap-4">
+                        <div className="space-y-2">
+                           <Label htmlFor="email">E-posta</Label>
+                           <Input 
+                             id="email" 
+                             type="email" 
+                             placeholder="ornek@eposta.com" 
+                             value={email}
+                             onChange={(e) => setEmail(e.target.value)}
+                             required 
+                           />
+                        </div>
+                         <div className="space-y-2">
+                           <Label htmlFor="password">Şifre</Label>
+                           <Input 
+                             id="password" 
+                             type="password" 
+                             placeholder="En az 6 karakter"
+                             value={password}
+                             onChange={(e) => setPassword(e.target.value)}
+                             required 
+                           />
+                        </div>
+                        <Button type="submit" disabled={isSigningUp} className="w-full mt-2">
+                            {isSigningUp ? <Loader2 className="animate-spin" /> : 'Hesap Oluştur'}
+                        </Button>
+                    </form>
+                    <p className="text-center text-sm text-muted-foreground mt-6">
                         Zaten bir hesabın var mı?{' '}
                         <Link href="/login" className="underline hover:text-primary">
                             Giriş yap
