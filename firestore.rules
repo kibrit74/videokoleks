@@ -7,6 +7,7 @@
  *
  * Data Structure:
  * All data is nested under /users/{userId}, creating a clear ownership hierarchy.
+ * - /users/{userId}: Stores public profile information for each user.
  * - /users/{userId}/categories/{categoryId}: Stores category data owned by the user.
  * - /users/{userId}/videos/{videoId}: Stores video data owned by the user.
  *
@@ -44,6 +45,17 @@ service cloud.firestore {
      */
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Rules for the user document itself.
+     * @path /users/{userId}
+     * @allow (get, update) A signed-in user can read and update their own user document.
+     * @deny (get, update) A signed-in user cannot read or update another user's document.
+     * @principle Enforces self-service profile management.
+     */
+    match /users/{userId} {
+      allow get, update: if isOwner(userId);
     }
 
     /**
