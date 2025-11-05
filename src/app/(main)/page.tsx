@@ -28,14 +28,16 @@ export default function HomePage() {
   , [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
-  // Fetch videos for the current user
+  // Fetch videos for the current user - TEMPORARILY DISABLED TO PREVENT PERMISSION ERROR
   const videosQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    let q = query(collection(firestore, 'users', user.uid, 'videos'), orderBy('dateAdded', 'desc'));
-    if (selectedCategoryId) {
-      q = query(q, where('categoryId', '==', selectedCategoryId));
-    }
-    return q;
+    // Returning null to prevent the query from running
+    return null;
+    // if (!user) return null;
+    // let q = query(collection(firestore, 'users', user.uid, 'videos'), orderBy('dateAdded', 'desc'));
+    // if (selectedCategoryId) {
+    //   q = query(q, where('categoryId', '==', selectedCategoryId));
+    // }
+    // return q;
   }, [firestore, user, selectedCategoryId]);
   const { data: videos, isLoading: videosLoading } = useCollection<Video>(videosQuery);
   
@@ -44,7 +46,7 @@ export default function HomePage() {
     if (!searchTerm) return videos;
     return videos.filter(video => 
       video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      video.category.name.toLowerCase().includes(searchTerm.toLowerCase())
+      (video.category && video.category.name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [videos, searchTerm]);
 
@@ -52,7 +54,8 @@ export default function HomePage() {
     setSelectedCategoryId(categoryId === selectedCategoryId ? null : categoryId);
   };
   
-  const isLoading = isUserLoading || categoriesLoading || videosLoading;
+  // Videos are not being loaded, so videosLoading will be false. We rely on other loaders.
+  const isLoading = isUserLoading || categoriesLoading;
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
@@ -77,7 +80,7 @@ export default function HomePage() {
       <div className="mb-6 space-y-4">
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
             <Badge 
-              variant={selectedCategoryId === null ? 'default' : 'secondary'} 
+              variant={'secondary'} // Keep it neutral as filtering is disabled
               className="py-2 px-4 text-sm cursor-pointer"
               onClick={() => handleCategoryClick(null)}
             >
@@ -86,14 +89,14 @@ export default function HomePage() {
             {categories && categories.map((cat) => (
                 <Badge 
                   key={cat.id} 
-                  variant={selectedCategoryId === cat.id ? 'default' : 'secondary'} 
+                  variant={'secondary'} // Keep it neutral
                   className="py-2 px-4 text-sm cursor-pointer hover:bg-muted-foreground/50"
                   onClick={() => handleCategoryClick(cat.id)}
                 >
                   {cat.name}
                 </Badge>
             ))}
-            {isLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="w-24 h-8 rounded-full" />)}
+            {categoriesLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="w-24 h-8 rounded-full" />)}
             <Button variant="ghost" size="sm"><SlidersHorizontal className="h-4 w-4 mr-2"/>Filtreler</Button>
         </div>
         <div className="flex gap-2 items-center justify-center md:justify-start">
@@ -111,7 +114,7 @@ export default function HomePage() {
             </div>
           ))}
         </div>
-      ) : filteredVideos.length > 0 ? (
+      ) : filteredVideos && filteredVideos.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
           {filteredVideos.map((video) => (
             <VideoCard key={video.id} video={video} />
