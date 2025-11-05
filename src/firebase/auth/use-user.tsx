@@ -1,8 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { onIdTokenChanged, signInAnonymously, signOut, type Auth, User } from 'firebase/auth';
+import { onIdTokenChanged, signInWithPopup, GoogleAuthProvider, signOut, type Auth, User } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
-
 import { useAuth, useFirestore } from '@/firebase';
 
 export function useUser() {
@@ -14,9 +13,9 @@ export function useUser() {
 
   useEffect(() => {
     if (!auth || !firestore) {
-        setLoading(false);
-        return;
-    };
+      setLoading(false);
+      return;
+    }
 
     const unsubscribe = onIdTokenChanged(
       auth,
@@ -27,26 +26,23 @@ export function useUser() {
           setUser(user);
           const userRef = doc(firestore, 'users', user.uid);
           try {
-            // This will create the user doc if it doesn't exist, and update it if it does.
             await setDoc(
               userRef,
               {
                 uid: user.uid,
-                isAnonymous: user.isAnonymous,
+                email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL,
                 lastLogin: serverTimestamp(),
               },
-              { merge: true } // Use merge to avoid overwriting existing fields
+              { merge: true }
             );
           } catch (e) {
             console.error("Error writing user to firestore", e);
             setError(e as Error);
           }
         } else {
-          // If no user, sign in anonymously
-          signInAnonymously(auth).catch(err => {
-              console.error("Anonymous sign in failed", err);
-              setError(err);
-          });
+          setUser(null);
         }
         setLoading(false);
       },
@@ -63,6 +59,16 @@ export function useUser() {
   return { user, isUserLoading: loading, error };
 }
 
+export async function signInWithGoogle(auth: Auth) {
+    if (!auth) return;
+    const provider = new GoogleAuthProvider();
+    try {
+        await signInWithPopup(auth, provider);
+    } catch (error) {
+        console.error("Error during Google sign-in", error);
+        throw error;
+    }
+}
 
 export async function signOutUser(auth: Auth) {
     if (!auth) return;

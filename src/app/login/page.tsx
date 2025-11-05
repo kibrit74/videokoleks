@@ -1,15 +1,18 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useUser, signInWithGoogle } from '@/firebase/auth/use-user';
+import { useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { FcGoogle } from 'react-icons/fc';
 
 
 export default function LoginPage() {
     const { user, isUserLoading: loading } = useUser();
+    const auth = useAuth();
     const router = useRouter();
 
     useEffect(() => {
@@ -17,6 +20,17 @@ export default function LoginPage() {
             router.push('/profile');
         }
     }, [user, loading, router]);
+
+    const handleGoogleSignIn = async () => {
+        if (!auth) return;
+        try {
+            await signInWithGoogle(auth);
+            // The onAuthStateChanged listener in useUser will handle the redirect
+        } catch (error) {
+            console.error("Google Sign-In failed", error);
+            // Optionally, show a toast message to the user
+        }
+    };
 
     if (loading || user) {
         return (
@@ -31,11 +45,11 @@ export default function LoginPage() {
             <Card className="w-full max-w-sm">
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl font-headline">Giriş Yap</CardTitle>
-                    <CardDescription>Bu uygulama anonim giriş kullanmaktadır. Lütfen ana sayfaya dönün.</CardDescription>
+                    <CardDescription>Devam etmek için Google hesabınızla giriş yapın.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-4">
-                    <Button onClick={() => router.push('/')} size="lg" className="w-full">
-                        Ana Sayfaya Dön
+                    <Button onClick={handleGoogleSignIn} size="lg" className="w-full">
+                        <FcGoogle className="mr-2 h-5 w-5" /> Google ile Giriş Yap
                     </Button>
                 </CardContent>
             </Card>

@@ -1,67 +1,37 @@
 {
   "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the application.",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique ID from Firebase Auth." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "photoURL": { "type": "string", "format": "uri", "description": "URL of the user's profile picture." },
+        "lastLogin": { "type": "string", "format": "date-time", "description": "Timestamp of the user's last login." }
+      },
+      "required": ["uid", "email", "displayName", "lastLogin"]
+    },
     "Video": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Video",
       "type": "object",
       "description": "Represents a video saved by the user.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the video.",
-          "format": "uuid"
-        },
-        "platform": {
-          "type": "string",
-          "description": "The platform the video is from (e.g., Instagram, YouTube, TikTok)."
-        },
-        "url": {
-          "type": "string",
-          "description": "URL of the video.",
-          "format": "uri"
-        },
-        "title": {
-          "type": "string",
-          "description": "Title of the video."
-        },
-        "thumbnailUrl": {
-          "type": "string",
-          "description": "URL of the video's thumbnail image.",
-          "format": "uri"
-        },
-        "duration": {
-          "type": "number",
-          "description": "Duration of the video in seconds."
-        },
-        "categoryId": {
-          "type": "string",
-          "description": "Reference to Category. (Relationship: Category 1:N Video)"
-        },
-        "note": {
-          "type": "string",
-          "description": "User's note about the video."
-        },
-        "dateSaved": {
-          "type": "string",
-          "description": "Date and time the video was saved.",
-          "format": "date-time"
-        },
-        "isFavorite": {
-          "type": "boolean",
-          "description": "Indicates whether the video is marked as a favorite."
-        }
+        "id": { "type": "string", "description": "Unique identifier for the video." },
+        "platform": { "type": "string", "description": "The platform the video is from (e.g., Instagram, YouTube, TikTok)." },
+        "url": { "type": "string", "description": "URL of the video.", "format": "uri" },
+        "title": { "type": "string", "description": "Title of the video." },
+        "thumbnailUrl": { "type": "string", "description": "URL of the video's thumbnail image.", "format": "uri" },
+        "duration": { "type": "string", "description": "Duration of the video." },
+        "categoryId": { "type": "string", "description": "Reference to Category." },
+        "note": { "type": "string", "description": "User's note about the video." },
+        "dateSaved": { "type": "string", "description": "Date and time the video was saved.", "format": "date-time" },
+        "isFavorite": { "type": "boolean", "description": "Indicates whether the video is marked as a favorite." }
       },
-      "required": [
-        "id",
-        "platform",
-        "url",
-        "title",
-        "thumbnailUrl",
-        "duration",
-        "categoryId",
-        "dateSaved",
-        "isFavorite"
-      ]
+      "required": ["id", "platform", "url", "title", "thumbnailUrl", "duration", "categoryId", "dateSaved", "isFavorite"]
     },
     "Category": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -69,80 +39,45 @@
       "type": "object",
       "description": "Represents a category for organizing videos.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the category.",
-          "format": "uuid"
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the category."
-        },
-        "emoji": {
-          "type": "string",
-          "description": "Emoji associated with the category."
-        },
-        "color": {
-          "type": "string",
-          "description": "Color associated with the category (e.g., hex code)."
-        }
+        "id": { "type": "string", "description": "Unique identifier for the category." },
+        "name": { "type": "string", "description": "Name of the category." },
+        "emoji": { "type": "string", "description": "Emoji associated with the category." },
+        "color": { "type": "string", "description": "Color associated with the category (e.g., hex code)." }
       },
-      "required": [
-        "id",
-        "name",
-        "emoji",
-        "color"
-      ]
+      "required": ["id", "name", "emoji", "color"]
     }
   },
   "auth": {
     "providers": [
-      "anonymous"
+      "google.com"
     ]
   },
   "firestore": {
     "structure": [
       {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": { "$ref": "#/backend/entities/User" },
+          "description": "Stores public profile information for each user."
+        }
+      },
+      {
         "path": "/users/{userId}/categories/{categoryId}",
         "definition": {
           "entityName": "Category",
-          "schema": {
-            "$ref": "#/backend/entities/Category"
-          },
-          "description": "Stores categories created by the user. Path-based ownership ensures only the user can access their categories.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the category."
-            },
-            {
-              "name": "categoryId",
-              "description": "The unique ID of the category."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/Category" },
+          "description": "Stores categories created by a specific user."
         }
       },
       {
         "path": "/users/{userId}/videos/{videoId}",
         "definition": {
           "entityName": "Video",
-          "schema": {
-            "$ref": "#/backend/entities/Video"
-          },
-          "description": "Stores videos saved by the user. Path-based ownership ensures only the user can access their videos.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the video."
-            },
-            {
-              "name": "videoId",
-              "description": "The unique ID of the video."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/Video" },
+          "description": "Stores videos saved by a specific user."
         }
       }
-    ],
-    "reasoning": "The Firestore structure is designed to provide a secure and scalable solution for the VideoKoleks application. It follows the core principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters).\n\n**Authorization Independence:**\nAuthorization Independence is achieved by using path-based ownership for categories and videos. Specifically, all categories and videos are stored under the `/users/{userId}` collection. This means that authorization rules can be written based on the path, without needing to perform `get()` operations to check parent document attributes. This makes operations atomic and simplifies security rules.\n\n**Structural Segregation (Homogeneous Security Posture):**\nAll documents within a collection share the same security requirements. User-owned data is segregated under `/users/{userId}`.\n\n**Access Modeling:**\nPath-Based Ownership: Categories and Videos are stored under the user's document (`/users/{userId}/categories/{categoryId}` and `/users/{userId}/videos/{videoId}`). This makes ownership clear and simplifies rules.\n\n**QAPs Support:**\nThe structure supports secure list operations (QAPs) as all authorization information is contained within the path itself, eliminating the need for filtering based on data content. Rules can easily check if the requesting user ID matches the user ID in the path.\n\nTo resolve the error \"FirebaseError: Firebase: Error (auth/operation-not-allowed).\", the suggested structure facilitates simple, robust, and easily debuggable security rules, which should resolve the authentication error."
+    ]
   }
 }

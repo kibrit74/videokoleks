@@ -41,6 +41,7 @@ import type { Video, Category } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function ProfilePage() {
   const { toast } = useToast();
@@ -49,6 +50,12 @@ export default function ProfilePage() {
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [isUserLoading, user, router]);
 
   const videosQuery = useMemoFirebase(
     () => (user ? collection(firestore, 'users', user.uid, 'videos') : null),
@@ -127,8 +134,8 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     if (!auth) return;
     await signOutUser(auth);
-    toast({ title: 'Oturum sonlandırıldı. Yeni bir anonim oturum başlatıldı.' });
-    // User will be auto-signed in anonymously by the useUser hook
+    toast({ title: 'Oturum kapatıldı.' });
+    router.push('/login');
   };
 
   if (isUserLoading) {
@@ -165,8 +172,8 @@ export default function ProfilePage() {
              <div className="inline-block p-4 bg-primary/10 rounded-full mb-4">
                 <Unplug className="w-16 h-16 text-primary" />
              </div>
-            <h1 className="text-3xl font-bold font-headline">Oturum Bekleniyor</h1>
-            <p className="text-muted-foreground mt-2 mb-6">Anonim kullanıcı oturumu başlatılıyor...</p>
+            <h1 className="text-3xl font-bold font-headline">Oturumunuz Kapalı</h1>
+            <p className="text-muted-foreground mt-2 mb-6">Profilinizi görüntülemek için lütfen giriş yapın.</p>
             <Loader2 className="h-8 w-8 animate-spin mx-auto" />
         </div>
      )
@@ -177,14 +184,15 @@ export default function ProfilePage() {
       <header className="text-center mb-8">
         <>
           <Avatar className="w-24 h-24 mx-auto mb-4 border-2 border-primary">
+             <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? 'User'} />
              <AvatarFallback>
               <User />
             </AvatarFallback>
           </Avatar>
           <h1 className="text-3xl font-bold font-headline">
-            Anonim Kullanıcı
+            {user.displayName ?? 'Kullanıcı'}
           </h1>
-          <p className="text-muted-foreground text-xs">{user.uid}</p>
+          <p className="text-muted-foreground text-sm">{user.email}</p>
         </>
       </header>
 
@@ -253,7 +261,7 @@ export default function ProfilePage() {
                   onClick={handleLogout}
                 >
                   <LogOut className="w-5 h-5 mr-4 text-red-500" />
-                  <span>Yeni Oturum Başlat</span>
+                  <span>Çıkış Yap</span>
                 </Button>
               </li>
             )}
