@@ -18,29 +18,70 @@ import {
   Moon,
   LogOut,
   LogIn,
+  Loader2,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { videos, categories } from '@/lib/data';
 import { useUser, signOutUser } from '@/firebase/auth/use-user';
-import { useAuth } from '@/firebase';
+import {
+  useAuth,
+  useFirestore,
+  useCollection,
+  useMemoFirebase,
+} from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import type { Video, Category } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
-
+import Link from 'next/link';
 
 export default function ProfilePage() {
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
-  const { user, loading: userLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
 
+  const videosQuery = useMemoFirebase(
+    () => (user ? collection(firestore, 'users', user.uid, 'videos') : null),
+    [firestore, user]
+  );
+  const { data: videos, isLoading: videosLoading } =
+    useCollection<Video>(videosQuery);
 
-  const videoCount = videos.length;
-  const categoryCount = categories.length;
-  const favoriteCount = videos.filter(v => v.isFavorite).length;
+  const categoriesQuery = useMemoFirebase(
+    () =>
+      user ? collection(firestore, 'users', user.uid, 'categories') : null,
+    [firestore, user]
+  );
+  const { data: categories, isLoading: categoriesLoading } =
+    useCollection<Category>(categoriesQuery);
+
+  const favoriteVideosQuery = useMemoFirebase(
+    () =>
+      user
+        ? query(
+            collection(firestore, 'users', user.uid, 'videos'),
+            where('isFavorite', '==', true)
+          )
+        : null,
+    [firestore, user]
+  );
+  const { data: favoriteVideos, isLoading: favoritesLoading } =
+    useCollection<Video>(favoriteVideosQuery);
+
+  const videoCount = videos?.length ?? 0;
+  const categoryCount = categories?.length ?? 0;
+  const favoriteCount = favoriteVideos?.length ?? 0;
+  const statsLoading = videosLoading || categoriesLoading || favoritesLoading;
 
   const stats = [
     { icon: Package, label: 'Video', value: videoCount },
@@ -52,7 +93,9 @@ export default function ProfilePage() {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
     toast({
-        title: `Tema değiştirildi: ${newTheme === 'dark' ? 'Karanlık' : 'Aydınlık'}`,
+      title: `Tema değiştirildi: ${
+        newTheme === 'dark' ? 'Karanlık' : 'Aydınlık'
+      }`,
     });
   };
 
@@ -67,12 +110,11 @@ export default function ProfilePage() {
     { icon: Mail, label: 'Destek & Geri Bildirim', action: 'mail' },
     { icon: Info, label: 'Hakkında', action: 'toast' },
   ];
-  
+
   const handleSettingClick = (item: (typeof settingsItems)[number]) => {
     if (typeof item.action === 'function') {
       item.action();
-    }
-    else if (item.action === 'mail') {
+    } else if (item.action === 'mail') {
       window.location.href = 'mailto:destek@videokoleks.com';
     } else {
       toast({
@@ -89,30 +131,70 @@ export default function ProfilePage() {
     router.push('/');
   };
 
+  if (isUserLoading) {
+    return (
+       <div className="container mx-auto max-w-2xl px-4 py-8">
+         <header className="text-center mb-8">
+            <Skeleton className="w-24 h-24 rounded-full mx-auto mb-4" />
+            <Skeleton className="w-40 h-8 mx-auto" />
+            <Skeleton className="w-48 h-4 mx-auto mt-2" />
+        </header>
+        <Card className="mb-8">
+            <CardHeader>
+                <CardTitle>Koleksiyonumda</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                    {stats.map(stat => (
+                    <div key={stat.label}>
+                        <stat.icon className="w-8 h-8 mx-auto text-primary mb-2" />
+                        <Skeleton className="w-8 h-6 mx-auto" />
+                        <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
+                    </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!user) {
+     return (
+        <div className="container mx-auto max-w-2xl px-4 py-8 text-center">
+             <div className="inline-block p-4 bg-primary/10 rounded-full mb-4">
+                <User className="w-16 h-16 text-primary" />
+             </div>
+            <h1 className="text-3xl font-bold font-headline">Profilini Görüntüle</h1>
+            <p className="text-muted-foreground mt-2 mb-6">İstatistiklerini görmek ve ayarlarını yönetmek için giriş yap.</p>
+            <Button asChild size="lg">
+                <Link href="/login">
+                    <LogIn className="mr-2 h-5 w-5"/>
+                    Giriş Yap
+                </Link>
+            </Button>
+        </div>
+     )
+  }
+
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
       <header className="text-center mb-8">
-      {userLoading ? (
         <>
-            <Skeleton className="w-24 h-24 rounded-full mx-auto mb-4" />
-            <Skeleton className="w-40 h-8 mx-auto" />
-        </>
-      ) : user ? (
-        <>
-        <Avatar className="w-24 h-24 mx-auto mb-4 border-2 border-primary">
-            <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'}/>
+          <Avatar className="w-24 h-24 mx-auto mb-4 border-2 border-primary">
+            <AvatarImage
+              src={user.photoURL || undefined}
+              alt={user.displayName || 'User'}
+            />
             <AvatarFallback>
               {user.displayName?.charAt(0) || user.email?.charAt(0)}
             </AvatarFallback>
-        </Avatar>
-        <h1 className="text-3xl font-bold font-headline">{user.displayName || 'Kullanıcı'}</h1>
-        <p className="text-muted-foreground">{user.email}</p>
+          </Avatar>
+          <h1 className="text-3xl font-bold font-headline">
+            {user.displayName || 'Kullanıcı'}
+          </h1>
+          <p className="text-muted-foreground">{user.email}</p>
         </>
-      ) : (
-        <div className="inline-block p-4 bg-primary/10 rounded-full mb-4">
-          <User className="w-16 h-16 text-primary" />
-        </div>
-      )}
       </header>
 
       <Card className="mb-8">
@@ -124,7 +206,11 @@ export default function ProfilePage() {
             {stats.map(stat => (
               <div key={stat.label}>
                 <stat.icon className="w-8 h-8 mx-auto text-primary mb-2" />
-                <p className="text-2xl font-bold">{stat.value}</p>
+                {statsLoading ? (
+                    <Loader2 className="w-6 h-6 mx-auto animate-spin" />
+                ) : (
+                    <p className="text-2xl font-bold">{stat.value}</p>
+                )}
                 <p className="text-sm text-muted-foreground">{stat.label}</p>
               </div>
             ))}
@@ -158,25 +244,27 @@ export default function ProfilePage() {
                   </span>
                   {item.isTheme && (
                     <div className="ml-auto">
-                        {theme === 'dark' ? <Sun className="h-5 w-5 text-muted-foreground" /> : <Moon className="h-5 w-5 text-muted-foreground" />}
+                      {theme === 'dark' ? (
+                        <Sun className="h-5 w-5 text-muted-foreground" />
+                      ) : (
+                        <Moon className="h-5 w-5 text-muted-foreground" />
+                      )}
                     </div>
                   )}
                 </Button>
               </li>
             ))}
             {user && (
-                 <li key="logout">
-                 <Button
-                   variant="ghost"
-                   className="w-full justify-start h-14 px-4 text-base text-red-500 hover:text-red-500"
-                   onClick={handleLogout}
-                 >
-                   <LogOut
-                     className="w-5 h-5 mr-4 text-red-500"
-                   />
-                   <span>Çıkış Yap</span>
-                 </Button>
-               </li>
+              <li key="logout">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-14 px-4 text-base text-red-500 hover:text-red-500"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="w-5 h-5 mr-4 text-red-500" />
+                  <span>Çıkış Yap</span>
+                </Button>
+              </li>
             )}
           </ul>
         </CardContent>
