@@ -26,6 +26,7 @@ export default function HomePage() {
     if (storedNewVideos) {
       try {
         const newVideos: Video[] = JSON.parse(storedNewVideos);
+        // Combine new videos with initial videos, ensuring no duplicates
         setVideos(prevVideos => [...newVideos, ...prevVideos.filter(v => !newVideos.some(nv => nv.id === v.id))]);
       } catch (e) {
         console.error("Failed to parse new videos from localStorage", e);
@@ -48,7 +49,8 @@ export default function HomePage() {
         // Add to localStorage
         const storedNewVideos = localStorage.getItem(NEW_VIDEOS_STORAGE_KEY);
         const existingNewVideos = storedNewVideos ? JSON.parse(storedNewVideos) : [];
-        const finalNewVideos = [newVideo, ...existingNewVideos];
+        // Prevent duplicates in localStorage as well
+        const finalNewVideos = [newVideo, ...existingNewVideos.filter(v => v.id !== newVideo.id)];
         localStorage.setItem(NEW_VIDEOS_STORAGE_KEY, JSON.stringify(finalNewVideos));
         return updatedVideos;
     });
