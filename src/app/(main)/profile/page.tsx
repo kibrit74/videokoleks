@@ -18,33 +18,42 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-
-const stats = [
-  { icon: Package, label: 'Video', value: 247 },
-  { icon: FolderKanban, label: 'Kategori', value: 12 },
-  { icon: Star, label: 'Favori', value: 35 },
-];
+import { videos, categories } from '@/lib/data';
 
 const settingsItems = [
-  { icon: Settings, label: 'Ayarlar' },
-  { icon: Bell, label: 'Bildirimler' },
-  { icon: Paintbrush, label: 'Tema' },
-  { icon: Download, label: 'Otomatik Kaydetme' },
-  { icon: Lock, label: 'Gizlilik' },
-  { icon: Cloud, label: 'Yedekleme & Senkronizasyon' },
-  { icon: Gem, label: "Premium'a Geç", isPremium: true },
-  { icon: Mail, label: 'Destek & Geri Bildirim' },
-  { icon: Info, label: 'Hakkında' },
+  { icon: Settings, label: 'Ayarlar', action: 'toast' },
+  { icon: Bell, label: 'Bildirimler', action: 'toast' },
+  { icon: Paintbrush, label: 'Tema', action: 'toast' },
+  { icon: Download, label: 'Otomatik Kaydetme', action: 'toast' },
+  { icon: Lock, label: 'Gizlilik', action: 'toast' },
+  { icon: Cloud, label: 'Yedekleme & Senkronizasyon', action: 'toast' },
+  { icon: Gem, label: "Premium'a Geç", isPremium: true, action: 'toast' },
+  { icon: Mail, label: 'Destek & Geri Bildirim', action: 'mail' },
+  { icon: Info, label: 'Hakkında', action: 'toast' },
 ];
 
 export default function ProfilePage() {
   const { toast } = useToast();
 
-  const handleSettingClick = (label: string) => {
-    toast({
-      title: 'Çok yakında!',
-      description: `${label} özelliği yakında aktif olacak.`,
-    });
+  const videoCount = videos.length;
+  const categoryCount = categories.length;
+  const favoriteCount = videos.filter(v => v.isFavorite).length;
+
+  const stats = [
+    { icon: Package, label: 'Video', value: videoCount },
+    { icon: FolderKanban, label: 'Kategori', value: categoryCount },
+    { icon: Star, label: 'Favori', value: favoriteCount },
+  ];
+
+  const handleSettingClick = (item: (typeof settingsItems)[0]) => {
+    if (item.action === 'mail') {
+      window.location.href = 'mailto:destek@videokoleks.com';
+    } else {
+      toast({
+        title: 'Çok yakında!',
+        description: `${item.label} özelliği yakında aktif olacak.`,
+      });
+    }
   };
 
   return (
@@ -81,7 +90,7 @@ export default function ProfilePage() {
                 <Button
                   variant="ghost"
                   className="w-full justify-start h-14 px-4 text-base"
-                  onClick={() => handleSettingClick(item.label)}
+                  onClick={() => handleSettingClick(item)}
                 >
                   <item.icon
                     className={`w-5 h-5 mr-4 ${
