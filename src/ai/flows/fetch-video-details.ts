@@ -67,6 +67,7 @@ const fetchVideoDetailsFlow = ai.defineFlow(
         root.querySelector('title')?.text ||
         root.querySelector('meta[name="description"]')?.getAttribute('content');
       
+      // Try multiple image tags for robustness, especially for Instagram
       const thumbnailUrl = 
         root.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
         root.querySelector('meta[property="og:image:secure_url"]')?.getAttribute('content');
