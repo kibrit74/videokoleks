@@ -37,11 +37,8 @@ export default function HomePage() {
     }
     return q;
   }, [firestore, user, selectedCategoryId]);
-  
-  // CRITICAL: The useCollection hook is removed to prevent the permission error.
-  // This means `videos` will be null and `videosLoading` will be false.
-  const videos: Video[] | null = null;
-  const videosLoading = false;
+
+  const { data: videos, isLoading: videosLoading } = useCollection<Video>(videosQuery);
 
   
   const filteredVideos = useMemo(() => {
@@ -124,9 +121,9 @@ export default function HomePage() {
         </div>
       ) : (
          <div className="text-center py-20">
-            <h2 className="text-2xl font-semibold mb-2">Videolar yüklenemedi.</h2>
+            <h2 className="text-2xl font-semibold mb-2">Henüz video eklemediniz.</h2>
             <p className="text-muted-foreground">
-              Uygulama genelinde bir okuma izni sorunu yaşanmaktadır.
+              Başlamak için "Video Ekle" butonuna tıklayın.
             </p>
           </div>
       )}
