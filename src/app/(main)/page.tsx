@@ -28,8 +28,30 @@ export default function HomePage() {
     user ? collection(firestore, 'users', user.uid, 'categories') : null
   , [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
+
+   // Fetch videos for the current user
+  const videosQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    
+    let q = query(collection(firestore, 'users', user.uid, 'videos'), orderBy('dateAdded', 'desc'));
+    
+    if (selectedCategoryId) {
+      q = query(q, where('categoryId', '==', selectedCategoryId));
+    }
+
+    return q;
+  }, [firestore, user, selectedCategoryId]);
+
+  const { data: videos, isLoading: videosLoading, error: videosError } = useCollection<Video>(videosQuery);
+
+  const filteredVideos = useMemo(() => {
+    if (!videos) return [];
+    return videos.filter(video => 
+      video.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [videos, searchTerm]);
   
-  const isLoading = isUserLoading || categoriesLoading;
+  const isLoading = isUserLoading || categoriesLoading || videosLoading;
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
@@ -54,7 +76,8 @@ export default function HomePage() {
       <div className="mb-6 space-y-4">
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
             <Badge 
-              variant={'secondary'}
+              variant={selectedCategoryId === null ? 'default' : 'secondary'}
+              onClick={() => setSelectedCategoryId(null)}
               className="py-2 px-4 text-sm cursor-pointer"
             >
               Tümü
@@ -62,7 +85,8 @@ export default function HomePage() {
             {categories && categories.map((cat) => (
                 <Badge 
                   key={cat.id} 
-                  variant={'secondary'}
+                  variant={selectedCategoryId === cat.id ? 'default' : 'secondary'}
+                  onClick={() => setSelectedCategoryId(cat.id)}
                   className="py-2 px-4 text-sm cursor-pointer hover:bg-muted-foreground/50"
                 >
                   {cat.name}
@@ -78,20 +102,36 @@ export default function HomePage() {
         </div>
       </div>
 
-        <Alert variant="destructive" className="mb-8">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Önemli Bilgilendirme</AlertTitle>
-          <AlertDescription>
-            Firebase projenizdeki çözülemeyen bir izin sorunu nedeniyle videolar şu anda bu ekranda listelenememektedir. Ancak video ekleyebilir, silebilir ve kategorilerinizi yönetebilirsiniz.
-          </AlertDescription>
-        </Alert>
-
+        {isLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                {Array.from({length: 10}).map((_, i) => (
+                    <div key={i} className="aspect-[9/16] w-full">
+                        <Skeleton className="w-full h-full rounded-lg" />
+                    </div>
+                ))}
+            </div>
+        ) : videosError ? (
+             <Alert variant="destructive" className="mb-8">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Hata!</AlertTitle>
+              <AlertDescription>
+                Videolar yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.
+              </AlertDescription>
+            </Alert>
+        ) : filteredVideos.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                {filteredVideos.map((video) => (
+                    <VideoCard key={video.id} video={video} />
+                ))}
+            </div>
+        ) : (
          <div className="text-center py-20">
             <h2 className="text-2xl font-semibold mb-2">Henüz video eklemediniz.</h2>
             <p className="text-muted-foreground">
-              Başlamak için "Video Ekle" butonuna tıklayın. Eklediğiniz videolar detay sayfalarında görüntülenebilir.
+              Başlamak için "Video Ekle" butonuna tıklayın.
             </p>
           </div>
+        )}
 
       <AddVideoDialog 
         isOpen={isAddVideoOpen} 
