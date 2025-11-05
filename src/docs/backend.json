@@ -1,0 +1,83 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the application.",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique ID from Firebase Auth." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "photoURL": { "type": "string", "format": "uri", "description": "URL of the user's profile picture." },
+        "lastLogin": { "type": "string", "format": "date-time", "description": "Timestamp of the user's last login." }
+      },
+      "required": ["uid", "email", "lastLogin"]
+    },
+    "Video": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Video",
+      "type": "object",
+      "description": "Represents a video saved by the user.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the video." },
+        "platform": { "type": "string", "description": "The platform the video is from (e.g., Instagram, YouTube, TikTok)." },
+        "url": { "type": "string", "description": "URL of the video.", "format": "uri" },
+        "title": { "type": "string", "description": "Title of the video." },
+        "thumbnailUrl": { "type": "string", "description": "URL of the video's thumbnail image.", "format": "uri" },
+        "duration": { "type": "string", "description": "Duration of the video." },
+        "categoryId": { "type": "string", "description": "Reference to Category." },
+        "note": { "type": "string", "description": "User's note about the video." },
+        "dateSaved": { "type": "string", "description": "Date and time the video was saved.", "format": "date-time" },
+        "isFavorite": { "type": "boolean", "description": "Indicates whether the video is marked as a favorite." }
+      },
+      "required": ["id", "platform", "url", "title", "thumbnailUrl", "duration", "categoryId", "dateSaved", "isFavorite"]
+    },
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a category for organizing videos.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the category." },
+        "name": { "type": "string", "description": "Name of the category." },
+        "emoji": { "type": "string", "description": "Emoji associated with the category." },
+        "color": { "type": "string", "description": "Color associated with the category (e.g., hex code)." }
+      },
+      "required": ["id", "name", "emoji", "color"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "google.com"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": { "$ref": "#/backend/entities/User" },
+          "description": "Stores public profile information for each user."
+        }
+      },
+      {
+        "path": "/users/{userId}/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": { "$ref": "#/backend/entities/Category" },
+          "description": "Stores categories created by a specific user."
+        }
+      },
+      {
+        "path": "/users/{userId}/videos/{videoId}",
+        "definition": {
+          "entityName": "Video",
+          "schema": { "$ref": "#/backend/entities/Video" },
+          "description": "Stores videos saved by a specific user."
+        }
+      }
+    ]
+  }
+}

@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react';
 import { 
     onIdTokenChanged, 
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
+    GoogleAuthProvider,
+    signInWithPopup,
     signOut, 
     updateProfile,
     type Auth, 
@@ -44,7 +44,6 @@ export function useUser() {
             lastLogin: serverTimestamp(),
           };
           
-          // Non-blocking write with contextual error handling
           setDoc(userRef, userData, { merge: true })
             .catch(serverError => {
                 const permissionError = new FirestorePermissionError({
@@ -73,21 +72,11 @@ export function useUser() {
   return { user, isUserLoading: loading, error };
 }
 
-// Auth action: Create user with email and password
-export async function createUserWithEmail(auth: Auth, email: string, password: string) {
+// Auth action: Sign in with Google
+export async function signInWithGoogle(auth: Auth) {
     if (!auth) throw new Error("Auth service not available");
-    // This action can be awaited as it's part of the user interaction flow, not background sync
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const displayName = email.split('@')[0];
-    await updateProfile(userCredential.user, { displayName });
-    return userCredential;
-}
-
-// Auth action: Sign in with email and password
-export async function signInWithEmail(auth: Auth, email: string, password: string) {
-    if (!auth) throw new Error("Auth service not available");
-    // This action can be awaited
-    return await signInWithEmailAndPassword(auth, email, password);
+    const provider = new GoogleAuthProvider();
+    return await signInWithPopup(auth, provider);
 }
 
 // Auth action: Sign out
