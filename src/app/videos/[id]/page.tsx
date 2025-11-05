@@ -240,7 +240,9 @@ export default function VideoDetailPage() {
                 </Button>
                 <Button variant="ghost" className="flex-col h-auto text-white gap-1" onClick={() => toast({title: 'Çok yakında!'})}><Share2/> Paylaş</Button>
                 <Button variant="ghost" className="flex-col h-auto text-white gap-1" onClick={() => toast({title: 'Çok yakında!'})}><Edit/> Düzenle</Button>
-                <Button variant="ghost" className="flex-col h-auto text-red-500 hover:text-red-500/90 gap-1" onClick={deleteVideo}><Trash2/> Sil</Button>
+                <Button variant="ghost" className="flex-col h-auto text-red-500 hover:text-red-500/90 gap-1" onClick={deleteVideo}>
+                    <Trash2/> Sil
+                </Button>
               </div>
           </div>
         </div>
