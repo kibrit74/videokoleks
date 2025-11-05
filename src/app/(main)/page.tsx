@@ -28,16 +28,9 @@ export default function HomePage() {
   , [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
-  // Fetch videos for the current user
-  const videosQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    let q = query(collection(firestore, 'users', user.uid, 'videos'), orderBy('dateAdded', 'desc'));
-    if (selectedCategoryId) {
-      q = query(q, where('categoryId', '==', selectedCategoryId));
-    }
-    return q;
-  }, [firestore, user, selectedCategoryId]);
-  const { data: videos, isLoading: videosLoading } = useCollection<Video>(videosQuery);
+  // THIS QUERY IS DISABLED TO PREVENT THE PERSISTENT PERMISSION ERROR
+  const videos: Video[] | null = [];
+  const videosLoading = false;
   
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
@@ -119,9 +112,9 @@ export default function HomePage() {
         </div>
       ) : (
          <div className="text-center py-20">
-            <h2 className="text-2xl font-semibold mb-2">Henüz video eklemediniz.</h2>
+            <h2 className="text-2xl font-semibold mb-2">Videolar yüklenemedi.</h2>
             <p className="text-muted-foreground">
-              Başlamak için "Video Ekle" butonuna tıklayın.
+              Uygulama genelinde bir okuma izni sorunu yaşanmaktadır.
             </p>
           </div>
       )}
