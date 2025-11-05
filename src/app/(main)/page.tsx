@@ -26,10 +26,10 @@ export default function HomePage() {
     if (storedNewVideos) {
       try {
         const newVideos: Video[] = JSON.parse(storedNewVideos);
-        // Create a new array with unique videos, giving preference to newVideos
-        const allVideoIds = new Set(newVideos.map(v => v.id));
-        const uniqueInitialVideos = initialVideos.filter(v => !allVideoIds.has(v.id));
-        setVideos([...newVideos, ...uniqueInitialVideos]);
+        // Combine and filter for uniqueness
+        const combinedVideos = [...newVideos, ...initialVideos];
+        const uniqueVideos = Array.from(new Map(combinedVideos.map(video => [video.id, video])).values());
+        setVideos(uniqueVideos);
       } catch (e) {
         console.error("Failed to parse new videos from localStorage", e);
         localStorage.removeItem(NEW_VIDEOS_STORAGE_KEY);
@@ -54,13 +54,17 @@ export default function HomePage() {
         const updatedVideos = [newVideo, ...prevVideos];
         
         // Update localStorage
-        const storedNewVideos = localStorage.getItem(NEW_VIDEOS_STORAGE_KEY);
-        const existingNewVideos: Video[] = storedNewVideos ? JSON.parse(storedNewVideos) : [];
-        
-        // Prevent duplicates in localStorage as well
-        if (!existingNewVideos.some(v => v.id === newVideo.id)) {
-            const finalNewVideos = [newVideo, ...existingNewVideos];
-            localStorage.setItem(NEW_VIDEOS_STORAGE_KEY, JSON.stringify(finalNewVideos));
+        try {
+            const storedNewVideos = localStorage.getItem(NEW_VIDEOS_STORAGE_KEY);
+            const existingNewVideos: Video[] = storedNewVideos ? JSON.parse(storedNewVideos) : [];
+            
+            // Prevent duplicates in localStorage as well
+            if (!existingNewVideos.some(v => v.id === newVideo.id)) {
+                const finalNewVideos = [newVideo, ...existingNewVideos];
+                localStorage.setItem(NEW_VIDEOS_STORAGE_KEY, JSON.stringify(finalNewVideos));
+            }
+        } catch (e) {
+            console.error("Failed to update localStorage", e);
         }
         
         return updatedVideos;
