@@ -1,34 +1,107 @@
+/**
+ * @file Firestore Security Rules for VideoKoleks Application
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for all data. Each user has exclusive control over their profile, categories, and videos.
+ *
+ * Data Structure:
+ * - /users/{userId}: User profiles.
+ * - /users/{userId}/categories/{categoryId}: Video categories owned by the user.
+ * - /users/{userId}/videos/{videoId}: Video information owned by the user.
+ *
+ * Key Security Decisions:
+ * - Users can only access their own data.
+ * - No public data access is permitted.
+ * - Data validation is limited to authorization and relationship enforcement during this prototyping phase.
+ * - The system authenticates with password or anonymous authentication, so rules only check for a valid `request.auth` context.
+ *
+ * Denormalization for Authorization:
+ *  -  The data structure inherently enforces ownership via path-based security. No denormalization is required because user id is directly encoded in the paths.
+ *
+ */
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
-    }
-
-    function isSignedIn() {
-      return request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
-    }
-
-    // USERS
+    /**
+     * @description Secure access to user profiles.
+     * @path /users/{userId}
+     * @allow (create) - Authenticated user with UID matching the userId in the path can create their profile.
+     * @allow (get, update, delete) - Authenticated user with UID matching the userId in the path can get, update, and delete their profile.
+     * @deny (create) - Authenticated user with UID not matching the userId in the path cannot create a profile.
+     * @deny (get, update, delete) - Authenticated user with UID not matching the userId in the path cannot get, update, or delete a profile.
+     * @principle Enforces document ownership for all operations on user profiles.
+     */
     match /users/{userId} {
-      allow get: if true;
+      // Function to check if the requesting user is the owner of the resource.
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Function to check if the document exists and the requesting user is the owner.
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
       allow list: if false;
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && isSignedIn();
-      allow delete: if false;
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
 
-      // VIDEOS SUBCOLLECTION
-      match /videos/{videoId} {
-        allow read, write: if isOwner(userId) && isSignedIn();
+    /**
+     * @description Secure access to video categories owned by a user.
+     * @path /users/{userId}/categories/{categoryId}
+     * @allow (create) - Authenticated user with UID matching the userId in the path can create a category.
+     * @allow (get, update, delete) - Authenticated user with UID matching the userId in the path can get, update, and delete a category.
+     * @deny (create) - Authenticated user with UID not matching the userId in the path cannot create a category.
+     * @deny (get, update, delete) - Authenticated user with UID not matching the userId in the path cannot get, update, or delete a category.
+     * @principle Enforces document ownership for all operations on user categories.
+     */
+    match /users/{userId}/categories/{categoryId} {
+       // Function to check if the requesting user is the owner of the resource.
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
       }
 
-      // CATEGORIES SUBCOLLECTION
-      match /categories/{categoryId} {
-        allow read, write: if isOwner(userId) && isSignedIn();
+      // Function to check if the document exists and the requesting user is the owner.
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
       }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Secure access to video information owned by a user.
+     * @path /users/{userId}/videos/{videoId}
+     * @allow (create) - Authenticated user with UID matching the userId in the path can create a video.
+     * @allow (get, update, delete) - Authenticated user with UID matching the userId in the path can get, update, and delete a video.
+     * @deny (create) - Authenticated user with UID not matching the userId in the path cannot create a video.
+     * @deny (get, update, delete) - Authenticated user with UID not matching the userId in the path cannot get, update, or delete a video.
+     * @principle Enforces document ownership for all operations on user videos.
+     */
+    match /users/{userId}/videos/{videoId} {
+      // Function to check if the requesting user is the owner of the resource.
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Function to check if the document exists and the requesting user is the owner.
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
     }
   }
 }

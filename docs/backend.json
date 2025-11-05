@@ -1,74 +1,202 @@
 {
   "entities": {
-    "UserProfile": {
-      "title": "User Profile",
-      "description": "Represents a user's profile information.",
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
       "type": "object",
+      "description": "Represents a user of the VideoKoleks application.",
       "properties": {
-        "displayName": {
+        "id": {
           "type": "string",
-          "description": "The user's display name."
+          "description": "Unique identifier for the User entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "The user's display name or username."
         },
         "email": {
           "type": "string",
-          "format": "email",
-          "description": "The user's email address."
+          "description": "The user's email address.",
+          "format": "email"
         },
-        "photoURL": {
+        "profilePicture": {
           "type": "string",
-          "format": "uri",
-          "description": "The URL of the user's profile picture."
+          "description": "URL of the user's profile picture.",
+          "format": "uri"
         }
       },
-      "required": ["displayName", "email"]
+      "required": [
+        "id",
+        "username",
+        "email"
+      ]
     },
     "Video": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Video",
-      "description": "Represents a saved video.",
       "type": "object",
+      "description": "Represents a video saved by a user.",
       "properties": {
-        "title": { "type": "string" },
-        "thumbnailUrl": { "type": "string", "format": "uri" },
-        "imageHint": { "type": "string" },
-        "platform": { "type": "string", "enum": ["instagram", "youtube", "tiktok"] },
-        "duration": { "type": "string" },
-        "categoryId": { "type": "string" },
-        "notes": { "type": "string" },
-        "isFavorite": { "type": "boolean" },
-        "dateAdded": { "type": "string", "format": "date-time" },
-        "originalUrl": { "type": "string", "format": "uri" },
-        "owner": { "type": "string", "description": "The UID of the user who owns this video." }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Video entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Video)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the video."
+        },
+        "url": {
+          "type": "string",
+          "description": "The URL of the video.",
+          "format": "uri"
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "description": "The URL of the video's thumbnail image.",
+          "format": "uri"
+        },
+        "platform": {
+          "type": "string",
+          "description": "The platform where the video was originally hosted (e.g., Instagram, YouTube, TikTok)."
+        },
+        "duration": {
+          "type": "number",
+          "description": "The duration of the video in seconds."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category. (Relationship: Category 1:N Video)"
+        },
+        "note": {
+          "type": "string",
+          "description": "User's note about the video."
+        },
+        "dateSaved": {
+          "type": "string",
+          "description": "The date and time the video was saved.",
+          "format": "date-time"
+        },
+        "isFavorite": {
+          "type": "boolean",
+          "description": "Indicates if the video has been added to favorites."
+        }
       },
-      "required": ["title", "thumbnailUrl", "platform", "categoryId", "dateAdded", "originalUrl", "owner"]
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "url",
+        "thumbnailUrl",
+        "platform",
+        "duration",
+        "categoryId",
+        "dateSaved",
+        "isFavorite"
+      ]
     },
     "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Category",
-      "description": "Represents a user-defined category for videos.",
       "type": "object",
+      "description": "Represents a category for organizing videos.",
       "properties": {
-        "name": { "type": "string" },
-        "emoji": { "type": "string" },
-        "color": { "type": "string" },
-        "owner": { "type": "string", "description": "The UID of the user who owns this category." }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Category entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Category)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the category."
+        },
+        "emoji": {
+          "type": "string",
+          "description": "Emoji associated with the category for visual representation."
+        },
+        "color": {
+          "type": "string",
+          "description": "Color associated with the category for visual representation."
+        }
       },
-      "required": ["name", "emoji", "color", "owner"]
+      "required": [
+        "id",
+        "userId",
+        "name"
+      ]
     }
   },
   "auth": {
-    "providers": ["google.com"]
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
-    "/users/{userId}": {
-      "schema": { "$ref": "#/entities/UserProfile" },
-      "description": "Stores public-facing user profile information."
-    },
-    "/users/{userId}/videos/{videoId}": {
-        "schema": { "$ref": "#/entities/Video" },
-        "description": "Stores the videos saved by a user."
-    },
-    "/users/{userId}/categories/{categoryId}": {
-        "schema": { "$ref": "#/entities/Category" },
-        "description": "Stores the categories created by a user."
-    }
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information.  Accessible only by the user with the matching userId.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores video categories owned by the user. Accessible only by the user with the matching userId.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "categoryId",
+              "description": "The unique identifier for the category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/videos/{videoId}",
+        "definition": {
+          "entityName": "Video",
+          "schema": {
+            "$ref": "#/backend/entities/Video"
+          },
+          "description": "Stores video information owned by the user. Accessible only by the user with the matching userId.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "videoId",
+              "description": "The unique identifier for the video."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to address the application's requirements for managing user videos, categories, and associated metadata. The core principle is **Authorization Independence** achieved through path-based ownership and, where necessary, denormalization. This eliminates the need for `get()` calls in security rules, enabling atomic operations and simplifying rule logic. The structure also ensures clarity, security, and scalability.\n\n**Authorization Independence and QAPs:**\n\n*   **Users Collection:** The `/users/{userId}` collection stores user profiles. Security rules ensure that only the authenticated user can access their own profile data, fulfilling the ownership requirement. No denormalization needed here as the user is always accessing their own data by uid.\n*   **Categories Collection:** Each user owns their categories, stored in `/users/{userId}/categories/{categoryId}`. Only the authenticated user (owner) can manage categories within their user path.  This supports the QAP of listing categories securely, as rules simply check `request.auth.uid == userId`.\n*   **Videos Collection:** Each user owns their videos, stored in `/users/{userId}/videos/{videoId}`. Similar to categories, security rules ensure that only the authenticated user (owner) can manage videos within their user path. This structure supports the QAP of listing videos securely, as rules simply check `request.auth.uid == userId`.\n\n**Structural Segregation:**\n\n*   The segregation of user-owned data into subcollections under `/users/{userId}` ensures that each collection has a homogeneous security posture. Only the owner can access the data within their path. This simplifies security rules and enhances maintainability.\n\n**Access Modeling:**\n\n*   **Path-Based Ownership:** User profiles and their associated videos/categories leverage path-based ownership. This access modeling ensures that only the user associated with the path can access the data within that path.\n\n**Overall:**\n\nThe structure provides a clear, secure, and scalable solution for managing user videos and associated categories. The adherence to core design principles and strategies ensures that the security rules are simple, robust, and easily debuggable."
   }
 }
