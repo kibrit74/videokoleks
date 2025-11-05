@@ -9,9 +9,19 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Plus, SlidersHorizontal } from 'lucide-react';
 import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { AddVideoDialog } from '@/components/add-video-dialog';
+import { cn } from '@/lib/utils';
 
 export default function HomePage() {
   const [isAddVideoOpen, setAddVideoOpen] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
+  const filteredVideos = selectedCategoryId
+    ? videos.filter(video => video.category.id === selectedCategoryId)
+    : videos;
+
+  const handleCategoryClick = (categoryId: string | null) => {
+    setSelectedCategoryId(categoryId);
+  };
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
@@ -30,9 +40,22 @@ export default function HomePage() {
 
       <div className="mb-6 space-y-4">
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
-            <Badge variant="secondary" className="py-2 px-4 text-sm bg-primary text-primary-foreground cursor-pointer">Tümü</Badge>
+            <Badge 
+              variant={selectedCategoryId === null ? 'default' : 'secondary'} 
+              className="py-2 px-4 text-sm cursor-pointer"
+              onClick={() => handleCategoryClick(null)}
+            >
+              Tümü
+            </Badge>
             {categories.map((cat) => (
-                <Badge key={cat.id} variant="secondary" className="py-2 px-4 text-sm cursor-pointer hover:bg-muted-foreground/50">{cat.name}</Badge>
+                <Badge 
+                  key={cat.id} 
+                  variant={selectedCategoryId === cat.id ? 'default' : 'secondary'} 
+                  className="py-2 px-4 text-sm cursor-pointer hover:bg-muted-foreground/50"
+                  onClick={() => handleCategoryClick(cat.id)}
+                >
+                  {cat.name}
+                </Badge>
             ))}
             <Button variant="ghost" size="sm"><SlidersHorizontal className="h-4 w-4 mr-2"/>Filtreler</Button>
         </div>
@@ -44,7 +67,7 @@ export default function HomePage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-        {videos.map((video) => (
+        {filteredVideos.map((video) => (
           <VideoCard key={video.id} video={video} />
         ))}
       </div>
