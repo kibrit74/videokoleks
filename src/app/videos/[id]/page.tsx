@@ -37,8 +37,10 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
         }
         if (platform === 'instagram') {
             // Add '/embed' to the path, e.g. /reels/Cxyz/ -> /reels/Cxyz/embed
-            urlObject.pathname = urlObject.pathname.replace(/\/$/, '') + '/embed';
-            return urlObject.toString();
+            if (urlObject.pathname.includes('/reel/') || urlObject.pathname.includes('/p/')) {
+                urlObject.pathname = urlObject.pathname.replace(/\/$/, '') + '/embed';
+                return urlObject.toString();
+            }
         }
     } catch(e) {
         console.error("Invalid URL for embedding:", url);
@@ -137,7 +139,7 @@ export default function VideoDetailPage() {
           />
         )}
         
-        <div className={cn("absolute inset-0 flex flex-col justify-between p-4 bg-black/30", isPlaying && "hidden")}>
+        <div className={cn("absolute inset-0 flex flex-col justify-between p-4 bg-black/30 transition-opacity", isPlaying ? "opacity-0 pointer-events-none" : "opacity-100")}>
           <header className="flex justify-between items-center">
             <Button asChild variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 text-white">
               <Link href="/">
@@ -190,7 +192,7 @@ export default function VideoDetailPage() {
                 </Button>
                 <Button variant="ghost" className="flex-col h-auto text-white gap-1"><Share2/> Paylaş</Button>
                 <Button variant="ghost" className="flex-col h-auto text-white gap-1"><Edit/> Düzenle</Button>
-                <Button variant="ghost" className="flex-col h-auto text-destructive gap-1"><Trash2/> Sil</Button>
+                <Button variant="ghost" className="flex-col h-auto text-white gap-1"><Trash2/> Sil</Button>
               </div>
           </div>
         </div>
