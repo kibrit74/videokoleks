@@ -1,6 +1,6 @@
 'use client';
 
-import { notFound, useSearchParams, useRouter } from 'next/navigation';
+import { notFound, useSearchParams, useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -27,11 +27,13 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
   tiktok: TiktokIcon,
 };
 
-export default function VideoDetailPage({ params }: { params: { id: string } }) {
+export default function VideoDetailPage() {
   const router = useRouter();
+  const params = useParams();
   const searchParams = useSearchParams();
   const [videos, setVideos] = useState<Video[]>([]);
   const [currentVideo, setCurrentVideo] = useState<Video | undefined>(undefined);
+  const videoId = params.id as string;
 
   useEffect(() => {
     const videosParam = searchParams.get('videos');
@@ -39,13 +41,13 @@ export default function VideoDetailPage({ params }: { params: { id: string } }) 
       try {
         const parsedVideos: Video[] = JSON.parse(videosParam);
         setVideos(parsedVideos);
-        const foundVideo = parsedVideos.find((v) => v.id === params.id);
+        const foundVideo = parsedVideos.find((v) => v.id === videoId);
         setCurrentVideo(foundVideo);
       } catch (e) {
         console.error("Failed to parse videos from query params", e);
       }
     }
-  }, [searchParams, params.id]);
+  }, [searchParams, videoId]);
 
   if (currentVideo === undefined) {
     return (
@@ -66,7 +68,7 @@ export default function VideoDetailPage({ params }: { params: { id: string } }) 
   }
 
 
-  const videoIndex = videos.findIndex(v => v.id === params.id);
+  const videoIndex = videos.findIndex(v => v.id === videoId);
   const prevVideo = videoIndex > 0 ? videos[videoIndex - 1] : null;
   const nextVideo = videoIndex < videos.length - 1 ? videos[videoIndex + 1] : null;
 
