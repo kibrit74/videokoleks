@@ -1,6 +1,6 @@
 'use client';
 
-import { notFound, useSearchParams, useRouter, useParams } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -52,12 +52,11 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
 const NEW_VIDEOS_STORAGE_KEY = 'newVideos';
 
 export default function VideoDetailPage() {
-  const router = useRouter();
   const params = useParams();
+  const videoId = params.id as string;
+  
   const [allVideos, setAllVideos] = useState<Video[]>(initialVideos);
   const [isPlaying, setIsPlaying] = useState(false);
-
-  const videoId = params.id as string;
 
   useEffect(() => {
     const storedNewVideos = localStorage.getItem(NEW_VIDEOS_STORAGE_KEY);
@@ -101,9 +100,9 @@ export default function VideoDetailPage() {
   const embedUrl = getEmbedUrl(currentVideo.originalUrl, currentVideo.platform);
 
 
-  const navigateToVideo = (targetVideo: Video | null) => {
-      if (targetVideo) {
-          router.push(`/videos/${targetVideo.id}`);
+  const navigateToVideo = (targetVideoId: string | undefined) => {
+      if (targetVideoId) {
+          window.location.href = `/videos/${targetVideoId}`;
       }
   }
 
@@ -147,12 +146,12 @@ export default function VideoDetailPage() {
             </Button>
             <div className="flex items-center gap-2">
                {prevVideo && (
-                <Button onClick={() => navigateToVideo(prevVideo)} variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 text-white">
+                <Button onClick={() => navigateToVideo(prevVideo?.id)} variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 text-white">
                     <ChevronLeft />
                 </Button>
                 )}
                 {nextVideo && (
-                <Button onClick={() => navigateToVideo(nextVideo)} variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 text-white">
+                <Button onClick={() => navigateToVideo(nextVideo?.id)} variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 text-white">
                     <ChevronRight />
                 </Button>
                 )}

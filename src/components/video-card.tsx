@@ -7,7 +7,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
