@@ -114,7 +114,11 @@ export default function VideoDetailPage() {
           </header>
 
           <div className="flex items-center justify-center">
-            <Button variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-20 w-20"><Play className="h-10 w-10 fill-white" /></Button>
+            <Button asChild variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-20 w-20">
+                <Link href={currentVideo.originalUrl} target="_blank">
+                    <Play className="h-10 w-10 fill-white" />
+                </Link>
+            </Button>
           </div>
           
           <div className="text-white space-y-4">
@@ -136,7 +140,11 @@ export default function VideoDetailPage() {
 
               <div className="flex justify-around items-center pt-2">
                 <Button variant="ghost" className="flex-col h-auto text-white gap-1"><Heart className={cn(currentVideo.isFavorite && "fill-red-500 text-red-500")} /> Favori</Button>
-                <Button variant="ghost" className="flex-col h-auto text-white gap-1"><ExternalLink/> Orijinali Aç</Button>
+                <Button asChild variant="ghost" className="flex-col h-auto text-white gap-1">
+                    <Link href={currentVideo.originalUrl} target="_blank">
+                        <ExternalLink/> Orijinali Aç
+                    </Link>
+                </Button>
                 <Button variant="ghost" className="flex-col h-auto text-white gap-1"><Share2/> Paylaş</Button>
                 <Button variant="ghost" className="flex-col h-auto text-white gap-1"><Edit/> Düzenle</Button>
                 <Button variant="ghost" className="flex-col h-auto text-destructive gap-1"><Trash2/> Sil</Button>
