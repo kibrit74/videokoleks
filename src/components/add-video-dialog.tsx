@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { categories } from '@/lib/data';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Video, Category } from '@/lib/types';
@@ -21,34 +20,39 @@ import { cn } from '@/lib/utils';
 import { fetchVideoDetails } from '@/ai/flows/fetch-video-details';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-type NewVideoData = Omit<
-  Video,
-  'id' | 'dateAdded' | 'isFavorite' | 'imageHint'
->;
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 interface AddVideoDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSave: (videoData: NewVideoData) => void;
 }
 
 export function AddVideoDialog({
   isOpen,
   onOpenChange,
-  onSave,
 }: AddVideoDialogProps) {
   const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
+
   const [videoUrl, setVideoUrl] = useState('');
   const [videoDetails, setVideoDetails] = useState<{
     title?: string;
     thumbnailUrl?: string;
   } | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null
   );
   const [notes, setNotes] = useState('');
+
+  const categoriesQuery = useMemoFirebase(() =>
+    user ? collection(firestore, 'users', user.uid, 'categories') : null
+  , [firestore, user]);
+  const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
+
 
   useEffect(() => {
     if (!isOpen) {
@@ -57,7 +61,8 @@ export function AddVideoDialog({
       setVideoDetails(null);
       setSelectedCategory(null);
       setNotes('');
-      setIsLoading(false);
+      setIsFetching(false);
+      setIsSaving(false);
     }
   }, [isOpen]);
 
@@ -68,7 +73,7 @@ export function AddVideoDialog({
     }
 
     const timer = setTimeout(async () => {
-      setIsLoading(true);
+      setIsFetching(true);
       try {
         const details = await fetchVideoDetails({ videoUrl });
         if (details.title && details.thumbnailUrl) {
@@ -91,7 +96,7 @@ export function AddVideoDialog({
           description: 'Video detayları alınırken bir hata oluştu.',
         });
       } finally {
-        setIsLoading(false);
+        setIsFetching(false);
       }
     }, 1000); // Debounce for 1 second
 
@@ -106,36 +111,56 @@ export function AddVideoDialog({
     return 'instagram'; // default
   };
 
-  const handleSave = () => {
-    if (!videoUrl || !selectedCategory || !videoDetails?.title || !videoDetails?.thumbnailUrl) {
+  const handleSave = async () => {
+    if (!user || !videoUrl || !selectedCategory || !videoDetails?.title || !videoDetails?.thumbnailUrl) {
       toast({
         variant: 'destructive',
         title: 'Eksik Bilgi',
-        description:
-          'Lütfen video linki, kategori ve video detaylarının yüklendiğinden emin olun.',
+        description: 'Lütfen video linki ve kategori girdiğinizden emin olun.',
       });
       return;
     }
 
+    setIsSaving(true);
     const platform = getPlatformFromUrl(videoUrl);
 
-    onSave({
-      title: videoDetails.title,
-      thumbnailUrl: videoDetails.thumbnailUrl,
-      originalUrl: videoUrl,
-      platform,
-      category: selectedCategory,
-      duration: '0:00', // This could be fetched as well in a future version
-      notes: notes,
-    });
+    try {
+        const videosCollection = collection(firestore, 'users', user.uid, 'videos');
+        await addDoc(videosCollection, {
+            userId: user.uid,
+            title: videoDetails.title,
+            thumbnailUrl: videoDetails.thumbnailUrl,
+            originalUrl: videoUrl,
+            platform,
+            category: selectedCategory, // Denormalized category data
+            categoryId: selectedCategory.id,
+            duration: '0:00', // This could be fetched as well in a future version
+            notes: notes,
+            isFavorite: false,
+            dateAdded: serverTimestamp(),
+            imageHint: "video thumbnail"
+        });
 
-    toast({
-      title: 'Video Kaydedildi! ✨',
-      description: 'Videonuz koleksiyonunuza eklendi.',
-    });
+        toast({
+            title: 'Video Kaydedildi! ✨',
+            description: 'Videonuz koleksiyonunuza eklendi.',
+        });
 
-    onOpenChange(false);
+        onOpenChange(false);
+
+    } catch (error) {
+        console.error("Error saving video:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Hata!',
+            description: 'Video kaydedilirken bir hata oluştu.',
+        });
+    } finally {
+        setIsSaving(false);
+    }
   };
+  
+  const isLoading = isFetching || isSaving;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -155,10 +180,11 @@ export function AddVideoDialog({
                 placeholder="https://www.instagram.com/reels/..."
                 value={videoUrl}
                 onChange={e => setVideoUrl(e.target.value)}
+                disabled={isLoading}
               />
             </div>
 
-            {isLoading && (
+            {isFetching && (
               <div className="flex items-center justify-center h-24">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <span className="ml-2">Video bilgileri getiriliyor...</span>
@@ -184,19 +210,24 @@ export function AddVideoDialog({
             <div className="space-y-2">
               <Label>Kategori seç</Label>
               <div className="flex flex-wrap gap-2">
-                {categories.map(cat => (
-                  <Button
-                    key={cat.id}
-                    variant={
-                      selectedCategory?.id === cat.id ? 'default' : 'outline'
-                    }
-                    size="sm"
-                    onClick={() => setSelectedCategory(cat)}
-                    className="transition-all"
-                  >
-                    {cat.emoji} {cat.name}
-                  </Button>
-                ))}
+                {categoriesLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                    categories?.map(cat => (
+                        <Button
+                            key={cat.id}
+                            variant={
+                            selectedCategory?.id === cat.id ? 'default' : 'outline'
+                            }
+                            size="sm"
+                            onClick={() => setSelectedCategory(cat)}
+                            className="transition-all"
+                            disabled={isLoading}
+                        >
+                            {cat.emoji} {cat.name}
+                        </Button>
+                    ))
+                )}
                 <Button variant="outline" size="sm" disabled>
                   <PlusCircle className="mr-2 h-4 w-4" /> Yeni Kategori
                 </Button>
@@ -209,15 +240,16 @@ export function AddVideoDialog({
                 placeholder="Bu videoyla ilgili notlarınız..."
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
+                disabled={isLoading}
               />
             </div>
           </div>
         </ScrollArea>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             İptal
           </Button>
-          <Button onClick={handleSave} disabled={!videoDetails || isLoading}>
+          <Button onClick={handleSave} disabled={!videoDetails || !selectedCategory || isLoading}>
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Kaydet'}
           </Button>
         </DialogFooter>

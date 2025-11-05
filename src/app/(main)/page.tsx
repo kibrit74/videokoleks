@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { videos as initialVideos, categories } from '@/lib/data';
+import { useState, useMemo } from 'react';
+import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy } from 'firebase/firestore';
+
 import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,76 +11,48 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Plus, SlidersHorizontal } from 'lucide-react';
 import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { AddVideoDialog } from '@/components/add-video-dialog';
-import { cn } from '@/lib/utils';
-import type { Video } from '@/lib/types';
-
-
-const NEW_VIDEOS_STORAGE_KEY = 'newVideos';
+import type { Video, Category } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function HomePage() {
-  const [videos, setVideos] = useState<Video[]>(initialVideos);
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+
   const [isAddVideoOpen, setAddVideoOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    // Load new videos from localStorage on mount
-    const storedNewVideos = localStorage.getItem(NEW_VIDEOS_STORAGE_KEY);
-    if (storedNewVideos) {
-      try {
-        const newVideos: Video[] = JSON.parse(storedNewVideos);
-        // Combine and filter for uniqueness
-        const combinedVideos = [...newVideos, ...initialVideos];
-        const uniqueVideos = Array.from(new Map(combinedVideos.map(video => [video.id, video])).values());
-        setVideos(uniqueVideos);
-      } catch (e) {
-        console.error("Failed to parse new videos from localStorage", e);
-        localStorage.removeItem(NEW_VIDEOS_STORAGE_KEY);
-      }
+  // Fetch categories for the current user
+  const categoriesQuery = useMemoFirebase(() =>
+    user ? collection(firestore, 'users', user.uid, 'categories') : null
+  , [firestore, user]);
+  const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
+
+  // Fetch videos for the current user
+  const videosQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    let q = query(collection(firestore, 'users', user.uid, 'videos'), orderBy('dateAdded', 'desc'));
+    if (selectedCategoryId) {
+      q = query(q, where('categoryId', '==', selectedCategoryId));
     }
-  }, []);
-
-  const handleAddVideo = (newVideoData: Omit<Video, 'id' | 'dateAdded' | 'isFavorite' | 'imageHint'>) => {
-    const newVideo: Video = {
-      ...newVideoData,
-      id: `new-${Date.now()}`,
-      dateAdded: 'şimdi',
-      isFavorite: false,
-      imageHint: "video thumbnail",
-    };
-
-    setVideos(prevVideos => {
-        // Prevent adding duplicates to the state
-        if (prevVideos.some(v => v.id === newVideo.id)) {
-            return prevVideos;
-        }
-        const updatedVideos = [newVideo, ...prevVideos];
-        
-        // Update localStorage
-        try {
-            const storedNewVideos = localStorage.getItem(NEW_VIDEOS_STORAGE_KEY);
-            const existingNewVideos: Video[] = storedNewVideos ? JSON.parse(storedNewVideos) : [];
-            
-            // Prevent duplicates in localStorage as well
-            if (!existingNewVideos.some(v => v.id === newVideo.id)) {
-                const finalNewVideos = [newVideo, ...existingNewVideos];
-                localStorage.setItem(NEW_VIDEOS_STORAGE_KEY, JSON.stringify(finalNewVideos));
-            }
-        } catch (e) {
-            console.error("Failed to update localStorage", e);
-        }
-        
-        return updatedVideos;
-    });
-  };
-
-
-  const filteredVideos = selectedCategoryId
-    ? videos.filter(video => video.category.id === selectedCategoryId)
-    : videos;
+    return q;
+  }, [firestore, user, selectedCategoryId]);
+  const { data: videos, isLoading: videosLoading } = useCollection<Video>(videosQuery);
+  
+  const filteredVideos = useMemo(() => {
+    if (!videos) return [];
+    if (!searchTerm) return videos;
+    return videos.filter(video => 
+      video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      video.category.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [videos, searchTerm]);
 
   const handleCategoryClick = (categoryId: string | null) => {
     setSelectedCategoryId(categoryId === selectedCategoryId ? null : categoryId);
   };
+  
+  const isLoading = isUserLoading || categoriesLoading || videosLoading;
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
@@ -87,9 +61,14 @@ export default function HomePage() {
         <div className="flex flex-col md:flex-row gap-4 items-center">
           <div className="relative flex-grow w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input placeholder="Video, kategori ara..." className="pl-10 h-12 text-lg" />
+            <Input 
+              placeholder="Video, kategori ara..." 
+              className="pl-10 h-12 text-lg" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <Button size="lg" className="w-full md:w-auto" onClick={() => setAddVideoOpen(true)}>
+          <Button size="lg" className="w-full md:w-auto" onClick={() => setAddVideoOpen(true)} disabled={!user}>
             <Plus className="mr-2 h-5 w-5" /> Video Ekle
           </Button>
         </div>
@@ -104,7 +83,7 @@ export default function HomePage() {
             >
               Tümü
             </Badge>
-            {categories.map((cat) => (
+            {categories && categories.map((cat) => (
                 <Badge 
                   key={cat.id} 
                   variant={selectedCategoryId === cat.id ? 'default' : 'secondary'} 
@@ -114,6 +93,7 @@ export default function HomePage() {
                   {cat.name}
                 </Badge>
             ))}
+            {isLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="w-24 h-8 rounded-full" />)}
             <Button variant="ghost" size="sm"><SlidersHorizontal className="h-4 w-4 mr-2"/>Filtreler</Button>
         </div>
         <div className="flex gap-2 items-center justify-center md:justify-start">
@@ -123,15 +103,32 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-        {filteredVideos.map((video) => (
-          <VideoCard key={video.id} video={video} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+          {Array.from({length: 10}).map((_, i) => (
+            <div key={i} className="aspect-[9/16] w-full">
+              <Skeleton className="w-full h-full rounded-lg" />
+            </div>
+          ))}
+        </div>
+      ) : filteredVideos.length > 0 ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+          {filteredVideos.map((video) => (
+            <VideoCard key={video.id} video={video} />
+          ))}
+        </div>
+      ) : (
+         <div className="text-center py-20">
+            <h2 className="text-2xl font-semibold mb-2">Henüz video eklemediniz.</h2>
+            <p className="text-muted-foreground">
+              Başlamak için "Video Ekle" butonuna tıklayın.
+            </p>
+          </div>
+      )}
+
       <AddVideoDialog 
         isOpen={isAddVideoOpen} 
         onOpenChange={setAddVideoOpen}
-        onSave={handleAddVideo}
       />
     </div>
   );

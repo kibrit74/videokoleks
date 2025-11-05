@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,24 +13,67 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { useUser, useFirestore } from '@/firebase';
+import { addDoc, collection } from 'firebase/firestore';
+import { Loader2 } from 'lucide-react';
 
 interface NewCategoryDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
 }
 
-const emojis = ['😂', '🍕', '💪', '💡', '📚', '🎨', '✈️', '🎬', '🎮'];
-const colors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500', 'bg-blue-500', 'bg-purple-500'];
+const emojis = ['😂', '🍕', '💪', '💡', '📚', '🎨', '✈️', '🎬', '🎮', '🎉', '💡', '💰'];
+const colors = [
+  'bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500', 
+  'bg-teal-500', 'bg-blue-500', 'bg-indigo-500', 'bg-purple-500', 'bg-pink-500'
+];
 
 export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogProps) {
   const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
 
-  const handleCreate = () => {
-    toast({
-      title: 'Kategori Oluşturuldu! 🎉',
-      description: 'Yeni kategoriniz başarıyla eklendi.',
-    });
-    onOpenChange(false);
+  const [name, setName] = useState('');
+  const [selectedEmoji, setSelectedEmoji] = useState(emojis[0]);
+  const [selectedColor, setSelectedColor] = useState(colors[0]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleCreate = async () => {
+    if (!user) {
+        toast({ variant: "destructive", title: "Giriş yapmalısınız." });
+        return;
+    }
+    if (!name.trim()) {
+        toast({ variant: "destructive", title: "Kategori adı boş olamaz." });
+        return;
+    }
+
+    setIsLoading(true);
+    try {
+        const categoriesCollection = collection(firestore, 'users', user.uid, 'categories');
+        await addDoc(categoriesCollection, {
+            userId: user.uid,
+            name: name.trim(),
+            emoji: selectedEmoji,
+            color: selectedColor
+        });
+
+        toast({
+            title: 'Kategori Oluşturuldu! 🎉',
+            description: 'Yeni kategoriniz başarıyla eklendi.',
+        });
+        onOpenChange(false);
+        // Reset form
+        setName('');
+        setSelectedEmoji(emojis[0]);
+        setSelectedColor(colors[0]);
+
+    } catch (error) {
+        console.error("Error creating category:", error);
+        toast({ variant: "destructive", title: "Hata!", description: "Kategori oluşturulurken bir sorun oluştu."});
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   return (
@@ -42,25 +86,42 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-6 py-4">
+           <div className="space-y-2">
+            <Label htmlFor="category-name">Kategori Adı</Label>
+            <Input 
+                id="category-name" 
+                placeholder="Örn: Dans Videoları" 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+            />
+          </div>
           <div className="space-y-2">
             <Label>Emoji seç</Label>
             <div className="flex flex-wrap gap-2">
               {emojis.map((emoji) => (
-                <Button key={emoji} variant="outline" size="icon" className="text-xl">
+                <Button 
+                    key={emoji} 
+                    variant={selectedEmoji === emoji ? 'default' : 'outline'} 
+                    size="icon" 
+                    className="text-xl"
+                    onClick={() => setSelectedEmoji(emoji)}
+                >
                   {emoji}
                 </Button>
               ))}
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="category-name">Kategori Adı</Label>
-            <Input id="category-name" placeholder="Örn: Dans Videoları" />
-          </div>
-          <div className="space-y-2">
             <Label>Renk</Label>
             <div className="flex flex-wrap gap-2">
               {colors.map((color) => (
-                <Button key={color} variant="outline" size="icon" className="p-0">
+                <Button 
+                    key={color} 
+                    variant={selectedColor === color ? 'default': 'outline'}
+                    size="icon"
+                    className="p-0"
+                    onClick={() => setSelectedColor(color)}
+                >
                   <div className={`w-6 h-6 rounded-full ${color}`} />
                 </Button>
               ))}
@@ -68,8 +129,11 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>İptal</Button>
-          <Button onClick={handleCreate}>Oluştur</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>İptal</Button>
+          <Button onClick={handleCreate} disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+            Oluştur
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

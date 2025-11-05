@@ -1,6 +1,6 @@
 'use client';
 
-import { notFound, useParams } from 'next/navigation';
+import { notFound, useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -15,12 +15,16 @@ import {
   Edit,
   Trash2,
   Heart,
+  Loader2,
 } from 'lucide-react';
 import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import type { Platform, Video } from '@/lib/types';
-import { useEffect, useState, useMemo } from 'react';
-import { videos as initialVideos } from '@/lib/data';
+import { useState, useMemo } from 'react';
+import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
+import { doc, collection, updateDoc, deleteDoc, query, orderBy, getDocs, limit, startAfter, endBefore, limitToLast } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -36,7 +40,6 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
             return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : null;
         }
         if (platform === 'instagram') {
-            // Add '/embed' to the path, e.g. /reels/Cxyz/ -> /reels/Cxyz/embed
             if (urlObject.pathname.includes('/reel/') || urlObject.pathname.includes('/p/')) {
                 urlObject.pathname = urlObject.pathname.replace(/\/$/, '') + '/embed';
                 return urlObject.toString();
@@ -46,39 +49,45 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
         console.error("Invalid URL for embedding:", url);
         return null;
     }
-    // TikTok oEmbed is more complex and often requires server-side fetching or a library.
-    // A simple link might be the most reliable option for now.
     return null;
 }
 
-const NEW_VIDEOS_STORAGE_KEY = 'newVideos';
 
 export default function VideoDetailPage() {
   const params = useParams();
   const videoId = params.id as string;
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const router = useRouter();
+  const { toast } = useToast();
   
-  const [allVideos, setAllVideos] = useState<Video[]>(initialVideos);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  useEffect(() => {
-    const storedNewVideos = localStorage.getItem(NEW_VIDEOS_STORAGE_KEY);
-    if (storedNewVideos) {
-        try {
-            const newVideos: Video[] = JSON.parse(storedNewVideos);
-            // Combine initial videos and new videos, removing duplicates
-            setAllVideos(prevVideos => [...newVideos, ...prevVideos.filter(v => !newVideos.some(nv => nv.id === v.id))]);
-        } catch (e) {
-            console.error("Failed to parse new videos from localStorage", e);
-        }
-    }
-  }, []);
+  const videoDocRef = useMemoFirebase(() => 
+    (user && videoId) ? doc(firestore, 'users', user.uid, 'videos', videoId) : null
+  , [firestore, user, videoId]);
+
+  const { data: currentVideo, isLoading: videoLoading } = useDoc<Video>(videoDocRef);
+
+  // For next/prev navigation
+  const videosQuery = useMemoFirebase(() =>
+    user ? query(collection(firestore, 'users', user.uid, 'videos'), orderBy('dateAdded', 'desc')) : null
+  , [firestore, user]);
+  const { data: allVideos, isLoading: allVideosLoading } = useCollection<Video>(videosQuery);
   
-  const currentVideo = useMemo(() => allVideos.find((v) => v.id === videoId), [allVideos, videoId]);
+  const videoIndex = useMemo(() => allVideos?.findIndex(v => v.id === videoId) ?? -1, [allVideos, videoId]);
+  const prevVideo = videoIndex > 0 ? allVideos?.[videoIndex - 1] : null;
+  const nextVideo = (allVideos && videoIndex < allVideos.length - 1) ? allVideos[videoIndex + 1] : null;
 
-  useEffect(() => {
-    setIsPlaying(false); // Reset playing state on video change
-  }, [videoId]);
-
+  if (videoLoading || allVideosLoading) {
+    return (
+        <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white">
+             <div className="relative w-full max-w-sm aspect-[9/16] bg-card overflow-hidden rounded-lg">
+                <Skeleton className="w-full h-full" />
+             </div>
+        </div>
+    )
+  }
 
   if (!currentVideo) {
     return (
@@ -94,17 +103,13 @@ export default function VideoDetailPage() {
     )
   }
 
-  const videoIndex = allVideos.findIndex(v => v.id === videoId);
-  const prevVideo = videoIndex > 0 ? allVideos[videoIndex - 1] : null;
-  const nextVideo = videoIndex < allVideos.length - 1 ? allVideos[videoIndex + 1] : null;
-
   const PlatformIcon = platformIcons[currentVideo.platform];
   const embedUrl = getEmbedUrl(currentVideo.originalUrl, currentVideo.platform);
 
 
   const navigateToVideo = (targetVideoId: string | undefined) => {
       if (targetVideoId) {
-          window.location.href = `/videos/${targetVideoId}`;
+          router.push(`/videos/${targetVideoId}`);
       }
   }
 
@@ -112,9 +117,30 @@ export default function VideoDetailPage() {
     if (embedUrl) {
       setIsPlaying(true);
     } else {
-      // Fallback for platforms that can't be embedded easily (like TikTok)
       window.open(currentVideo.originalUrl, '_blank');
     }
+  }
+
+  const toggleFavorite = async () => {
+      if (!videoDocRef) return;
+      await updateDoc(videoDocRef, { isFavorite: !currentVideo.isFavorite });
+      toast({ title: currentVideo.isFavorite ? 'Favorilerden kaldırıldı.' : 'Favorilere eklendi!' });
+  }
+  
+  const deleteVideo = async () => {
+    if(!videoDocRef) return;
+    await deleteDoc(videoDocRef);
+    toast({ title: 'Video silindi.'});
+    router.push('/');
+  }
+
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return 'Bilinmiyor';
+    // Firestore Timestamps can be null on the client before they are set by the server.
+    if (timestamp.toDate) {
+      return timestamp.toDate().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+    return 'Az önce';
   }
 
   return (
@@ -180,19 +206,19 @@ export default function VideoDetailPage() {
               <div className="space-y-2">
                 <p className="text-sm"><span className={cn("inline-block w-6 text-center mr-1 p-1 rounded-md", currentVideo.category.color)}>{currentVideo.category.emoji}</span> Kategori: {currentVideo.category.name}</p>
                 {currentVideo.notes && <p className="text-sm bg-white/10 p-2 rounded-md">📝 Notun: "{currentVideo.notes}"</p>}
-                <p className="text-xs text-neutral-400">📅 Kaydedildi: {currentVideo.dateAdded}</p>
+                <p className="text-xs text-neutral-400">📅 Kaydedildi: {formatDate(currentVideo.dateAdded)}</p>
               </div>
 
               <div className="flex justify-around items-center pt-2">
-                <Button variant="ghost" className="flex-col h-auto text-white gap-1"><Heart className={cn(currentVideo.isFavorite && "fill-red-500 text-red-500")} /> Favori</Button>
+                <Button variant="ghost" className="flex-col h-auto text-white gap-1" onClick={toggleFavorite}><Heart className={cn(currentVideo.isFavorite && "fill-red-500 text-red-500")} /> Favori</Button>
                 <Button asChild variant="ghost" className="flex-col h-auto text-white gap-1">
                     <Link href={currentVideo.originalUrl} target="_blank">
                         <ExternalLink/> Orijinali Aç
                     </Link>
                 </Button>
-                <Button variant="ghost" className="flex-col h-auto text-white gap-1"><Share2/> Paylaş</Button>
-                <Button variant="ghost" className="flex-col h-auto text-white gap-1"><Edit/> Düzenle</Button>
-                <Button variant="ghost" className="flex-col h-auto text-white gap-1"><Trash2/> Sil</Button>
+                <Button variant="ghost" className="flex-col h-auto text-white gap-1" onClick={() => toast({title: 'Çok yakında!'})}><Share2/> Paylaş</Button>
+                <Button variant="ghost" className="flex-col h-auto text-white gap-1" onClick={() => toast({title: 'Çok yakında!'})}><Edit/> Düzenle</Button>
+                <Button variant="ghost" className="flex-col h-auto text-white gap-1 text-red-500 hover:text-red-500" onClick={deleteVideo}><Trash2/> Sil</Button>
               </div>
           </div>
         </div>
