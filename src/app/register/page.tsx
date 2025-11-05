@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useAuth, useUser, signInWithGoogle } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
+import { signInWithGoogle } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useEffect } from 'react';
@@ -39,7 +40,7 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export default function RegisterPage() {
     const auth = useAuth();
-    const { user, loading } = useUser();
+    const { user, isUserLoading: loading } = useUser();
     const router = useRouter();
     const { toast } = useToast();
 
