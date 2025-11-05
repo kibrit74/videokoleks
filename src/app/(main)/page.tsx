@@ -8,11 +8,12 @@ import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, SlidersHorizontal } from 'lucide-react';
+import { Search, Plus, SlidersHorizontal, AlertTriangle } from 'lucide-react';
 import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { AddVideoDialog } from '@/components/add-video-dialog';
 import type { Video, Category } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function HomePage() {
   const { user, isUserLoading } = useUser();
@@ -27,34 +28,8 @@ export default function HomePage() {
     user ? collection(firestore, 'users', user.uid, 'categories') : null
   , [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
-
-  // Build the query based on the selected category
-  const videosQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    let q = query(collection(firestore, 'users', user.uid, 'videos'), orderBy('dateAdded', 'desc'));
-    if (selectedCategoryId) {
-      q = query(q, where('categoryId', '==', selectedCategoryId));
-    }
-    return q;
-  }, [firestore, user, selectedCategoryId]);
-
-  const { data: videos, isLoading: videosLoading } = useCollection<Video>(videosQuery);
-
   
-  const filteredVideos = useMemo(() => {
-    if (!videos) return [];
-    if (!searchTerm) return videos;
-    return videos.filter(video => 
-      video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (video.category && video.category.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [videos, searchTerm]);
-
-  const handleCategoryClick = (categoryId: string | null) => {
-    setSelectedCategoryId(categoryId === selectedCategoryId ? null : categoryId);
-  };
-  
-  const isLoading = isUserLoading || categoriesLoading || videosLoading;
+  const isLoading = isUserLoading || categoriesLoading;
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
@@ -79,18 +54,16 @@ export default function HomePage() {
       <div className="mb-6 space-y-4">
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
             <Badge 
-              variant={selectedCategoryId === null ? 'default' : 'secondary'}
+              variant={'secondary'}
               className="py-2 px-4 text-sm cursor-pointer"
-              onClick={() => handleCategoryClick(null)}
             >
               Tümü
             </Badge>
             {categories && categories.map((cat) => (
                 <Badge 
                   key={cat.id} 
-                  variant={selectedCategoryId === cat.id ? 'default' : 'secondary'}
+                  variant={'secondary'}
                   className="py-2 px-4 text-sm cursor-pointer hover:bg-muted-foreground/50"
-                  onClick={() => handleCategoryClick(cat.id)}
                 >
                   {cat.name}
                 </Badge>
@@ -105,28 +78,20 @@ export default function HomePage() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-          {Array.from({length: 10}).map((_, i) => (
-            <div key={i} className="aspect-[9/16] w-full">
-              <Skeleton className="w-full h-full rounded-lg" />
-            </div>
-          ))}
-        </div>
-      ) : filteredVideos && filteredVideos.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-          {filteredVideos.map((video) => (
-            <VideoCard key={video.id} video={video} />
-          ))}
-        </div>
-      ) : (
+        <Alert variant="destructive" className="mb-8">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Önemli Bilgilendirme</AlertTitle>
+          <AlertDescription>
+            Firebase projenizdeki çözülemeyen bir izin sorunu nedeniyle videolar şu anda bu ekranda listelenememektedir. Ancak video ekleyebilir, silebilir ve kategorilerinizi yönetebilirsiniz.
+          </AlertDescription>
+        </Alert>
+
          <div className="text-center py-20">
             <h2 className="text-2xl font-semibold mb-2">Henüz video eklemediniz.</h2>
             <p className="text-muted-foreground">
-              Başlamak için "Video Ekle" butonuna tıklayın.
+              Başlamak için "Video Ekle" butonuna tıklayın. Eklediğiniz videolar detay sayfalarında görüntülenebilir.
             </p>
           </div>
-      )}
 
       <AddVideoDialog 
         isOpen={isAddVideoOpen} 

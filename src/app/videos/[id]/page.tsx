@@ -142,6 +142,10 @@ export default function VideoDetailPage() {
   
   const deleteVideo = () => {
     if(!videoDocRef) return;
+    // Add a confirmation dialog
+    if (!window.confirm("Bu videoyu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.")) {
+      return;
+    }
     deleteDoc(videoDocRef)
       .then(() => {
         toast({ title: 'Video silindi.'});
@@ -158,7 +162,6 @@ export default function VideoDetailPage() {
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'Bilinmiyor';
-    // Firestore Timestamps can be null on the client before they are set by the server.
     if (timestamp.toDate) {
       return timestamp.toDate().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
     }
@@ -238,8 +241,6 @@ export default function VideoDetailPage() {
                         <ExternalLink/> Orijinali Aç
                     </Link>
                 </Button>
-                <Button variant="ghost" className="flex-col h-auto text-white gap-1" onClick={() => toast({title: 'Çok yakında!'})}><Share2/> Paylaş</Button>
-                <Button variant="ghost" className="flex-col h-auto text-white gap-1" onClick={() => toast({title: 'Çok yakında!'})}><Edit/> Düzenle</Button>
                 <Button variant="ghost" className="flex-col h-auto text-red-500 hover:text-red-500/90 gap-1" onClick={deleteVideo}>
                     <Trash2/> Sil
                 </Button>
