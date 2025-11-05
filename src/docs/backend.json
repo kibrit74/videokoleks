@@ -49,7 +49,7 @@
   },
   "auth": {
     "providers": [
-      "google.com"
+      "password"
     ]
   },
   "firestore": {

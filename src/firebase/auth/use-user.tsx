@@ -2,12 +2,13 @@
 import { useEffect, useState } from 'react';
 import { 
     onIdTokenChanged, 
-    GoogleAuthProvider,
-    signInWithPopup,
     signOut, 
     updateProfile,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
     type Auth, 
-    type User 
+    type User,
+    type UserCredential
 } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useAuth, useFirestore } from '@/firebase';
@@ -72,15 +73,25 @@ export function useUser() {
   return { user, isUserLoading: loading, error };
 }
 
-// Auth action: Sign in with Google
-export async function signInWithGoogle(auth: Auth) {
+// Auth action: Sign up with email and password
+export async function signUpWithEmail(auth: Auth, email: string, password: string): Promise<UserCredential> {
     if (!auth) throw new Error("Auth service not available");
-    const provider = new GoogleAuthProvider();
-    return await signInWithPopup(auth, provider);
+    return await createUserWithEmailAndPassword(auth, email, password);
+}
+
+// Auth action: Sign in with email and password
+export async function signInWithEmail(auth: Auth, email: string, password: string): Promise<UserCredential> {
+    if (!auth) throw new Error("Auth service not available");
+    return await signInWithEmailAndPassword(auth, email, password);
 }
 
 // Auth action: Sign out
 export async function signOutUser(auth: Auth) {
     if (!auth) return;
     await signOut(auth);
+}
+
+// Auth action: Update user profile
+export async function updateUserProfile(user: User, profile: { displayName?: string, photoURL?: string}) {
+    await updateProfile(user, profile);
 }

@@ -174,7 +174,7 @@ export default function ProfilePage() {
              </div>
             <h1 className="text-3xl font-bold font-headline">Oturumunuz Kapalı</h1>
             <p className="text-muted-foreground mt-2 mb-6">Profilinizi görüntülemek için lütfen giriş yapın.</p>
-            <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+            <Button onClick={() => router.push('/login')}>Giriş Yap</Button>
         </div>
      )
   }
