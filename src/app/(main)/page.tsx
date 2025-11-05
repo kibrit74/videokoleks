@@ -28,16 +28,14 @@ export default function HomePage() {
   , [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
-  // Fetch videos for the current user - TEMPORARILY DISABLED TO PREVENT PERMISSION ERROR
+  // Fetch videos for the current user
   const videosQuery = useMemoFirebase(() => {
-    // Returning null to prevent the query from running
-    return null;
-    // if (!user) return null;
-    // let q = query(collection(firestore, 'users', user.uid, 'videos'), orderBy('dateAdded', 'desc'));
-    // if (selectedCategoryId) {
-    //   q = query(q, where('categoryId', '==', selectedCategoryId));
-    // }
-    // return q;
+    if (!user) return null;
+    let q = query(collection(firestore, 'users', user.uid, 'videos'), orderBy('dateAdded', 'desc'));
+    if (selectedCategoryId) {
+      q = query(q, where('categoryId', '==', selectedCategoryId));
+    }
+    return q;
   }, [firestore, user, selectedCategoryId]);
   const { data: videos, isLoading: videosLoading } = useCollection<Video>(videosQuery);
   
@@ -54,8 +52,7 @@ export default function HomePage() {
     setSelectedCategoryId(categoryId === selectedCategoryId ? null : categoryId);
   };
   
-  // Videos are not being loaded, so videosLoading will be false. We rely on other loaders.
-  const isLoading = isUserLoading || categoriesLoading;
+  const isLoading = isUserLoading || categoriesLoading || videosLoading;
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
@@ -80,7 +77,7 @@ export default function HomePage() {
       <div className="mb-6 space-y-4">
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
             <Badge 
-              variant={'secondary'} // Keep it neutral as filtering is disabled
+              variant={selectedCategoryId === null ? 'default' : 'secondary'}
               className="py-2 px-4 text-sm cursor-pointer"
               onClick={() => handleCategoryClick(null)}
             >
@@ -89,7 +86,7 @@ export default function HomePage() {
             {categories && categories.map((cat) => (
                 <Badge 
                   key={cat.id} 
-                  variant={'secondary'} // Keep it neutral
+                  variant={selectedCategoryId === cat.id ? 'default' : 'secondary'}
                   className="py-2 px-4 text-sm cursor-pointer hover:bg-muted-foreground/50"
                   onClick={() => handleCategoryClick(cat.id)}
                 >
