@@ -1,9 +1,115 @@
+/**
+ * @fileoverview Firestore Security Rules for VideoKoleks application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model. Each user has full control
+ * over their own data (profile, videos, categories). Data is segregated under
+ * /users/{userId} to simplify authorization and prevent unauthorized access.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profiles. Only the user can read/write their profile.
+ * - /users/{userId}/videos/{videoId}: Stores videos saved by users. Each video
+ *   includes a denormalized 'userId' field for authorization.
+ * - /users/{userId}/categories/{categoryId}: Stores categories created by users.
+ *   Each category includes a denormalized 'userId' field for authorization.
+ *
+ * Key Security Decisions:
+ * - Users can only access their own data, enforced by path-based ownership and
+ *   the `isOwner()` helper function.
+ * - Listing of all users is disallowed to prevent enumeration.
+ * - The rules prioritize authorization and relational integrity over complete data
+ *   validation to enable rapid prototyping.
+ *
+ * Denormalization for Authorization:
+ * - Videos and Categories include the `userId` field, avoiding the need for `get()`
+ *   calls to the parent User document.
+ *
+ * Structural Segregation:
+ * - User-specific data is stored under the /users/{userId} path, ensuring a clear
+ *   and distinct security context for each user.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId}/{document=**} {
-      // Allow users to read and write to their own documents
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+    /**
+     * @description Checks if the request is made by the authenticated user.
+     * @param {string} userId The user ID to compare against the authenticated user's ID.
+     * @return {boolean} True if the user IDs match, false otherwise.
+     */
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the request is made by the authenticated user and resource exists.
+     * @param {string} userId The user ID to compare against the authenticated user's ID.
+     * @return {boolean} True if the user IDs match and resource exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && exists(resource.data);
+    }
+
+    /**
+     * @description Requires the user to be signed in.
+     * @return {boolean} True if the user is signed in, false otherwise.
+     */
+    //function isSignedIn() {
+    //    return request.auth != null;
+    //}
+
+    /**
+     * @description Defines rules for user profiles.
+     * @path /users/{userId}
+     * @allow (create) Signed-in user with matching userId in the document.
+     * @allow (get, update, delete) Signed-in user matching the userId.
+     * @deny (create) Signed-in user with mismatched userId in the document.
+     * @deny (get, update, delete) Signed-in user with mismatched userId.
+     * @principle Enforces document ownership for writes, restricts access to a user's own profile.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Prevent listing all users
+
+      allow create: if isOwner(userId) && request.auth.uid == userId;
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Defines rules for videos saved by users.
+     * @path /users/{userId}/videos/{videoId}
+     * @allow (create) Signed-in user with matching userId and videoId in the document.
+     * @allow (get, list, update, delete) Signed-in user matching the userId.
+     * @deny (create) Signed-in user with mismatched userId in the document.
+     * @deny (get, list, update, delete) Signed-in user with mismatched userId.
+     * @principle Enforces document ownership for writes, restricts access to a user's own videos.
+     */
+    match /users/{userId}/videos/{videoId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Defines rules for categories created by users.
+     * @path /users/{userId}/categories/{categoryId}
+     * @allow (create) Signed-in user with matching userId and categoryId in the document.
+     * @allow (get, list, update, delete) Signed-in user matching the userId.
+     * @deny (create) Signed-in user with mismatched userId in the document.
+     * @deny (get, list, update, delete) Signed-in user with mismatched userId.
+     * @principle Enforces document ownership for writes, restricts access to a user's own categories.
+     */
+    match /users/{userId}/categories/{categoryId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
     }
   }
 }

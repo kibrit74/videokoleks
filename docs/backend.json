@@ -4,52 +4,137 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the application.",
+      "description": "Represents a user of the VideoKoleks application.",
       "properties": {
-        "uid": { "type": "string", "description": "The user's unique ID from Firebase Auth." },
-        "email": { "type": "string", "format": "email", "description": "The user's email address." },
-        "displayName": { "type": "string", "description": "The user's display name." },
-        "photoURL": { "type": "string", "format": "uri", "description": "URL of the user's profile picture." },
-        "lastLogin": { "type": "string", "format": "date-time", "description": "Timestamp of the user's last login." }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "The username of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "profilePictureUrl": {
+          "type": "string",
+          "description": "URL of the user's profile picture.",
+          "format": "uri"
+        }
       },
-      "required": ["uid", "email", "lastLogin"]
+      "required": [
+        "id",
+        "username",
+        "email"
+      ]
     },
     "Video": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Video",
       "type": "object",
-      "description": "Represents a video saved by the user.",
+      "description": "Represents a video saved within the VideoKoleks application.",
       "properties": {
-        "id": { "type": "string", "description": "Unique identifier for the video." },
-        "platform": { "type": "string", "description": "The platform the video is from (e.g., Instagram, YouTube, TikTok)." },
-        "url": { "type": "string", "description": "URL of the video.", "format": "uri" },
-        "title": { "type": "string", "description": "Title of the video." },
-        "thumbnailUrl": { "type": "string", "description": "URL of the video's thumbnail image.", "format": "uri" },
-        "duration": { "type": "string", "description": "Duration of the video." },
-        "categoryId": { "type": "string", "description": "Reference to Category." },
-        "note": { "type": "string", "description": "User's note about the video." },
-        "dateSaved": { "type": "string", "description": "Date and time the video was saved.", "format": "date-time" },
-        "isFavorite": { "type": "boolean", "description": "Indicates whether the video is marked as a favorite." }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Video entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Video)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the video."
+        },
+        "url": {
+          "type": "string",
+          "description": "The URL of the video.",
+          "format": "uri"
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "description": "The URL of the video's thumbnail image.",
+          "format": "uri"
+        },
+        "platform": {
+          "type": "string",
+          "description": "The platform where the video was originally hosted (e.g., Instagram, YouTube, TikTok)."
+        },
+        "duration": {
+          "type": "number",
+          "description": "The duration of the video in seconds."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category. (Relationship: Category 1:N Video)"
+        },
+        "note": {
+          "type": "string",
+          "description": "User's note about the video."
+        },
+        "savedAt": {
+          "type": "string",
+          "description": "The date and time when the video was saved.",
+          "format": "date-time"
+        },
+        "isFavorite": {
+          "type": "boolean",
+          "description": "Indicates whether the video has been marked as a favorite."
+        }
       },
-      "required": ["id", "platform", "url", "title", "thumbnailUrl", "duration", "categoryId", "dateSaved", "isFavorite"]
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "url",
+        "thumbnailUrl",
+        "platform",
+        "duration",
+        "categoryId",
+        "savedAt"
+      ]
     },
     "Category": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Category",
       "type": "object",
-      "description": "Represents a category for organizing videos.",
+      "description": "Represents a category for organizing videos within the VideoKoleks application.",
       "properties": {
-        "id": { "type": "string", "description": "Unique identifier for the category." },
-        "name": { "type": "string", "description": "Name of the category." },
-        "emoji": { "type": "string", "description": "Emoji associated with the category." },
-        "color": { "type": "string", "description": "Color associated with the category (e.g., hex code)." }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Category entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Category)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the category (e.g., Comedy, Recipes, Sports)."
+        },
+        "emoji": {
+          "type": "string",
+          "description": "An emoji representing the category."
+        },
+        "color": {
+          "type": "string",
+          "description": "A color associated with the category (e.g., for UI display)."
+        }
       },
-      "required": ["id", "name", "emoji", "color"]
+      "required": [
+        "id",
+        "userId",
+        "name"
+      ]
     }
   },
   "auth": {
     "providers": [
-      "password"
+      "password",
+      "anonymous"
     ]
   },
   "firestore": {
@@ -58,26 +143,59 @@
         "path": "/users/{userId}",
         "definition": {
           "entityName": "User",
-          "schema": { "$ref": "#/backend/entities/User" },
-          "description": "Stores public profile information for each user."
-        }
-      },
-      {
-        "path": "/users/{userId}/categories/{categoryId}",
-        "definition": {
-          "entityName": "Category",
-          "schema": { "$ref": "#/backend/entities/Category" },
-          "description": "Stores categories created by a specific user."
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles.  Path-based ownership: Only the user can read/write their own profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
         }
       },
       {
         "path": "/users/{userId}/videos/{videoId}",
         "definition": {
           "entityName": "Video",
-          "schema": { "$ref": "#/backend/entities/Video" },
-          "description": "Stores videos saved by a specific user."
+          "schema": {
+            "$ref": "#/backend/entities/Video"
+          },
+          "description": "Stores videos saved by users. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "videoId",
+              "description": "The unique identifier of the video."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores categories created by users. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "categoryId",
+              "description": "The unique identifier of the category."
+            }
+          ]
         }
       }
-    ]
+    ],
+    "reasoning": "The Firestore structure is designed to provide a secure, scalable, and easily debuggable solution for the VideoKoleks application. The design prioritizes authorization independence, clarity of intent, and adherence to the DBAC principle (database-based access control). It employs denormalization and structural segregation to simplify security rules and enable efficient data access. Path-based ownership is favored for user-owned data, and membership maps are used for collaborative data.\n\n1.  **Authorization Independence:**\n    *   The structure avoids hierarchical authorization dependencies (`get()`) by denormalizing authorization context. Specifically, `userId` is included in both `Video` and `Category` documents. This allows security rules to validate ownership without needing to fetch the parent `User` document, ensuring atomic operations and easier debugging.\n\n2.  **Clarity of Intent (Debuggability):**\n    *   The structure uses clear and consistent naming conventions for collections and documents (e.g., `/users/{userId}/videos/{videoId}`).\n    *   Explicit ownership is enforced using the `userId` field.\n\n3.  **DBAC (No Custom Claims):**\n    *   Authorization relies solely on `request.auth.uid`, with roles stored directly within the documents (e.g., `userId` field represents the owner).\n\n4.  **QAPs (Rules are not Filters):**\n    *   Secure `list` operations are supported by structural segregation. Each collection (e.g., `/users/{userId}/videos`) has a homogeneous security posture, ensuring that rules can effectively control access to all documents within the collection.\n\n**Denormalization Strategy:**\n\n*   The `Video` and `Category` collections include the `userId` field, which is a foreign key referencing the `User` document. This denormalization is crucial for authorization independence, enabling security rules to validate ownership without performing additional `get()` operations.\n\n**Structural Segregation:**\n\n*   The structure separates user-specific data into subcollections under the `/users/{userId}` path. This segregation ensures that each user's data has a distinct security context, simplifying access control rules."
   }
 }
