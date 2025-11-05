@@ -12,6 +12,9 @@ import { type Firestore } from 'firebase/firestore';
 import { usePathname, useRouter } from 'next/navigation';
 import { useUser } from './auth/use-user';
 
+const AUTH_ROUTES = ['/login', '/register'];
+const PROTECTED_ROUTES = ['/profile', '/favorites', '/categories'];
+
 export const FirebaseContext = createContext<{
   firebaseApp: FirebaseApp | null;
   auth: Auth | null;
@@ -39,10 +42,35 @@ export function FirebaseProvider({
 
   return (
     <FirebaseContext.Provider value={contextValue}>
-      {children}
+      <AuthNavigator>{children}</AuthNavigator>
     </FirebaseContext.Provider>
   );
 }
+
+
+function AuthNavigator({ children }: { children: ReactNode }) {
+  const { user, loading } = useUser();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+
+    const isAuthRoute = AUTH_ROUTES.includes(pathname);
+    const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route));
+
+    if (!user && isProtectedRoute) {
+      router.push('/login');
+    }
+    if (user && isAuthRoute) {
+      router.push('/profile');
+    }
+
+  }, [user, loading, pathname, router]);
+
+  return <>{children}</>;
+}
+
 
 export const useFirebaseApp = () => {
   const context = useContext(FirebaseContext);
