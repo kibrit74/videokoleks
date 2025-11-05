@@ -2,9 +2,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // WARNING: This is an insecure rule for debugging purposes.
-    // It allows any authenticated user to read and write to the entire database.
+    // It allows ANY user (authenticated or not) to read and write to the entire database.
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
   }
 }
