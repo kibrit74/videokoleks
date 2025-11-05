@@ -8,22 +8,26 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
     // USERS
     match /users/{userId} {
       allow get: if true;
       allow list: if false;
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
+      allow update: if isOwner(userId) && isSignedIn();
       allow delete: if false;
 
       // VIDEOS SUBCOLLECTION
       match /videos/{videoId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isOwner(userId) && isSignedIn();
       }
 
       // CATEGORIES SUBCOLLECTION
       match /categories/{categoryId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isOwner(userId) && isSignedIn();
       }
     }
   }

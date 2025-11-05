@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { onIdTokenChanged, signInAnonymously } from 'firebase/auth';
+import { onIdTokenChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 
 import { useAuth, useFirestore } from '@/firebase';
@@ -37,19 +37,16 @@ export function useUser() {
               { merge: true }
             );
           } catch (e) {
+            console.error("Error writing user to firestore", e);
             setError(e as Error);
           }
         } else {
-          try {
-            const { user: anonUser } = await signInAnonymously(auth);
-            setUser(anonUser);
-          } catch (e) {
-            setError(e as Error);
-          }
+          setUser(null);
         }
         setLoading(false);
       },
       (err) => {
+        console.error("Auth state change error", err);
         setError(err);
         setLoading(false);
       }
@@ -59,4 +56,26 @@ export function useUser() {
   }, [auth, firestore]);
 
   return { user, loading, error };
+}
+
+
+export async function signInWithGoogle() {
+  const auth = useAuth();
+  if (!auth) return;
+  const provider = new GoogleAuthProvider();
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (error) {
+    console.error("Error signing in with Google", error);
+  }
+}
+
+export async function signOutUser() {
+    const auth = useAuth();
+    if (!auth) return;
+    try {
+        await signOut(auth);
+    } catch (error) {
+        console.error("Error signing out", error);
+    }
 }
