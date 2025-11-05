@@ -1,104 +1,114 @@
 /**
- * @file Firestore Security Rules for VideoKoleks Application
+ * @fileoverview Firestore Security Rules for VideoKoleks application.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for all data. Each user has exclusive control over their profile, categories, and videos.
+ * This ruleset enforces a strict user-ownership model. Each user has full control over their data (videos and categories),
+ * and no user can access another user's data.
  *
  * Data Structure:
- * - /users/{userId}: User profiles.
- * - /users/{userId}/categories/{categoryId}: Video categories owned by the user.
- * - /users/{userId}/videos/{videoId}: Video information owned by the user.
+ * Data is organized hierarchically under `/users/{userId}`, with subcollections for `videos` and `categories`.
+ * - `/users/{userId}`: Stores user profiles. Access is restricted to the authenticated user.
+ * - `/users/{userId}/videos/{videoId}`: Stores videos owned by the user.
+ * - `/users/{userId}/categories/{categoryId}`: Stores categories created by the user.
  *
  * Key Security Decisions:
- * - Users can only access their own data.
- * - No public data access is permitted.
- * - Data validation is limited to authorization and relationship enforcement during this prototyping phase.
- * - The system authenticates with password or anonymous authentication, so rules only check for a valid `request.auth` context.
+ * - User data is private; listing all users is disallowed.
+ * - All authorization decisions are based on the authenticated user's UID (`request.auth.uid`).
+ * - The rules avoid `get()` calls by relying on path-based ownership.
  *
  * Denormalization for Authorization:
- *  -  The data structure inherently enforces ownership via path-based security. No denormalization is required because user id is directly encoded in the paths.
- *
+ * - Each video and category document contains a `userId` field, which must match the `userId` in the path.
+ *   This denormalization avoids the need to query a separate user document to verify ownership.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Secure access to user profiles.
+     * @description Allows users to read and write their own user document.
      * @path /users/{userId}
-     * @allow (create) - Authenticated user with UID matching the userId in the path can create their profile.
-     * @allow (get, update, delete) - Authenticated user with UID matching the userId in the path can get, update, and delete their profile.
-     * @deny (create) - Authenticated user with UID not matching the userId in the path cannot create a profile.
-     * @deny (get, update, delete) - Authenticated user with UID not matching the userId in the path cannot get, update, or delete a profile.
-     * @principle Enforces document ownership for all operations on user profiles.
+     * @allow (create) request.auth.uid == "{userId}"
+     * @allow (get) request.auth.uid == "{userId}"
+     * @allow (update) request.auth.uid == "{userId}"
+     * @allow (delete) request.auth.uid == "{userId}"
+     * @deny (create) request.auth.uid != "{userId}"
+     * @deny (get) request.auth.uid != "{userId}"
+     * @deny (update) request.auth.uid != "{userId}"
+     * @deny (delete) request.auth.uid != "{userId}"
+     * @principle Enforces document ownership and validates relational integrity.
      */
     match /users/{userId} {
-      // Function to check if the requesting user is the owner of the resource.
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
 
-      // Function to check if the document exists and the requesting user is the owner.
       function isExistingOwner(userId) {
         return isOwner(userId) && resource != null;
       }
 
       allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
+      allow list: if false; // User listing is disallowed.
+
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Secure access to video categories owned by a user.
-     * @path /users/{userId}/categories/{categoryId}
-     * @allow (create) - Authenticated user with UID matching the userId in the path can create a category.
-     * @allow (get, update, delete) - Authenticated user with UID matching the userId in the path can get, update, and delete a category.
-     * @deny (create) - Authenticated user with UID not matching the userId in the path cannot create a category.
-     * @deny (get, update, delete) - Authenticated user with UID not matching the userId in the path cannot get, update, or delete a category.
-     * @principle Enforces document ownership for all operations on user categories.
+     * @description Allows users to manage their own videos.
+     * @path /users/{userId}/videos/{videoId}
+     * @allow (create) request.auth.uid == "{userId}"
+     * @allow (get) request.auth.uid == "{userId}"
+     * @allow (update) request.auth.uid == "{userId}"
+     * @allow (delete) request.auth.uid == "{userId}"
+     * @deny (create) request.auth.uid != "{userId}"
+     * @deny (get) request.auth.uid != "{userId}"
+     * @deny (update) request.auth.uid != "{userId}"
+     * @deny (delete) request.auth.uid != "{userId}"
+     * @principle Enforces document ownership for writes and validates relational integrity.
      */
-    match /users/{userId}/categories/{categoryId} {
-       // Function to check if the requesting user is the owner of the resource.
+    match /users/{userId}/videos/{videoId} {
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
 
-      // Function to check if the document exists and the requesting user is the owner.
       function isExistingOwner(userId) {
         return isOwner(userId) && resource != null;
       }
 
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
+
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Secure access to video information owned by a user.
-     * @path /users/{userId}/videos/{videoId}
-     * @allow (create) - Authenticated user with UID matching the userId in the path can create a video.
-     * @allow (get, update, delete) - Authenticated user with UID matching the userId in the path can get, update, and delete a video.
-     * @deny (create) - Authenticated user with UID not matching the userId in the path cannot create a video.
-     * @deny (get, update, delete) - Authenticated user with UID not matching the userId in the path cannot get, update, or delete a video.
-     * @principle Enforces document ownership for all operations on user videos.
+     * @description Allows users to manage their own categories.
+     * @path /users/{userId}/categories/{categoryId}
+     * @allow (create) request.auth.uid == "{userId}"
+     * @allow (get) request.auth.uid == "{userId}"
+     * @allow (update) request.auth.uid == "{userId}"
+     * @allow (delete) request.auth.uid == "{userId}"
+     * @deny (create) request.auth.uid != "{userId}"
+     * @deny (get) request.auth.uid != "{userId}"
+     * @deny (update) request.auth.uid != "{userId}"
+     * @deny (delete) request.auth.uid != "{userId}"
+     * @principle Enforces document ownership for writes and validates relational integrity.
      */
-    match /users/{userId}/videos/{videoId} {
-      // Function to check if the requesting user is the owner of the resource.
+    match /users/{userId}/categories/{categoryId} {
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
 
-      // Function to check if the document exists and the requesting user is the owner.
       function isExistingOwner(userId) {
         return isOwner(userId) && resource != null;
       }
 
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
+
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
       allow delete: if isExistingOwner(userId);
