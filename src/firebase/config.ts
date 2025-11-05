@@ -1,16 +1,15 @@
 
 import { getApps, initializeApp, type FirebaseOptions } from 'firebase/app';
 
-let firebaseConfig: FirebaseOptions = {};
-
-try {
-  if (process.env.NEXT_PUBLIC_FIREBASE_CONFIG) {
-    firebaseConfig = JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_CONFIG);
-  }
-} catch (e) {
-  console.error("Failed to parse Firebase config", e);
-}
-
+// Firebase config is now hardcoded to prevent environment variable issues.
+const firebaseConfig: FirebaseOptions = {
+  "apiKey": "mock-api-key",
+  "authDomain": "mock-auth-domain-35510.firebaseapp.com",
+  "projectId": "mock-project-id-35510",
+  "storageBucket": "mock-storage-bucket-35510.appspot.com",
+  "messagingSenderId": "mock-messaging-sender-id",
+  "appId": "mock-app-id"
+};
 
 // This function is not 'use client' and can be used on the server.
 export function initializeFirebase() {
