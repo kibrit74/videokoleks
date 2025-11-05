@@ -21,8 +21,8 @@ import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import type { Platform, Video } from '@/lib/types';
 import { useState, useMemo } from 'react';
-import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, updateDoc, deleteDoc, query, orderBy, getDocs, limit, startAfter, endBefore, limitToLast } from 'firebase/firestore';
+import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection, deleteDocumentNonBlocking } from '@/firebase';
+import { doc, collection, updateDoc, query, orderBy, getDocs, limit, startAfter, endBefore, limitToLast } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -142,22 +142,11 @@ export default function VideoDetailPage() {
   
   const deleteVideo = () => {
     if(!videoDocRef) return;
-    // Add a confirmation dialog
-    if (!window.confirm("Bu videoyu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.")) {
-      return;
+    if (window.confirm("Bu videoyu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.")) {
+      deleteDocumentNonBlocking(videoDocRef);
+      toast({ title: 'Video silindi.'});
+      router.push('/');
     }
-    deleteDoc(videoDocRef)
-      .then(() => {
-        toast({ title: 'Video silindi.'});
-        router.push('/');
-      })
-      .catch(serverError => {
-        const permissionError = new FirestorePermissionError({
-            path: videoDocRef.path,
-            operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
   }
 
   const formatDate = (timestamp: any) => {
@@ -241,7 +230,7 @@ export default function VideoDetailPage() {
                         <ExternalLink/> Orijinali Aç
                     </Link>
                 </Button>
-                <Button variant="ghost" className="flex-col h-auto text-red-500 hover:text-red-500/90 gap-1" onClick={deleteVideo}>
+                <Button data-testid="delete-video-button" variant="ghost" className="flex-col h-auto text-red-500 hover:text-red-500/90 gap-1" onClick={deleteVideo}>
                     <Trash2/> Sil
                 </Button>
               </div>
