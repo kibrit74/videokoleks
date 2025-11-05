@@ -14,7 +14,10 @@ export function useUser() {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!auth || !firestore) return;
+    if (!auth || !firestore) {
+        setLoading(false);
+        return;
+    };
 
     const unsubscribe = onIdTokenChanged(
       auth,
@@ -25,6 +28,7 @@ export function useUser() {
           setUser(user);
           const userRef = doc(firestore, 'users', user.uid);
           try {
+            // This will create the user doc if it doesn't exist, and update it if it does.
             await setDoc(
               userRef,
               {
@@ -34,7 +38,7 @@ export function useUser() {
                 photoURL: user.photoURL,
                 lastLogin: serverTimestamp(),
               },
-              { merge: true }
+              { merge: true } // Use merge to avoid overwriting existing fields
             );
           } catch (e) {
             console.error("Error writing user to firestore", e);
@@ -55,7 +59,7 @@ export function useUser() {
     return () => unsubscribe();
   }, [auth, firestore]);
 
-  return { user, loading, error };
+  return { user, isUserLoading: loading, error };
 }
 
 
@@ -66,6 +70,8 @@ export async function signInWithGoogle(auth: Auth) {
     await signInWithPopup(auth, provider);
   } catch (error) {
     console.error("Error signing in with Google", error);
+    // Re-throw the error to be caught by the caller if needed
+    throw error;
   }
 }
 
@@ -75,5 +81,6 @@ export async function signOutUser(auth: Auth) {
         await signOut(auth);
     } catch (error) {
         console.error("Error signing out", error);
+        throw error;
     }
 }
