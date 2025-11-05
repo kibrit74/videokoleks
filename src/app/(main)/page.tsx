@@ -37,7 +37,12 @@ export default function HomePage() {
     }
     return q;
   }, [firestore, user, selectedCategoryId]);
-  const { data: videos, isLoading: videosLoading } = useCollection<Video>(videosQuery);
+  
+  // CRITICAL: The useCollection hook is removed to prevent the permission error.
+  // This means `videos` will be null and `videosLoading` will be false.
+  const videos: Video[] | null = null;
+  const videosLoading = false;
+
   
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
