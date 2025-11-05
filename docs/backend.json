@@ -97,7 +97,6 @@
   },
   "auth": {
     "providers": [
-      "password",
       "anonymous"
     ]
   },

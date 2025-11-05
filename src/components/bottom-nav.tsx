@@ -10,7 +10,7 @@ const navItems = [
   { href: '/', label: 'Ana Sayfa', icon: Home },
   { href: '/categories', label: 'Kategoriler', icon: FolderKanban },
   { href: '/favorites', label: 'Favoriler', icon: Star },
-  { href: '/profile', label: 'Profil', icon: User, auth: true },
+  { href: '/profile', label: 'Profil', icon: User },
 ];
 
 export function BottomNav() {
@@ -22,12 +22,11 @@ export function BottomNav() {
       <div className="mx-auto flex h-16 max-w-md items-center justify-around">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
-          const href = item.auth && !user ? '/login' : item.href;
           
           return (
             <Link
               key={item.href}
-              href={href}
+              href={item.href}
               className={cn(
                 'flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary',
                 isActive && 'text-primary'

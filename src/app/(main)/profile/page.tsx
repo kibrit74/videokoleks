@@ -17,8 +17,8 @@ import {
   Sun,
   Moon,
   LogOut,
-  LogIn,
   Loader2,
+  Unplug,
 } from 'lucide-react';
 import {
   Card,
@@ -28,19 +28,19 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, signOutUser } from '@/firebase/auth/use-user';
+import { signOutUser } from '@/firebase/auth/use-user';
 import {
   useAuth,
   useFirestore,
   useCollection,
   useMemoFirebase,
+  useUser
 } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { Video, Category } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 export default function ProfilePage() {
   const { toast } = useToast();
@@ -127,8 +127,8 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     if (!auth) return;
     await signOutUser(auth);
-    toast({ title: 'Başarıyla çıkış yaptınız.' });
-    router.push('/');
+    toast({ title: 'Oturum sonlandırıldı. Yeni bir anonim oturum başlatıldı.' });
+    // User will be auto-signed in anonymously by the useUser hook
   };
 
   if (isUserLoading) {
@@ -163,16 +163,11 @@ export default function ProfilePage() {
      return (
         <div className="container mx-auto max-w-2xl px-4 py-8 text-center">
              <div className="inline-block p-4 bg-primary/10 rounded-full mb-4">
-                <User className="w-16 h-16 text-primary" />
+                <Unplug className="w-16 h-16 text-primary" />
              </div>
-            <h1 className="text-3xl font-bold font-headline">Profilini Görüntüle</h1>
-            <p className="text-muted-foreground mt-2 mb-6">İstatistiklerini görmek ve ayarlarını yönetmek için giriş yap.</p>
-            <Button asChild size="lg">
-                <Link href="/login">
-                    <LogIn className="mr-2 h-5 w-5"/>
-                    Giriş Yap
-                </Link>
-            </Button>
+            <h1 className="text-3xl font-bold font-headline">Oturum Bekleniyor</h1>
+            <p className="text-muted-foreground mt-2 mb-6">Anonim kullanıcı oturumu başlatılıyor...</p>
+            <Loader2 className="h-8 w-8 animate-spin mx-auto" />
         </div>
      )
   }
@@ -182,18 +177,14 @@ export default function ProfilePage() {
       <header className="text-center mb-8">
         <>
           <Avatar className="w-24 h-24 mx-auto mb-4 border-2 border-primary">
-            <AvatarImage
-              src={user.photoURL || undefined}
-              alt={user.displayName || 'User'}
-            />
-            <AvatarFallback>
-              {user.displayName?.charAt(0) || user.email?.charAt(0)}
+             <AvatarFallback>
+              <User />
             </AvatarFallback>
           </Avatar>
           <h1 className="text-3xl font-bold font-headline">
-            {user.displayName || 'Kullanıcı'}
+            Anonim Kullanıcı
           </h1>
-          <p className="text-muted-foreground">{user.email}</p>
+          <p className="text-muted-foreground text-xs">{user.uid}</p>
         </>
       </header>
 
@@ -262,7 +253,7 @@ export default function ProfilePage() {
                   onClick={handleLogout}
                 >
                   <LogOut className="w-5 h-5 mr-4 text-red-500" />
-                  <span>Çıkış Yap</span>
+                  <span>Yeni Oturum Başlat</span>
                 </Button>
               </li>
             )}

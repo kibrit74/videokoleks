@@ -1,10 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { onIdTokenChanged, signInWithPopup, GoogleAuthProvider, signOut, type Auth } from 'firebase/auth';
+import { onIdTokenChanged, signInAnonymously, signOut, type Auth, User } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 
 import { useAuth, useFirestore } from '@/firebase';
-import type { User } from 'firebase/auth';
 
 export function useUser() {
   const auth = useAuth();
@@ -33,9 +32,7 @@ export function useUser() {
               userRef,
               {
                 uid: user.uid,
-                email: user.email,
-                displayName: user.displayName,
-                photoURL: user.photoURL,
+                isAnonymous: user.isAnonymous,
                 lastLogin: serverTimestamp(),
               },
               { merge: true } // Use merge to avoid overwriting existing fields
@@ -45,7 +42,11 @@ export function useUser() {
             setError(e as Error);
           }
         } else {
-          setUser(null);
+          // If no user, sign in anonymously
+          signInAnonymously(auth).catch(err => {
+              console.error("Anonymous sign in failed", err);
+              setError(err);
+          });
         }
         setLoading(false);
       },
@@ -62,18 +63,6 @@ export function useUser() {
   return { user, isUserLoading: loading, error };
 }
 
-
-export async function signInWithGoogle(auth: Auth) {
-  if (!auth) return;
-  const provider = new GoogleAuthProvider();
-  try {
-    await signInWithPopup(auth, provider);
-  } catch (error) {
-    console.error("Error signing in with Google", error);
-    // Re-throw the error to be caught by the caller if needed
-    throw error;
-  }
-}
 
 export async function signOutUser(auth: Auth) {
     if (!auth) return;
