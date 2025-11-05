@@ -61,16 +61,19 @@ const fetchVideoDetailsFlow = ai.defineFlow(
       const html = await response.text();
       const root = parse(html);
 
-      // Look for oEmbed/OpenGraph meta tags
+      // Look for oEmbed/OpenGraph meta tags, with fallbacks for different platforms
       const title =
         root.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
-        root.querySelector('title')?.text;
+        root.querySelector('title')?.text ||
+        root.querySelector('meta[name="description"]')?.getAttribute('content');
       
       const thumbnailUrl = 
-        root.querySelector('meta[property="og:image"]')?.getAttribute('content');
+        root.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
+        root.querySelector('meta[property="og:image:secure_url"]')?.getAttribute('content');
+
 
       return {
-        title: title?.trim(),
+        title: title?.trim().split('\n')[0], // Clean up title
         thumbnailUrl,
       };
     } catch (error) {
