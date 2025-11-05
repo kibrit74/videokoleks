@@ -11,7 +11,7 @@ import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { AddVideoDialog } from '@/components/add-video-dialog';
 import { cn } from '@/lib/utils';
 import type { Video } from '@/lib/types';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+
 
 const NEW_VIDEOS_STORAGE_KEY = 'newVideos';
 
@@ -34,24 +34,24 @@ export default function HomePage() {
     }
   }, []);
 
-  const handleAddVideo = (newVideoData: Omit<Video, 'id' | 'dateAdded' | 'isFavorite' | 'imageHint' | 'thumbnailUrl'>) => {
-    const randomImage = PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)];
+  const handleAddVideo = (newVideoData: Omit<Video, 'id' | 'dateAdded' | 'isFavorite' | 'imageHint'>) => {
     const newVideo: Video = {
       ...newVideoData,
       id: `new-${Date.now()}`,
       dateAdded: 'şimdi',
       isFavorite: false,
-      thumbnailUrl: randomImage.imageUrl,
-      imageHint: randomImage.imageHint,
+      imageHint: "video thumbnail",
     };
 
-    // Add to localStorage
-    const storedNewVideos = localStorage.getItem(NEW_VIDEOS_STORAGE_KEY);
-    const newVideos = storedNewVideos ? JSON.parse(storedNewVideos) : [];
-    newVideos.unshift(newVideo);
-    localStorage.setItem(NEW_VIDEOS_STORAGE_KEY, JSON.stringify(newVideos));
-
-    setVideos(prevVideos => [newVideo, ...prevVideos]);
+    setVideos(prevVideos => {
+        const updatedVideos = [newVideo, ...prevVideos];
+        // Add to localStorage
+        const storedNewVideos = localStorage.getItem(NEW_VIDEOS_STORAGE_KEY);
+        const existingNewVideos = storedNewVideos ? JSON.parse(storedNewVideos) : [];
+        const finalNewVideos = [newVideo, ...existingNewVideos];
+        localStorage.setItem(NEW_VIDEOS_STORAGE_KEY, JSON.stringify(finalNewVideos));
+        return updatedVideos;
+    });
   };
 
 
