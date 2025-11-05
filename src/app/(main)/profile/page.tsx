@@ -1,5 +1,5 @@
 'use client';
-
+import { useTheme } from 'next-themes';
 import {
   User,
   Package,
@@ -14,26 +14,17 @@ import {
   Gem,
   Mail,
   Info,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { videos, categories } from '@/lib/data';
 
-const settingsItems = [
-  { icon: Settings, label: 'Ayarlar', action: 'toast' },
-  { icon: Bell, label: 'Bildirimler', action: 'toast' },
-  { icon: Paintbrush, label: 'Tema', action: 'toast' },
-  { icon: Download, label: 'Otomatik Kaydetme', action: 'toast' },
-  { icon: Lock, label: 'Gizlilik', action: 'toast' },
-  { icon: Cloud, label: 'Yedekleme & Senkronizasyon', action: 'toast' },
-  { icon: Gem, label: "Premium'a Geç", isPremium: true, action: 'toast' },
-  { icon: Mail, label: 'Destek & Geri Bildirim', action: 'mail' },
-  { icon: Info, label: 'Hakkında', action: 'toast' },
-];
-
 export default function ProfilePage() {
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
 
   const videoCount = videos.length;
   const categoryCount = categories.length;
@@ -45,8 +36,31 @@ export default function ProfilePage() {
     { icon: Star, label: 'Favori', value: favoriteCount },
   ];
 
-  const handleSettingClick = (item: (typeof settingsItems)[0]) => {
-    if (item.action === 'mail') {
+  const handleThemeChange = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    toast({
+        title: `Tema değiştirildi: ${newTheme === 'dark' ? 'Karanlık' : 'Aydınlık'}`,
+    });
+  };
+
+  const settingsItems = [
+    { icon: Settings, label: 'Ayarlar', action: 'toast' },
+    { icon: Bell, label: 'Bildirimler', action: 'toast' },
+    { icon: Paintbrush, label: 'Tema', action: handleThemeChange, isTheme: true },
+    { icon: Download, label: 'Otomatik Kaydetme', action: 'toast' },
+    { icon: Lock, label: 'Gizlilik', action: 'toast' },
+    { icon: Cloud, label: 'Yedekleme & Senkronizasyon', action: 'toast' },
+    { icon: Gem, label: "Premium'a Geç", isPremium: true, action: 'toast' },
+    { icon: Mail, label: 'Destek & Geri Bildirim', action: 'mail' },
+    { icon: Info, label: 'Hakkında', action: 'toast' },
+  ];
+
+  const handleSettingClick = (item: (typeof settingsItems)[number]) => {
+    if (typeof item.action === 'function') {
+      item.action();
+    }
+    else if (item.action === 'mail') {
       window.location.href = 'mailto:destek@videokoleks.com';
     } else {
       toast({
@@ -106,6 +120,11 @@ export default function ProfilePage() {
                   >
                     {item.label}
                   </span>
+                  {item.isTheme && (
+                    <div className="ml-auto">
+                        {theme === 'dark' ? <Sun className="h-5 w-5 text-muted-foreground" /> : <Moon className="h-5 w-5 text-muted-foreground" />}
+                    </div>
+                  )}
                 </Button>
               </li>
             ))}
