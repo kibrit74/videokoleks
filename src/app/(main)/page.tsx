@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { videos as initialVideos, categories } from '@/lib/data';
 import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
@@ -13,10 +13,26 @@ import { cn } from '@/lib/utils';
 import type { Video } from '@/lib/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
+const NEW_VIDEOS_STORAGE_KEY = 'newVideos';
+
 export default function HomePage() {
   const [videos, setVideos] = useState<Video[]>(initialVideos);
   const [isAddVideoOpen, setAddVideoOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Load new videos from localStorage on mount
+    const storedNewVideos = localStorage.getItem(NEW_VIDEOS_STORAGE_KEY);
+    if (storedNewVideos) {
+      try {
+        const newVideos: Video[] = JSON.parse(storedNewVideos);
+        setVideos(prevVideos => [...newVideos, ...prevVideos.filter(v => !newVideos.some(nv => nv.id === v.id))]);
+      } catch (e) {
+        console.error("Failed to parse new videos from localStorage", e);
+        localStorage.removeItem(NEW_VIDEOS_STORAGE_KEY);
+      }
+    }
+  }, []);
 
   const handleAddVideo = (newVideoData: Omit<Video, 'id' | 'dateAdded' | 'isFavorite' | 'imageHint' | 'thumbnailUrl'>) => {
     const randomImage = PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)];
@@ -28,6 +44,13 @@ export default function HomePage() {
       thumbnailUrl: randomImage.imageUrl,
       imageHint: randomImage.imageHint,
     };
+
+    // Add to localStorage
+    const storedNewVideos = localStorage.getItem(NEW_VIDEOS_STORAGE_KEY);
+    const newVideos = storedNewVideos ? JSON.parse(storedNewVideos) : [];
+    newVideos.unshift(newVideo);
+    localStorage.setItem(NEW_VIDEOS_STORAGE_KEY, JSON.stringify(newVideos));
+
     setVideos(prevVideos => [newVideo, ...prevVideos]);
   };
 
@@ -85,7 +108,7 @@ export default function HomePage() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
         {filteredVideos.map((video) => (
-          <VideoCard key={video.id} video={video} allVideos={videos} />
+          <VideoCard key={video.id} video={video} />
         ))}
       </div>
       <AddVideoDialog 

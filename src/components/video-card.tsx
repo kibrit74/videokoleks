@@ -8,8 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { videos as initialVideos } from '@/lib/data';
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -23,18 +21,11 @@ const platformColors: Record<Platform, string> = {
   tiktok: 'bg-[#00F2EA] text-black',
 };
 
-export function VideoCard({ video, allVideos }: { video: Video, allVideos: Video[] }) {
+export function VideoCard({ video }: { video: Video }) {
   const PlatformIcon = platformIcons[video.platform];
-  const router = useRouter();
-
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    const videosQuery = encodeURIComponent(JSON.stringify(allVideos));
-    router.push(`/videos/${video.id}?videos=${videosQuery}`);
-  };
 
   return (
-    <Link href={`/videos/${video.id}`} onClick={handleClick} className="group block">
+    <Link href={`/videos/${video.id}`} className="group block">
       <Card className="overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1">
         <CardContent className="p-0">
           <div className="relative aspect-[9/16] w-full">

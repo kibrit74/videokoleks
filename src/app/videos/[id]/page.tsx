@@ -19,7 +19,8 @@ import {
 import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import type { Platform, Video } from '@/lib/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { videos as initialVideos } from '@/lib/data';
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -28,53 +29,61 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
 };
 
 function getEmbedUrl(url: string, platform: Platform): string | null {
-    if (platform === 'youtube') {
-        const videoId = new URL(url).searchParams.get('v');
-        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-    }
-    if (platform === 'instagram') {
+    try {
         const urlObject = new URL(url);
-        // Add '/embed' to the path, e.g. /reels/Cxyz/ -> /reels/Cxyz/embed
-        urlObject.pathname = urlObject.pathname.replace(/\/$/, '') + '/embed';
-        return urlObject.toString();
+        if (platform === 'youtube') {
+            const videoId = urlObject.searchParams.get('v');
+            return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : null;
+        }
+        if (platform === 'instagram') {
+            // Add '/embed' to the path, e.g. /reels/Cxyz/ -> /reels/Cxyz/embed
+            urlObject.pathname = urlObject.pathname.replace(/\/$/, '') + '/embed';
+            return urlObject.toString();
+        }
+    } catch(e) {
+        console.error("Invalid URL for embedding:", url);
+        return null;
     }
     // TikTok oEmbed is more complex and often requires server-side fetching or a library.
-    // For a client-side only solution, direct embedding can be tricky due to their policies.
     // A simple link might be the most reliable option for now.
     return null;
 }
 
+const NEW_VIDEOS_STORAGE_KEY = 'newVideos';
 
 export default function VideoDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const searchParams = useSearchParams();
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [currentVideo, setCurrentVideo] = useState<Video | undefined>(undefined);
+  const [allVideos, setAllVideos] = useState<Video[]>(initialVideos);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const videoId = params.id as string;
 
   useEffect(() => {
-    setIsPlaying(false); // Reset playing state on video change
-    const videosParam = searchParams.get('videos');
-    if (videosParam) {
-      try {
-        const parsedVideos: Video[] = JSON.parse(videosParam);
-        setVideos(parsedVideos);
-        const foundVideo = parsedVideos.find((v) => v.id === videoId);
-        setCurrentVideo(foundVideo);
-      } catch (e) {
-        console.error("Failed to parse videos from query params", e);
-      }
+    const storedNewVideos = localStorage.getItem(NEW_VIDEOS_STORAGE_KEY);
+    if (storedNewVideos) {
+        try {
+            const newVideos: Video[] = JSON.parse(storedNewVideos);
+            // Combine initial videos and new videos, removing duplicates
+            setAllVideos(prevVideos => [...newVideos, ...prevVideos.filter(v => !newVideos.some(nv => nv.id === v.id))]);
+        } catch (e) {
+            console.error("Failed to parse new videos from localStorage", e);
+        }
     }
-  }, [searchParams, videoId]);
+  }, []);
+  
+  const currentVideo = useMemo(() => allVideos.find((v) => v.id === videoId), [allVideos, videoId]);
 
-  if (currentVideo === undefined) {
+  useEffect(() => {
+    setIsPlaying(false); // Reset playing state on video change
+  }, [videoId]);
+
+
+  if (!currentVideo) {
     return (
         <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white">
-            <h1 className="text-2xl font-bold">Video yükleniyor...</h1>
-            <p className="text-muted-foreground">Eğer video görünmezse, ana sayfaya dönüp tekrar deneyin.</p>
+            <h1 className="text-2xl font-bold">Video bulunamadı.</h1>
+            <p className="text-muted-foreground">Video yükleniyor ya da artık mevcut değil.</p>
             <Button asChild variant="ghost" size="lg" className="mt-4 text-white">
                 <Link href="/">
                     <ArrowLeft className="mr-2" /> Ana Sayfaya Dön
@@ -84,14 +93,9 @@ export default function VideoDetailPage() {
     )
   }
 
-  if (currentVideo === null) {
-    notFound();
-  }
-
-
-  const videoIndex = videos.findIndex(v => v.id === videoId);
-  const prevVideo = videoIndex > 0 ? videos[videoIndex - 1] : null;
-  const nextVideo = videoIndex < videos.length - 1 ? videos[videoIndex + 1] : null;
+  const videoIndex = allVideos.findIndex(v => v.id === videoId);
+  const prevVideo = videoIndex > 0 ? allVideos[videoIndex - 1] : null;
+  const nextVideo = videoIndex < allVideos.length - 1 ? allVideos[videoIndex + 1] : null;
 
   const PlatformIcon = platformIcons[currentVideo.platform];
   const embedUrl = getEmbedUrl(currentVideo.originalUrl, currentVideo.platform);
@@ -99,8 +103,7 @@ export default function VideoDetailPage() {
 
   const navigateToVideo = (targetVideo: Video | null) => {
       if (targetVideo) {
-          const videosQuery = encodeURIComponent(JSON.stringify(videos));
-          router.push(`/videos/${targetVideo.id}?videos=${videosQuery}`);
+          router.push(`/videos/${targetVideo.id}`);
       }
   }
 
