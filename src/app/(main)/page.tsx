@@ -28,9 +28,16 @@ export default function HomePage() {
   , [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
-  // THIS QUERY IS DISABLED TO PREVENT THE PERSISTENT PERMISSION ERROR
-  const videos: Video[] | null = [];
-  const videosLoading = false;
+  // Build the query based on the selected category
+  const videosQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    let q = query(collection(firestore, 'users', user.uid, 'videos'), orderBy('dateAdded', 'desc'));
+    if (selectedCategoryId) {
+      q = query(q, where('categoryId', '==', selectedCategoryId));
+    }
+    return q;
+  }, [firestore, user, selectedCategoryId]);
+  const { data: videos, isLoading: videosLoading } = useCollection<Video>(videosQuery);
   
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
