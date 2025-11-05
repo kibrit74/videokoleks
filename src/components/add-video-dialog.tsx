@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,24 +13,64 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { categories } from '@/lib/data';
 import { PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import type { Video, Category } from '@/lib/types';
+import { cn } from '@/lib/utils';
+
+
+type NewVideoData = Omit<Video, 'id' | 'dateAdded' | 'isFavorite' | 'imageHint' | 'thumbnailUrl'>;
 
 interface AddVideoDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  onSave: (videoData: NewVideoData) => void;
 }
 
-export function AddVideoDialog({ isOpen, onOpenChange }: AddVideoDialogProps) {
+export function AddVideoDialog({ isOpen, onOpenChange, onSave }: AddVideoDialogProps) {
   const { toast } = useToast();
+  const [videoUrl, setVideoUrl] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [notes, setNotes] = useState('');
+
+  const getPlatformFromUrl = (url: string): Video['platform'] => {
+    if (url.includes('instagram.com')) return 'instagram';
+    if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
+    if (url.includes('tiktok.com')) return 'tiktok';
+    return 'instagram'; // default
+  };
 
   const handleSave = () => {
+    if (!videoUrl || !selectedCategory) {
+        toast({
+            variant: 'destructive',
+            title: 'Eksik Bilgi',
+            description: 'Lütfen video linki ve kategori seçtiğinizden emin olun.',
+        });
+        return;
+    }
+
+    const platform = getPlatformFromUrl(videoUrl);
+
+    onSave({
+        title: `Yeni Video - ${selectedCategory.name}`,
+        originalUrl: videoUrl,
+        platform,
+        category: selectedCategory,
+        duration: '0:00',
+        notes: notes,
+    });
+
     toast({
       title: 'Video Kaydedildi! ✨',
       description: 'Videonuz koleksiyonunuza eklendi.',
     });
+    
+    // Reset form and close
+    setVideoUrl('');
+    setSelectedCategory(null);
+    setNotes('');
     onOpenChange(false);
   };
   
@@ -45,24 +86,40 @@ export function AddVideoDialog({ isOpen, onOpenChange }: AddVideoDialogProps) {
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="video-url">Video Linki</Label>
-            <Input id="video-url" placeholder="https://www.instagram.com/reels/..." />
+            <Input 
+              id="video-url" 
+              placeholder="https://www.instagram.com/reels/..."
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label>Kategori seç</Label>
             <div className="flex flex-wrap gap-2">
               {categories.map((cat) => (
-                <Button key={cat.id} variant="outline" size="sm">
+                <Button 
+                    key={cat.id} 
+                    variant={selectedCategory?.id === cat.id ? 'default' : 'outline'} 
+                    size="sm"
+                    onClick={() => setSelectedCategory(cat)}
+                    className="transition-all"
+                >
                   {cat.emoji} {cat.name}
                 </Button>
               ))}
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" disabled>
                 <PlusCircle className="mr-2 h-4 w-4" /> Yeni Kategori
               </Button>
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="notes">Not ekle (opsiyonel)</Label>
-            <Textarea id="notes" placeholder="Bu videoyla ilgili notlarınız..." />
+            <Textarea 
+                id="notes" 
+                placeholder="Bu videoyla ilgili notlarınız..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)} 
+            />
           </div>
         </div>
         <DialogFooter>

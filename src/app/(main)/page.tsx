@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { videos, categories } from '@/lib/data';
+import { videos as initialVideos, categories } from '@/lib/data';
 import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,17 +10,32 @@ import { Search, Plus, SlidersHorizontal } from 'lucide-react';
 import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { AddVideoDialog } from '@/components/add-video-dialog';
 import { cn } from '@/lib/utils';
+import type { Video } from '@/lib/types';
 
 export default function HomePage() {
+  const [videos, setVideos] = useState<Video[]>(initialVideos);
   const [isAddVideoOpen, setAddVideoOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
+  const handleAddVideo = (newVideoData: Omit<Video, 'id' | 'dateAdded' | 'isFavorite' | 'imageHint' | 'thumbnailUrl'>) => {
+    const newVideo: Video = {
+      ...newVideoData,
+      id: (videos.length + 2).toString(),
+      dateAdded: 'şimdi',
+      isFavorite: false,
+      thumbnailUrl: `https://picsum.photos/seed/${videos.length + 2}/400/711`,
+      imageHint: 'new video',
+    };
+    setVideos(prevVideos => [newVideo, ...prevVideos]);
+  };
+
 
   const filteredVideos = selectedCategoryId
     ? videos.filter(video => video.category.id === selectedCategoryId)
     : videos;
 
   const handleCategoryClick = (categoryId: string | null) => {
-    setSelectedCategoryId(categoryId);
+    setSelectedCategoryId(categoryId === selectedCategoryId ? null : categoryId);
   };
 
   return (
@@ -71,7 +86,11 @@ export default function HomePage() {
           <VideoCard key={video.id} video={video} />
         ))}
       </div>
-      <AddVideoDialog isOpen={isAddVideoOpen} onOpenChange={setAddVideoOpen} />
+      <AddVideoDialog 
+        isOpen={isAddVideoOpen} 
+        onOpenChange={setAddVideoOpen}
+        onSave={handleAddVideo}
+      />
     </div>
   );
 }
