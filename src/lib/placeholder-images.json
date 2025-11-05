@@ -1,3 +1,64 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "1",
+      "description": "A close-up of a delicious pasta dish being twirled on a fork.",
+      "imageUrl": "https://images.unsplash.com/photo-1608897013039-887f21d8c804?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwYXN0YSUyMGRpc2h8ZW58MHx8fHwxNzYyMzM0NjQyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "pasta dish"
+    },
+    {
+      "id": "2",
+      "description": "A fluffy ginger cat batting playfully at a dangling toy.",
+      "imageUrl": "https://images.unsplash.com/photo-1513245543132-31f507417b26?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxmdW5ueSUyMGNhdHxlbnwwfHx8fDE3NjIzNjYyNTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "funny cat"
+    },
+    {
+      "id": "3",
+      "description": "A person in sportswear doing jumping jacks in a bright living room.",
+      "imageUrl": "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxob21lJTIwd29ya291dHxlbnwwfHx8fDE3NjIzNjc5ODl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "home workout"
+    },
+    {
+      "id": "4",
+      "description": "Sun rising over a misty mountain range, casting a golden glow.",
+      "imageUrl": "https://images.unsplash.com/photo-1594329852649-012d9528deda?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxtb3VudGFpbiUyMHN1bnJpc2V8ZW58MHx8fHwxNzYyMzEzNzIwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "mountain sunrise"
+    },
+    {
+      "id": "5",
+      "description": "Lines of code on a dark computer screen with colorful syntax highlighting.",
+      "imageUrl": "https://images.unsplash.com/photo-1557324232-b8917d3c3dcb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxjb2RpbmclMjBzY3JlZW58ZW58MHx8fHwxNzYyMzM2NTE4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "coding screen"
+    },
+    {
+      "id": "6",
+      "description": "A person with a backpack looking out over a stunning tropical beach in Bali.",
+      "imageUrl": "https://images.unsplash.com/photo-1682218999167-14f86714a2c9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxiYWxpJTIwdHJhdmVsfGVufDB8fHx8MTc2MjM2Nzk4OXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "bali travel"
+    },
+    {
+      "id": "7",
+      "description": "A comedian on a dimly lit stage, mid-joke, with a microphone.",
+      "imageUrl": "https://images.unsplash.com/photo-1618861297248-3438b3d9aae9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxzdGFuZCUyMHVwfGVufDB8fHx8MTc2MjM2Nzk4OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "stand up"
+    },
+    {
+      "id": "8",
+      "description": "A vibrant smoothie bowl topped with fresh berries, granola, and coconut flakes.",
+      "imageUrl": "https://images.unsplash.com/photo-1557568951-a691f75c810f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzbW9vdGhpZSUyMGJvd2x8ZW58MHx8fHwxNzYyMzQ0NTU0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "smoothie bowl"
+    },
+    {
+      "id": "9",
+      "description": "A person stretching on a yoga mat as the morning sun streams through a window.",
+      "imageUrl": "https://images.unsplash.com/photo-1692621081241-38a18a6eab7f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxtb3JuaW5nJTIwZXhlcmNpc2V8ZW58MHx8fHwxNzYyMzY3OTg4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "morning exercise"
+    },
+    {
+      "id": "10",
+      "description": "A street food vendor in Italy handing a fresh slice of pizza to a customer.",
+      "imageUrl": "https://images.unsplash.com/photo-1595343823032-8212b01e3084?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxpdGFseSUyMGZvb2R8ZW58MHx8fHwxNzYyMzY3OTg4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "italy food"
+    }
+  ]
 }
