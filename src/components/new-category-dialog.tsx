@@ -16,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { addDoc, collection } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface NewCategoryDialogProps {
   isOpen: boolean;
@@ -39,7 +41,7 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
   const [isLoading, setIsLoading] = useState(false);
 
   const handleCreate = async () => {
-    if (!user) {
+    if (!user || !firestore) {
         toast({ variant: "destructive", title: "Giriş yapmalısınız." });
         return;
     }
@@ -49,31 +51,42 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
     }
 
     setIsLoading(true);
-    try {
-        const categoriesCollection = collection(firestore, 'users', user.uid, 'categories');
-        await addDoc(categoriesCollection, {
-            userId: user.uid,
-            name: name.trim(),
-            emoji: selectedEmoji,
-            color: selectedColor
-        });
 
-        toast({
-            title: 'Kategori Oluşturuldu! 🎉',
-            description: 'Yeni kategoriniz başarıyla eklendi.',
-        });
-        onOpenChange(false);
-        // Reset form
-        setName('');
-        setSelectedEmoji(emojis[0]);
-        setSelectedColor(colors[0]);
+    const categoryData = {
+        userId: user.uid,
+        name: name.trim(),
+        emoji: selectedEmoji,
+        color: selectedColor
+    };
+    
+    const categoriesCollection = collection(firestore, 'users', user.uid, 'categories');
 
-    } catch (error) {
-        console.error("Error creating category:", error);
-        toast({ variant: "destructive", title: "Hata!", description: "Kategori oluşturulurken bir sorun oluştu."});
-    } finally {
-        setIsLoading(false);
-    }
+    // Use non-blocking write with contextual error handling
+    addDoc(categoriesCollection, categoryData)
+      .then(() => {
+          toast({
+              title: 'Kategori Oluşturuldu! 🎉',
+              description: 'Yeni kategoriniz başarıyla eklendi.',
+          });
+          onOpenChange(false);
+          // Reset form
+          setName('');
+          setSelectedEmoji(emojis[0]);
+          setSelectedColor(colors[0]);
+      })
+      .catch(serverError => {
+          const permissionError = new FirestorePermissionError({
+              path: categoriesCollection.path,
+              operation: 'create',
+              requestResourceData: categoryData,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+          // Optionally, show a generic error toast to the user
+          toast({ variant: "destructive", title: "Hata!", description: "Kategori oluşturulurken bir sorun oluştu."});
+      })
+      .finally(() => {
+          setIsLoading(false);
+      });
   };
 
   return (

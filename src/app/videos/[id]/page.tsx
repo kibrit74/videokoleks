@@ -25,6 +25,8 @@ import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from '@
 import { doc, collection, updateDoc, deleteDoc, query, orderBy, getDocs, limit, startAfter, endBefore, limitToLast } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -121,17 +123,37 @@ export default function VideoDetailPage() {
     }
   }
 
-  const toggleFavorite = async () => {
-      if (!videoDocRef) return;
-      await updateDoc(videoDocRef, { isFavorite: !currentVideo.isFavorite });
-      toast({ title: currentVideo.isFavorite ? 'Favorilerden kaldırıldı.' : 'Favorilere eklendi!' });
+  const toggleFavorite = () => {
+      if (!videoDocRef || !currentVideo) return;
+      const newFavoriteStatus = !currentVideo.isFavorite;
+      updateDoc(videoDocRef, { isFavorite: newFavoriteStatus })
+        .then(() => {
+            toast({ title: newFavoriteStatus ? 'Favorilere eklendi!' : 'Favorilerden kaldırıldı.' });
+        })
+        .catch(serverError => {
+            const permissionError = new FirestorePermissionError({
+                path: videoDocRef.path,
+                operation: 'update',
+                requestResourceData: { isFavorite: newFavoriteStatus },
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
   }
   
-  const deleteVideo = async () => {
+  const deleteVideo = () => {
     if(!videoDocRef) return;
-    await deleteDoc(videoDocRef);
-    toast({ title: 'Video silindi.'});
-    router.push('/');
+    deleteDoc(videoDocRef)
+      .then(() => {
+        toast({ title: 'Video silindi.'});
+        router.push('/');
+      })
+      .catch(serverError => {
+        const permissionError = new FirestorePermissionError({
+            path: videoDocRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   }
 
   const formatDate = (timestamp: any) => {

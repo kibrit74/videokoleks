@@ -11,6 +11,8 @@ import {
 } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useAuth, useFirestore } from '@/firebase';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 // Main hook to get the current user state
 export function useUser() {
@@ -34,24 +36,25 @@ export function useUser() {
         if (user) {
           setUser(user);
           const userRef = doc(firestore, 'users', user.uid);
-          try {
-            // This ensures user document is created/updated on every login/token change
-            await setDoc(
-              userRef,
-              {
-                uid: user.uid,
-                email: user.email,
-                // displayName and photoURL might be null on creation, but updated later
-                displayName: user.displayName, 
-                photoURL: user.photoURL,
-                lastLogin: serverTimestamp(),
-              },
-              { merge: true }
-            );
-          } catch (e) {
-            console.error("Error writing user to Firestore", e);
-            setError(e as Error);
-          }
+          const userData = {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName, 
+            photoURL: user.photoURL,
+            lastLogin: serverTimestamp(),
+          };
+          
+          // Non-blocking write with contextual error handling
+          setDoc(userRef, userData, { merge: true })
+            .catch(serverError => {
+                const permissionError = new FirestorePermissionError({
+                    path: userRef.path,
+                    operation: 'write',
+                    requestResourceData: userData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            });
+
         } else {
           setUser(null);
         }
@@ -73,36 +76,22 @@ export function useUser() {
 // Auth action: Create user with email and password
 export async function createUserWithEmail(auth: Auth, email: string, password: string) {
     if (!auth) throw new Error("Auth service not available");
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        // Set a default display name from the email prefix
-        const displayName = email.split('@')[0];
-        await updateProfile(userCredential.user, { displayName });
-        return userCredential;
-    } catch (error) {
-        console.error("Error creating user with email and password", error);
-        throw error;
-    }
+    // This action can be awaited as it's part of the user interaction flow, not background sync
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const displayName = email.split('@')[0];
+    await updateProfile(userCredential.user, { displayName });
+    return userCredential;
 }
 
 // Auth action: Sign in with email and password
 export async function signInWithEmail(auth: Auth, email: string, password: string) {
     if (!auth) throw new Error("Auth service not available");
-    try {
-        return await signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-        console.error("Error signing in with email and password", error);
-        throw error;
-    }
+    // This action can be awaited
+    return await signInWithEmailAndPassword(auth, email, password);
 }
 
 // Auth action: Sign out
 export async function signOutUser(auth: Auth) {
     if (!auth) return;
-    try {
-        await signOut(auth);
-    } catch (error) {
-        console.error("Error signing out", error);
-        throw error;
-    }
+    await signOut(auth);
 }

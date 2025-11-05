@@ -22,6 +22,8 @@ import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface AddVideoDialogProps {
   isOpen: boolean;
@@ -112,7 +114,7 @@ export function AddVideoDialog({
   };
 
   const handleSave = async () => {
-    if (!user || !videoUrl || !selectedCategory || !videoDetails?.title || !videoDetails?.thumbnailUrl) {
+    if (!user || !firestore || !videoUrl || !selectedCategory || !videoDetails?.title || !videoDetails?.thumbnailUrl) {
       toast({
         variant: 'destructive',
         title: 'Eksik Bilgi',
@@ -124,40 +126,49 @@ export function AddVideoDialog({
     setIsSaving(true);
     const platform = getPlatformFromUrl(videoUrl);
 
-    try {
-        const videosCollection = collection(firestore, 'users', user.uid, 'videos');
-        await addDoc(videosCollection, {
-            userId: user.uid,
-            title: videoDetails.title,
-            thumbnailUrl: videoDetails.thumbnailUrl,
-            originalUrl: videoUrl,
-            platform,
-            category: selectedCategory, // Denormalized category data
-            categoryId: selectedCategory.id,
-            duration: '0:00', // This could be fetched as well in a future version
-            notes: notes,
-            isFavorite: false,
-            dateAdded: serverTimestamp(),
-            imageHint: "video thumbnail"
-        });
+    const videoData = {
+        userId: user.uid,
+        title: videoDetails.title,
+        thumbnailUrl: videoDetails.thumbnailUrl,
+        originalUrl: videoUrl,
+        platform,
+        category: selectedCategory, // Denormalized category data
+        categoryId: selectedCategory.id,
+        duration: '0:00', // This could be fetched as well in a future version
+        notes: notes,
+        isFavorite: false,
+        dateAdded: serverTimestamp(),
+        imageHint: "video thumbnail"
+    };
 
+    const videosCollection = collection(firestore, 'users', user.uid, 'videos');
+    
+    // Use non-blocking write with contextual error handling
+    addDoc(videosCollection, videoData)
+      .then(() => {
         toast({
-            title: 'Video Kaydedildi! ✨',
-            description: 'Videonuz koleksiyonunuza eklendi.',
+          title: 'Video Kaydedildi! ✨',
+          description: 'Videonuz koleksiyonunuza eklendi.',
         });
-
         onOpenChange(false);
-
-    } catch (error) {
-        console.error("Error saving video:", error);
+      })
+      .catch(serverError => {
+        const permissionError = new FirestorePermissionError({
+          path: videosCollection.path,
+          operation: 'create',
+          requestResourceData: videoData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        // Optionally, show a generic error toast to the user
         toast({
             variant: 'destructive',
             title: 'Hata!',
-            description: 'Video kaydedilirken bir hata oluştu.',
+            description: 'Video kaydedilirken bir sorun oluştu.',
         });
-    } finally {
+      })
+      .finally(() => {
         setIsSaving(false);
-    }
+      });
   };
   
   const isLoading = isFetching || isSaving;
