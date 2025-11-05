@@ -11,6 +11,7 @@ import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { AddVideoDialog } from '@/components/add-video-dialog';
 import { cn } from '@/lib/utils';
 import type { Video } from '@/lib/types';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function HomePage() {
   const [videos, setVideos] = useState<Video[]>(initialVideos);
@@ -18,13 +19,14 @@ export default function HomePage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
   const handleAddVideo = (newVideoData: Omit<Video, 'id' | 'dateAdded' | 'isFavorite' | 'imageHint' | 'thumbnailUrl'>) => {
+    const randomImage = PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)];
     const newVideo: Video = {
       ...newVideoData,
       id: `new-${Date.now()}`,
       dateAdded: 'şimdi',
       isFavorite: false,
-      thumbnailUrl: `https://picsum.photos/seed/${videos.length + 2}/400/711`,
-      imageHint: 'new video',
+      thumbnailUrl: randomImage.imageUrl,
+      imageHint: randomImage.imageHint,
     };
     setVideos(prevVideos => [newVideo, ...prevVideos]);
   };

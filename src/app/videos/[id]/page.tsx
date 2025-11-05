@@ -27,15 +27,36 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
   tiktok: TiktokIcon,
 };
 
+function getEmbedUrl(url: string, platform: Platform): string | null {
+    if (platform === 'youtube') {
+        const videoId = new URL(url).searchParams.get('v');
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    }
+    if (platform === 'instagram') {
+        const urlObject = new URL(url);
+        // Add '/embed' to the path, e.g. /reels/Cxyz/ -> /reels/Cxyz/embed
+        urlObject.pathname = urlObject.pathname.replace(/\/$/, '') + '/embed';
+        return urlObject.toString();
+    }
+    // TikTok oEmbed is more complex and often requires server-side fetching or a library.
+    // For a client-side only solution, direct embedding can be tricky due to their policies.
+    // A simple link might be the most reliable option for now.
+    return null;
+}
+
+
 export default function VideoDetailPage() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
   const [videos, setVideos] = useState<Video[]>([]);
   const [currentVideo, setCurrentVideo] = useState<Video | undefined>(undefined);
+  const [isPlaying, setIsPlaying] = useState(false);
+
   const videoId = params.id as string;
 
   useEffect(() => {
+    setIsPlaying(false); // Reset playing state on video change
     const videosParam = searchParams.get('videos');
     if (videosParam) {
       try {
@@ -73,6 +94,8 @@ export default function VideoDetailPage() {
   const nextVideo = videoIndex < videos.length - 1 ? videos[videoIndex + 1] : null;
 
   const PlatformIcon = platformIcons[currentVideo.platform];
+  const embedUrl = getEmbedUrl(currentVideo.originalUrl, currentVideo.platform);
+
 
   const navigateToVideo = (targetVideo: Video | null) => {
       if (targetVideo) {
@@ -81,18 +104,38 @@ export default function VideoDetailPage() {
       }
   }
 
+  const handlePlayClick = () => {
+    if (embedUrl) {
+      setIsPlaying(true);
+    } else {
+      // Fallback for platforms that can't be embedded easily (like TikTok)
+      window.open(currentVideo.originalUrl, '_blank');
+    }
+  }
+
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center">
       <div className="relative w-full max-w-sm aspect-[9/16] bg-card overflow-hidden rounded-lg shadow-2xl shadow-primary/20">
-        <Image
-          src={currentVideo.thumbnailUrl}
-          alt={currentVideo.title}
-          fill
-          className="object-cover"
-          data-ai-hint={currentVideo.imageHint}
-        />
+        {isPlaying && embedUrl ? (
+          <iframe
+            src={embedUrl}
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            title="Embedded Video Player"
+          ></iframe>
+        ) : (
+          <Image
+            src={currentVideo.thumbnailUrl}
+            alt={currentVideo.title}
+            fill
+            className="object-cover"
+            data-ai-hint={currentVideo.imageHint}
+            priority
+          />
+        )}
         
-        <div className="absolute inset-0 flex flex-col justify-between p-4 bg-black/30">
+        <div className={cn("absolute inset-0 flex flex-col justify-between p-4 bg-black/30", isPlaying && "hidden")}>
           <header className="flex justify-between items-center">
             <Button asChild variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 text-white">
               <Link href="/">
@@ -114,10 +157,8 @@ export default function VideoDetailPage() {
           </header>
 
           <div className="flex items-center justify-center">
-            <Button asChild variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-20 w-20">
-                <Link href={currentVideo.originalUrl} target="_blank">
-                    <Play className="h-10 w-10 fill-white" />
-                </Link>
+            <Button variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-20 w-20" onClick={handlePlayClick}>
+                <Play className="h-10 w-10 fill-white" />
             </Button>
           </div>
           
