@@ -70,29 +70,36 @@ const fetchVideoDetailsFlow = ai.defineFlow(
 
       let html = await response.text();
 
-      // If using the proxy, the actual HTML is inside a JSON response.
+      // If using the proxy, the actual HTML is inside a JSON response's "contents" field.
       if (isInstagram) {
-        const jsonResponse = JSON.parse(html);
-        html = jsonResponse.contents;
+        try {
+            const jsonResponse = JSON.parse(html);
+            html = jsonResponse.contents;
+        } catch (e) {
+            // If the response is not JSON, it might be the direct HTML.
+            // No action needed, just proceed with the html as is.
+        }
       }
       
       if (!html) {
-        throw new Error('No HTML content received.');
+        throw new Error('No HTML content received from proxy or direct fetch.');
       }
 
       const root = parse(html);
 
-      // Extract title and thumbnail using Open Graph (og) meta tags,
-      // as described by the user. This is a more reliable method for scraped content.
+      // Extract title and thumbnail using Open Graph (og) meta tags.
+      // Fallback to the main <title> tag if og:title is not found.
       const title =
         root.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
         root.querySelector('title')?.text;
       
+      // For thumbnail, try multiple Open Graph properties as Instagram sometimes uses alternatives.
       const thumbnailUrl = 
         root.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
         root.querySelector('meta[property="og:image:secure_url"]')?.getAttribute('content');
 
       return {
+        // Trim and take the first line to get a cleaner title.
         title: title?.trim().split('\n')[0],
         thumbnailUrl,
       };
