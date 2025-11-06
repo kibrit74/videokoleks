@@ -41,16 +41,16 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
 
 function getEmbedUrl(url: string, platform: Platform): string | null {
     try {
-        const urlObject = new URL(url);
+        const cleanedUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+        const urlObject = new URL(cleanedUrl);
+
         if (platform === 'youtube') {
             const videoId = urlObject.searchParams.get('v');
             return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
         }
         if (platform === 'instagram') {
-             // Instagram embed URLs require the path to end with /embed
-            if (urlObject.pathname.includes('/p/') || urlObject.pathname.includes('/reel/')) {
-                 const cleanedPath = urlObject.pathname.replace(/\/$/, ''); // remove trailing slash
-                 return `https://www.instagram.com${cleanedPath}/embed`;
+             if (urlObject.pathname.includes('/p/') || urlObject.pathname.includes('/reel/')) {
+                 return `https://www.instagram.com${urlObject.pathname}/embed`;
             }
         }
         if (platform === 'tiktok') {
@@ -60,7 +60,7 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
             }
         }
     } catch(e) {
-        console.error("Invalid URL for embedding:", url);
+        console.error("Invalid URL for embedding:", url, e);
         return null;
     }
     return null;
