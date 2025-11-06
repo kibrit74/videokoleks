@@ -19,28 +19,28 @@ service cloud.firestore {
     
     // Rules for the 'categories' subcollection
     match /users/{userId}/categories/{categoryId} {
-      // Allow creation if the user is signed in and the incoming data's userId matches their own uid.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == request.auth.uid;
-      
-      // Allow list and read operations if the user is the owner of this collection path.
-      allow list, read: if isSignedIn() && isOwner(userId);
-
-      // Allow update and delete if the user is the owner of this collection path.
-      // These rules don't need to check request.resource.data.
-      allow update, delete: if isSignedIn() && isOwner(userId);
+      // Allow single document reads, updates, and deletes if the user is the owner.
+      allow read, update, delete: if isSignedIn() && isOwner(userId);
+      // Allow document creation if the user is the owner and the data is for them.
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+    }
+    
+    // Allow the owner to list their own categories
+    match /users/{userId}/categories {
+        allow list: if isSignedIn() && isOwner(userId);
     }
 
     // Rules for the 'videos' subcollection
     match /users/{userId}/videos/{videoId} {
-      // Allow creation if the user is signed in and the incoming data's userId matches their own uid.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == request.auth.uid;
-      
-      // Allow list and read operations if the user is the owner of this collection path.
-      allow list, read: if isSignedIn() && isOwner(userId);
-
-      // Allow update and delete if the user is the owner of this collection path.
-      // These rules don't need to check request.resource.data.
-      allow update, delete: if isSignedIn() && isOwner(userId);
+      // Allow single document reads, updates, and deletes if the user is the owner.
+      allow read, update, delete: if isSignedIn() && isOwner(userId);
+      // Allow document creation if the user is the owner and the data is for them.
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+    }
+    
+    // Allow the owner to list their own videos
+    match /users/{userId}/videos {
+        allow list: if isSignedIn() && isOwner(userId);
     }
   }
 }
