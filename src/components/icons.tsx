@@ -1,3 +1,5 @@
+'use client';
+
 import type { SVGProps } from 'react';
 
 export function InstagramIcon(props: SVGProps<SVGSVGElement>) {
@@ -55,9 +57,9 @@ export function TiktokIcon(props: SVGProps<SVGSVGElement>) {
       strokeLinejoin="round"
       {...props}
     >
-      <path d="M21 8v5a4 4 0 0 1-4 4H7.5a4.5 4.5 0 0 1-4.5-4.5V8a4.5 4.5 0 0 1 4.5-4.5H11" />
-      <path d="M11 12a4 4 0 0 0 4 4V8a4 4 0 0 0-4-4v8" />
-      <circle cx="17.5" cy="4.5" r="1.5" />
+      <path d="M16 4h-4v10.5c0 1.93-1.57 3.5-3.5 3.5s-3.5-1.57-3.5-3.5V5" />
+      <path d="M16 4a2 2 0 1 1-4 0" />
+      <path d="M12 4v10.5" />
     </svg>
   );
 }
