@@ -45,7 +45,12 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
         const urlObject = new URL(cleanedUrl);
 
         if (platform === 'youtube') {
-            const videoId = urlObject.searchParams.get('v');
+            let videoId = urlObject.searchParams.get('v');
+            if (!videoId) {
+                // Handle youtu.be short URLs
+                const pathParts = urlObject.pathname.split('/');
+                videoId = pathParts[pathParts.length - 1];
+            }
             return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
         }
         if (platform === 'instagram') {
