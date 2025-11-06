@@ -3,7 +3,7 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
+    
     function isSignedIn() {
       return request.auth != null;
     }
@@ -12,28 +12,20 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    // Users
     match /users/{userId} {
-      // A user can be created by anyone who is signed in,
-      // as long as the document ID matches their own user ID.
-      allow create: if isSignedIn() && isOwner(userId);
-      
-      // A user can read, update, or delete their own document.
-      allow read, update, delete: if isSignedIn() && isOwner(userId);
+      allow read, write: if isSignedIn() && isOwner(userId);
     }
     
-    // Categories and Videos
-    match /users/{userId}/{collection}/{docId} {
-        // Users can create documents (categories, videos) under their own user path.
-        // The resource's userId must match the authenticated user's ID.
-        allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+    match /users/{userId}/categories/{categoryId} {
+      allow list, read: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update, delete: if isSignedIn() && isOwner(userId);
+    }
 
-        // Users can read, update, or delete their own documents.
-        // The existing resource's userId must match the authenticated user's ID.
-        allow read, update, delete: if isSignedIn() && isOwner(userId) && resource.data.userId == userId;
-
-        // Users can list documents within their own subcollections.
-        allow list: if isSignedIn() && isOwner(userId);
+    match /users/{userId}/videos/{videoId} {
+      allow list, read: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update, delete: if isSignedIn() && isOwner(userId);
     }
   }
 }
