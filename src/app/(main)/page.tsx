@@ -33,7 +33,8 @@ export default function HomePage() {
   const videosQuery = useMemoFirebase(() => {
     if (!user) return null;
     
-    let q = query(collection(firestore, 'users', user.uid, 'videos'), orderBy('dateAdded', 'desc'));
+    // Removed orderBy to simplify the query and avoid needing a composite index, which might be the cause of permission errors.
+    let q = query(collection(firestore, 'users', user.uid, 'videos'));
     
     if (selectedCategoryId) {
       q = query(q, where('categoryId', '==', selectedCategoryId));
@@ -46,7 +47,16 @@ export default function HomePage() {
 
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
-    return videos.filter(video => 
+    // Sort videos by dateAdded on the client-side
+    const sorted = [...videos].sort((a, b) => {
+        const dateA = a.dateAdded?.toDate() ?? 0;
+        const dateB = b.dateAdded?.toDate() ?? 0;
+        if (dateA > dateB) return -1;
+        if (dateA < dateB) return 1;
+        return 0;
+    });
+
+    return sorted.filter(video => 
       video.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [videos, searchTerm]);
