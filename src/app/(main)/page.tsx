@@ -14,6 +14,7 @@ import { AddVideoDialog } from '@/components/add-video-dialog';
 import type { Video, Category } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 export default function HomePage() {
   const { user, isUserLoading } = useUser();
@@ -99,7 +100,10 @@ export default function HomePage() {
                   onClick={() => setSelectedCategoryId(cat.id)}
                   className="py-2 px-4 text-sm cursor-pointer hover:bg-muted-foreground/50"
                 >
-                  {cat.name}
+                  <span className="flex items-center gap-2">
+                    {cat.emoji}
+                    {cat.name}
+                  </span>
                 </Badge>
             ))}
             {categoriesLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="w-24 h-8 rounded-full" />)}
