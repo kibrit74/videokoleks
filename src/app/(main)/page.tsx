@@ -92,17 +92,23 @@ export default function HomePage() {
             >
               Tümü
             </Button>
-            {categories && categories.map((cat) => (
+            {categories && categories.map((cat) => {
+              const isSelected = selectedCategoryId === cat.id;
+              return (
                 <Button
                   key={cat.id} 
-                  variant={selectedCategoryId === cat.id ? 'secondary' : 'ghost'}
+                  variant={isSelected ? 'default' : 'ghost'}
                   onClick={() => setSelectedCategoryId(cat.id)}
                   size="sm"
+                  className={cn(
+                    isSelected && `${cat.color} text-white hover:opacity-90`
+                  )}
                 >
                   <span className="mr-2">{cat.emoji}</span>
                   {cat.name}
                 </Button>
-            ))}
+              )
+            })}
             {categoriesLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="w-24 h-9 rounded-md" />)}
         </div>
         <div className="flex gap-2 items-center justify-center md:justify-start">
