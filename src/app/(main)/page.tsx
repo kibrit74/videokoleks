@@ -7,7 +7,6 @@ import { collection, query, where, orderBy } from 'firebase/firestore';
 import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Search, Plus, SlidersHorizontal, AlertTriangle } from 'lucide-react';
 import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { AddVideoDialog } from '@/components/add-video-dialog';
@@ -86,33 +85,31 @@ export default function HomePage() {
 
       <div className="mb-6 space-y-4">
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
-            <Badge 
-              variant={selectedCategoryId === null ? 'default' : 'secondary'}
+            <Button 
+              variant={selectedCategoryId === null ? 'secondary' : 'ghost'}
               onClick={() => setSelectedCategoryId(null)}
-              className="py-2 px-4 text-sm cursor-pointer"
+              size="sm"
             >
               Tümü
-            </Badge>
+            </Button>
             {categories && categories.map((cat) => (
-                <Badge 
+                <Button
                   key={cat.id} 
-                  variant={selectedCategoryId === cat.id ? 'default' : 'secondary'}
+                  variant={selectedCategoryId === cat.id ? 'secondary' : 'ghost'}
                   onClick={() => setSelectedCategoryId(cat.id)}
-                  className="py-2 px-4 text-sm cursor-pointer hover:bg-muted-foreground/50"
+                  size="sm"
                 >
-                  <span className="flex items-center gap-2">
-                    {cat.emoji}
-                    {cat.name}
-                  </span>
-                </Badge>
+                  <span className="mr-2">{cat.emoji}</span>
+                  {cat.name}
+                </Button>
             ))}
-            {categoriesLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="w-24 h-8 rounded-full" />)}
-            <Button variant="ghost" size="sm"><SlidersHorizontal className="h-4 w-4 mr-2"/>Filtreler</Button>
+            {categoriesLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="w-24 h-9 rounded-md" />)}
         </div>
         <div className="flex gap-2 items-center justify-center md:justify-start">
-            <Button variant="outline" size="sm" className="border-primary text-primary"><InstagramIcon className="h-4 w-4 mr-2" /> Instagram</Button>
+            <Button variant="outline" size="sm" className="border-primary/50 text-primary hover:bg-primary/10 hover:text-primary"><InstagramIcon className="h-4 w-4 mr-2" /> Instagram</Button>
             <Button variant="outline" size="sm"><YoutubeIcon className="h-4 w-4 mr-2" /> YouTube</Button>
             <Button variant="outline" size="sm"><TiktokIcon className="h-4 w-4 mr-2" /> TikTok</Button>
+            <Button variant="outline" size="sm"><SlidersHorizontal className="h-4 w-4 mr-2"/>Filtreler</Button>
         </div>
       </div>
 
