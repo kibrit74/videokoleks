@@ -47,7 +47,6 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
         if (platform === 'youtube') {
             let videoId = urlObject.searchParams.get('v');
             if (!videoId) {
-                // Handle youtu.be short URLs
                 const pathParts = urlObject.pathname.split('/');
                 videoId = pathParts[pathParts.length - 1];
             }
@@ -190,9 +189,10 @@ export default function VideoDetailPage() {
               src={currentVideo.thumbnailUrl}
               alt={currentVideo.title}
               fill
+              sizes="100vw"
+              priority
               className="object-contain"
               data-ai-hint={currentVideo.imageHint}
-              priority
             />
              <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center text-center p-4">
                 <AlertTriangle className="w-10 h-10 text-yellow-400 mb-2"/>
