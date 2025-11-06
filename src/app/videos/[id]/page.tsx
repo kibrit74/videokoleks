@@ -1,6 +1,6 @@
 'use client';
 
-import { notFound, useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -9,20 +9,27 @@ import {
   ChevronLeft,
   ChevronRight,
   Play,
-  Star,
-  ExternalLink,
-  Share2,
-  Edit,
-  Trash2,
   Heart,
-  Loader2,
+  ExternalLink,
+  Trash2,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import type { Platform, Video, Category } from '@/lib/types';
 import { useState, useMemo } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, updateDoc, query, orderBy, getDocs, limit, startAfter, endBefore, limitToLast, deleteDoc } from 'firebase/firestore';
+import { doc, collection, updateDoc, query, orderBy, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -152,20 +159,18 @@ export default function VideoDetailPage() {
       toast({ variant: 'destructive', title: 'Hata', description: 'Video referansı bulunamadı.' });
       return;
     }
-    if (window.confirm("Bu videoyu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.")) {
-      deleteDoc(videoDocRef)
-        .then(() => {
-          toast({ title: 'Video silindi.'});
-          router.push('/');
-        })
-        .catch(serverError => {
-            const permissionError = new FirestorePermissionError({
-                path: videoDocRef.path,
-                operation: 'delete',
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        });
-    }
+    deleteDoc(videoDocRef)
+      .then(() => {
+        toast({ title: 'Video silindi.'});
+        router.push('/');
+      })
+      .catch(serverError => {
+          const permissionError = new FirestorePermissionError({
+              path: videoDocRef.path,
+              operation: 'delete',
+          });
+          errorEmitter.emit('permission-error', permissionError);
+      });
   }
 
   const formatDate = (timestamp: any) => {
@@ -249,9 +254,27 @@ export default function VideoDetailPage() {
                         <ExternalLink/> Orijinali Aç
                     </Link>
                 </Button>
-                <Button data-testid="delete-video-button" variant="ghost" className="flex-col h-auto text-red-500 hover:text-red-500/90 gap-1" onClick={deleteVideo}>
-                    <Trash2/> Sil
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button data-testid="delete-video-button" variant="ghost" className="flex-col h-auto text-red-500 hover:text-red-500/90 gap-1">
+                        <Trash2/> Sil
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Bu video kalıcı olarak silinecektir. Bu işlem geri alınamaz.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>İptal</AlertDialogCancel>
+                      <AlertDialogAction onClick={deleteVideo} className="bg-destructive hover:bg-destructive/90">
+                        Sil
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
           </div>
         </div>
