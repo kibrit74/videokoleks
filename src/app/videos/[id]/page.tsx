@@ -131,15 +131,20 @@ export default function VideoDetailPage() {
 
   const navigateToVideo = (targetVideoId: string | undefined) => {
       if (targetVideoId) {
+          setIsPlaying(false);
           router.push(`/videos/${targetVideoId}`);
       }
   }
 
-  const handlePlayClick = () => {
+  const handlePlayInApp = () => {
     if (embedUrl) {
       setIsPlaying(true);
     } else {
-      window.open(currentVideo.originalUrl, '_blank');
+      toast({
+          variant: "destructive",
+          title: "Oynatılamıyor",
+          description: "Bu video uygulama içinde oynatılamıyor. Lütfen 'Orijinali Aç' seçeneğini kullanın.",
+      })
     }
   }
 
@@ -208,15 +213,10 @@ export default function VideoDetailPage() {
               data-ai-hint={currentVideo.imageHint}
               priority
             />
-            <div className="absolute inset-0 flex items-center justify-center">
-                <Button variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-20 w-20" onClick={handlePlayClick}>
-                    <Play className="h-10 w-10 fill-white" />
-                </Button>
-             </div>
           </>
         )}
         
-        <div className={cn("absolute inset-0 flex flex-col justify-between p-4 bg-gradient-to-t from-black/70 via-black/30 to-transparent transition-opacity", isPlaying ? "opacity-0 hover:opacity-100 pointer-events-none hover:pointer-events-auto" : "opacity-100")}>
+        <div className={cn("absolute inset-0 flex flex-col justify-between p-4 bg-gradient-to-t from-black/70 via-black/30 to-transparent transition-opacity", isPlaying ? "opacity-0 hover:opacity-100" : "opacity-100")}>
           <header className="flex justify-between items-center">
             <Button asChild variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 text-white">
               <Link href="/">
@@ -248,6 +248,20 @@ export default function VideoDetailPage() {
                     <span>{currentVideo.duration}</span>
                 </div>
               </div>
+              
+               <div className="flex gap-2">
+                    <Button asChild className="flex-1" size="lg">
+                        <Link href={currentVideo.originalUrl} target="_blank">
+                            <ExternalLink/> Orijinali Aç
+                        </Link>
+                    </Button>
+                    {embedUrl && 
+                        <Button onClick={handlePlayInApp} variant="secondary" size="lg">
+                            <Play /> Burada Oynat
+                        </Button>
+                    }
+                </div>
+
 
               <div className="space-y-2">
                 {category && <p className="text-sm"><span className={cn("inline-block w-6 text-center mr-1 p-1 rounded-md", category.color)}>{category.emoji}</span> Kategori: {category.name}</p>}
@@ -257,11 +271,7 @@ export default function VideoDetailPage() {
 
               <div className="flex justify-around items-center pt-2">
                 <Button variant="ghost" className="flex-col h-auto text-white gap-1" onClick={toggleFavorite}><Heart className={cn(currentVideo.isFavorite && "fill-red-500 text-red-500")} /> Favori</Button>
-                <Button asChild variant="ghost" className="flex-col h-auto text-white gap-1">
-                    <Link href={currentVideo.originalUrl} target="_blank">
-                        <ExternalLink/> Orijinali Aç
-                    </Link>
-                </Button>
+                
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button data-testid="delete-video-button" variant="ghost" className="flex-col h-auto text-red-500 hover:text-red-500/90 gap-1">
@@ -290,5 +300,3 @@ export default function VideoDetailPage() {
     </div>
   );
 }
-
-    
