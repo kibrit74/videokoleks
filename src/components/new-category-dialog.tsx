@@ -17,6 +17,7 @@ import { useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import type { Category } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 interface NewCategoryDialogProps {
   isOpen: boolean;
@@ -28,6 +29,9 @@ const colors = [
   'bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500', 
   'bg-teal-500', 'bg-blue-500', 'bg-indigo-500', 'bg-purple-500', 'bg-pink-500'
 ];
+
+// Helper to convert bg-color-500 to ring-color-500
+const toRingColor = (bgColor: string) => bgColor.replace('bg-', 'ring-');
 
 export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogProps) {
   const { toast } = useToast();
@@ -100,7 +104,7 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
               {emojis.map((emoji) => (
                 <Button 
                     key={emoji} 
-                    variant={selectedEmoji === emoji ? 'default' : 'outline'} 
+                    variant={selectedEmoji === emoji ? 'secondary' : 'outline'} 
                     size="icon" 
                     className="text-xl"
                     onClick={() => setSelectedEmoji(emoji)}
@@ -111,18 +115,20 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Renk</Label>
-            <div className="flex flex-wrap gap-2">
+            <Label>Renk Seç</Label>
+            <div className="flex flex-wrap gap-3">
               {colors.map((color) => (
-                <Button 
-                    key={color} 
-                    variant={selectedColor === color ? 'default': 'outline'}
-                    size="icon"
-                    className="p-0"
+                <button
+                    key={color}
+                    type="button"
                     onClick={() => setSelectedColor(color)}
-                >
-                  <div className={`w-6 h-6 rounded-full ${color}`} />
-                </Button>
+                    className={cn(
+                        'w-8 h-8 rounded-full transition-transform hover:scale-110 focus:outline-none',
+                        color,
+                        selectedColor === color && `ring-2 ring-offset-2 ring-offset-background ${toRingColor(color)}`
+                    )}
+                    aria-label={`Select ${color} color`}
+                />
               ))}
             </div>
           </div>
