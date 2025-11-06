@@ -4,7 +4,7 @@
  * @fileOverview A Genkit flow for fetching video details (title, thumbnail) from a URL.
  *
  * This is a server-side flow that scrapes the video URL to extract metadata.
- * It uses a special JSON endpoint for Instagram and falls back to HTML scraping for others.
+ * It uses a proxy for Instagram to bypass CORS and falls back to direct fetch for others.
  */
 
 import { ai } from '@/ai/genkit';
@@ -47,37 +47,16 @@ const fetchVideoDetailsFlow = ai.defineFlow(
   },
   async ({ videoUrl }) => {
     try {
-      // Instagram-specific logic using the ?__a=1 endpoint
-      if (videoUrl.includes('instagram.com/')) {
-        // Ensure the URL doesn't have other query params
-        const url = new URL(videoUrl);
-        url.search = ''; // Clear existing search params
-        const jsonUrl = `${url.toString()}?__a=1&__d=dis`;
-        
-        const response = await fetch(jsonUrl, {
-            headers: {
-                'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            },
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const media = data.graphql?.shortcode_media || data.items?.[0];
-            
-            if (media) {
-                 const title = media.edge_media_to_caption?.edges?.[0]?.node?.text || media.title || 'Instagram Video';
-                 const thumbnailUrl = media.display_url || media.image_versions2?.candidates?.[0]?.url;
-                 if (title && thumbnailUrl) {
-                     return { title: title.split('\n')[0], thumbnailUrl };
-                 }
-            }
-        }
-        // If the JSON endpoint fails, we let it fall through to the generic scraper
+      let fetchUrl = videoUrl;
+      const isInstagram = videoUrl.includes('instagram.com');
+      
+      // For Instagram, use a CORS proxy to fetch the HTML content.
+      // This is based on the user's detailed description of the scraping method.
+      if (isInstagram) {
+        fetchUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(videoUrl)}`;
       }
 
-      // Generic fallback for other platforms (YouTube, TikTok, etc.)
-      const response = await fetch(videoUrl, {
+      const response = await fetch(fetchUrl, {
         headers: {
           'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -89,40 +68,29 @@ const fetchVideoDetailsFlow = ai.defineFlow(
         throw new Error(`Failed to fetch URL: ${response.statusText}`);
       }
 
-      const html = await response.text();
-      const root = parse(html);
+      let html = await response.text();
 
-      let title: string | undefined;
-      let thumbnailUrl: string | undefined;
-
-      // Modern approach: Look for JSON-LD script tag
-      const jsonLdScript = root.querySelector('script[type="application/ld+json"]');
-      if (jsonLdScript) {
-        try {
-          const jsonData = JSON.parse(jsonLdScript.text);
-          const videoObject = jsonData['@graph']?.find((item: any) => item['@type'] === 'VideoObject') || jsonData;
-          
-          if(videoObject['@type'] === 'VideoObject' || videoObject.video) {
-              thumbnailUrl = videoObject.thumbnailUrl || videoObject.video?.thumbnailUrl;
-              title = videoObject.name || videoObject.video?.name;
-          }
-        } catch (e) {
-          console.error('Failed to parse JSON-LD, falling back to meta tags', e);
-        }
-      }
-
-      // Fallback to OpenGraph meta tags
-      if (!title) {
-        title =
-          root.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
-          root.querySelector('title')?.text;
+      // If using the proxy, the actual HTML is inside a JSON response.
+      if (isInstagram) {
+        const jsonResponse = JSON.parse(html);
+        html = jsonResponse.contents;
       }
       
-      if (!thumbnailUrl) {
-         thumbnailUrl = 
-          root.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
-          root.querySelector('meta[property="og:image:secure_url"]')?.getAttribute('content');
+      if (!html) {
+        throw new Error('No HTML content received.');
       }
+
+      const root = parse(html);
+
+      // Extract title and thumbnail using Open Graph (og) meta tags,
+      // as described by the user. This is a more reliable method for scraped content.
+      const title =
+        root.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
+        root.querySelector('title')?.text;
+      
+      const thumbnailUrl = 
+        root.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
+        root.querySelector('meta[property="og:image:secure_url"]')?.getAttribute('content');
 
       return {
         title: title?.trim().split('\n')[0],
@@ -130,6 +98,7 @@ const fetchVideoDetailsFlow = ai.defineFlow(
       };
     } catch (error) {
       console.error('Error scraping video URL:', error);
+      // Return empty if any step fails, so the client can handle it.
       return {};
     }
   }
