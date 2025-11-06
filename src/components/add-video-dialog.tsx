@@ -125,7 +125,7 @@ export function AddVideoDialog({
     const platform = getPlatformFromUrl(videoUrl);
 
     const videoData = {
-        userId: user.uid, // Add this line to include the user's ID
+        userId: user.uid, // This is crucial for security rules
         title: videoDetails.title,
         thumbnailUrl: videoDetails.thumbnailUrl,
         originalUrl: videoUrl,
