@@ -54,6 +54,12 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
                 return urlObject.toString();
             }
         }
+        if (platform === 'tiktok') {
+            const videoIdMatch = urlObject.pathname.match(/\/video\/(\d+)/);
+            if (videoIdMatch && videoIdMatch[1]) {
+                return `https://www.tiktok.com/embed/v2/${videoIdMatch[1]}`;
+            }
+        }
     } catch(e) {
         console.error("Invalid URL for embedding:", url);
         return null;
@@ -193,17 +199,24 @@ export default function VideoDetailPage() {
             title="Embedded Video Player"
           ></iframe>
         ) : (
-          <Image
-            src={currentVideo.thumbnailUrl}
-            alt={currentVideo.title}
-            fill
-            className="object-cover"
-            data-ai-hint={currentVideo.imageHint}
-            priority
-          />
+          <>
+            <Image
+              src={currentVideo.thumbnailUrl}
+              alt={currentVideo.title}
+              fill
+              className="object-cover"
+              data-ai-hint={currentVideo.imageHint}
+              priority
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+                <Button variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-20 w-20" onClick={handlePlayClick}>
+                    <Play className="h-10 w-10 fill-white" />
+                </Button>
+             </div>
+          </>
         )}
         
-        <div className={cn("absolute inset-0 flex flex-col justify-between p-4 bg-black/30 transition-opacity", isPlaying ? "opacity-0 pointer-events-none" : "opacity-100")}>
+        <div className={cn("absolute inset-0 flex flex-col justify-between p-4 bg-gradient-to-t from-black/70 via-black/30 to-transparent transition-opacity", isPlaying ? "opacity-0 hover:opacity-100 pointer-events-none hover:pointer-events-auto" : "opacity-100")}>
           <header className="flex justify-between items-center">
             <Button asChild variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 text-white">
               <Link href="/">
@@ -224,11 +237,6 @@ export default function VideoDetailPage() {
             </div>
           </header>
 
-          <div className="flex items-center justify-center">
-            <Button variant="ghost" size="icon" className="text-white bg-white/20 hover:bg-white/30 rounded-full h-20 w-20" onClick={handlePlayClick}>
-                <Play className="h-10 w-10 fill-white" />
-            </Button>
-          </div>
           
           <div className="text-white space-y-4">
               <div>
@@ -282,3 +290,5 @@ export default function VideoDetailPage() {
     </div>
   );
 }
+
+    
