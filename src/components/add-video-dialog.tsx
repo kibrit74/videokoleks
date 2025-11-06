@@ -20,10 +20,8 @@ import { cn } from '@/lib/utils';
 import { fetchVideoDetails } from '@/ai/flows/fetch-video-details';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 interface AddVideoDialogProps {
   isOpen: boolean;
@@ -127,7 +125,7 @@ export function AddVideoDialog({
     const platform = getPlatformFromUrl(videoUrl);
 
     const videoData = {
-        userId: user.uid,
+        userId: user.uid, // Add this line to include the user's ID
         title: videoDetails.title,
         thumbnailUrl: videoDetails.thumbnailUrl,
         originalUrl: videoUrl,
@@ -143,32 +141,15 @@ export function AddVideoDialog({
 
     const videosCollection = collection(firestore, 'users', user.uid, 'videos');
     
-    // Use non-blocking write with contextual error handling
-    addDoc(videosCollection, videoData)
-      .then(() => {
-        toast({
-          title: 'Video Kaydedildi! ✨',
-          description: 'Videonuz koleksiyonunuza eklendi.',
-        });
-        onOpenChange(false);
-      })
-      .catch(serverError => {
-        const permissionError = new FirestorePermissionError({
-          path: videosCollection.path,
-          operation: 'create',
-          requestResourceData: videoData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        // Optionally, show a generic error toast to the user
-        toast({
-            variant: 'destructive',
-            title: 'Hata!',
-            description: 'Video kaydedilirken bir sorun oluştu.',
-        });
-      })
-      .finally(() => {
-        setIsSaving(false);
-      });
+    addDocumentNonBlocking(videosCollection, videoData);
+    
+    toast({
+      title: 'Video Kaydedildi! ✨',
+      description: 'Videonuz koleksiyonunuza eklendi.',
+    });
+    
+    setIsSaving(false);
+    onOpenChange(false);
   };
   
   const isLoading = isFetching || isSaving;
