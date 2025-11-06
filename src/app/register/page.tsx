@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useUser, signUpWithEmail, updateUserProfile } from '@/firebase/auth/use-user';
-import { useAuth } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
+import { signUpWithEmail, updateUserProfile } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
