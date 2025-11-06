@@ -51,7 +51,6 @@ const fetchVideoDetailsFlow = ai.defineFlow(
       const isInstagram = videoUrl.includes('instagram.com');
       
       // For Instagram, use a CORS proxy to fetch the HTML content.
-      // This is based on the user's detailed description of the scraping method.
       if (isInstagram) {
         fetchUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(videoUrl)}`;
       }
@@ -71,12 +70,14 @@ const fetchVideoDetailsFlow = ai.defineFlow(
       let html = await response.text();
 
       // If using the proxy, the actual HTML is inside a JSON response's "contents" field.
+      // We need to handle both cases: where the response is JSON, and where it's raw HTML.
       if (isInstagram) {
         try {
+            // Attempt to parse as JSON. If it fails, we assume it's raw HTML.
             const jsonResponse = JSON.parse(html);
             html = jsonResponse.contents;
         } catch (e) {
-            // If the response is not JSON, it might be the direct HTML.
+            // If JSON.parse fails, it's likely because the response was already raw HTML.
             // No action needed, just proceed with the html as is.
         }
       }
@@ -105,7 +106,7 @@ const fetchVideoDetailsFlow = ai.defineFlow(
       };
     } catch (error) {
       console.error('Error scraping video URL:', error);
-      // Return empty if any step fails, so the client can handle it.
+      // Return empty if any step fails, so the client can handle it gracefully.
       return {};
     }
   }
