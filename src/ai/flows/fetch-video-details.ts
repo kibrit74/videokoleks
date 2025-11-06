@@ -51,6 +51,7 @@ const fetchVideoDetailsFlow = ai.defineFlow(
           // Pretend to be a browser to avoid getting blocked
           'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9',
         },
       });
 
@@ -61,17 +62,38 @@ const fetchVideoDetailsFlow = ai.defineFlow(
       const html = await response.text();
       const root = parse(html);
 
-      // Look for oEmbed/OpenGraph meta tags, with fallbacks for different platforms
-      const title =
-        root.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
-        root.querySelector('title')?.text ||
-        root.querySelector('meta[name="description"]')?.getAttribute('content');
-      
-      // Try multiple image tags for robustness, especially for Instagram
-      const thumbnailUrl = 
-        root.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
-        root.querySelector('meta[property="og:image:secure_url"]')?.getAttribute('content');
+      let title: string | undefined;
+      let thumbnailUrl: string | undefined;
 
+      // Modern approach: Look for JSON-LD script tag (used by Instagram & others)
+      const jsonLdScript = root.querySelector('script[type="application/ld+json"]');
+      if (jsonLdScript) {
+        try {
+          const jsonData = JSON.parse(jsonLdScript.text);
+          // Look for video objects within the JSON-LD data
+          const videoObject = jsonData['@graph']?.find((item: any) => item['@type'] === 'VideoObject') || jsonData;
+          
+          if(videoObject['@type'] === 'VideoObject' || videoObject.video) {
+              thumbnailUrl = videoObject.thumbnailUrl || videoObject.video?.thumbnailUrl;
+              title = videoObject.name || videoObject.video?.name;
+          }
+        } catch (e) {
+          console.error('Failed to parse JSON-LD, falling back to meta tags', e);
+        }
+      }
+
+      // Fallback to OpenGraph meta tags if JSON-LD fails or isn't present
+      if (!title) {
+        title =
+          root.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
+          root.querySelector('title')?.text;
+      }
+      
+      if (!thumbnailUrl) {
+         thumbnailUrl = 
+          root.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
+          root.querySelector('meta[property="og:image:secure_url"]')?.getAttribute('content');
+      }
 
       return {
         title: title?.trim().split('\n')[0], // Clean up title
