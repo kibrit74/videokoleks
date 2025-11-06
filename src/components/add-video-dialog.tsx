@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Video, Category } from '@/lib/types';
+import type { Video, Category, Platform } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { fetchVideoDetails } from '@/ai/flows/fetch-video-details';
 import Image from 'next/image';
@@ -103,12 +103,13 @@ export function AddVideoDialog({
     return () => clearTimeout(timer);
   }, [videoUrl, toast]);
 
-  const getPlatformFromUrl = (url: string): Video['platform'] => {
+  const getPlatformFromUrl = (url: string): Platform => {
     if (url.includes('instagram.com')) return 'instagram';
     if (url.includes('youtube.com') || url.includes('youtu.be'))
       return 'youtube';
     if (url.includes('tiktok.com')) return 'tiktok';
-    return 'instagram'; // default
+    // Return a default platform if none match
+    return 'instagram'; 
   };
 
   const handleSave = async () => {

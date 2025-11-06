@@ -1,46 +1,27 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return request.auth != null && request.auth.uid == userId;
     }
 
-    // Rules for the 'users' collection
-    match /users/{userId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
+    // Match any document in a user's private space.
+    match /users/{userId}/{document=**} {
+      // Allow read/write access only to the user who owns this path.
+      allow read, write: if isOwner(userId);
     }
     
-    // Rules for the 'categories' subcollection
+    // Explicit rules for creating documents to ensure data integrity.
     match /users/{userId}/categories/{categoryId} {
-      // Allow single document reads, updates, and deletes if the user is the owner.
-      allow read, update, delete: if isSignedIn() && isOwner(userId);
-      // Allow document creation if the user is the owner and the data is for them.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-    }
-    
-    // Allow the owner to list their own categories
-    match /users/{userId}/categories {
-        allow list: if isSignedIn() && isOwner(userId);
+      // Allow create only if the incoming data has the correct owner ID.
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
     }
 
-    // Rules for the 'videos' subcollection
     match /users/{userId}/videos/{videoId} {
-      // Allow single document reads, updates, and deletes if the user is the owner.
-      allow read, update, delete: if isSignedIn() && isOwner(userId);
-      // Allow document creation if the user is the owner and the data is for them.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-    }
-    
-    // Allow the owner to list their own videos
-    match /users/{userId}/videos {
-        allow list: if isSignedIn() && isOwner(userId);
+       // Allow create only if the incoming data has the correct owner ID.
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
     }
   }
 }

@@ -13,11 +13,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useFirestore } from '@/firebase';
-import { addDoc, collection } from 'firebase/firestore';
+import { useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { collection } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import type { Category } from '@/lib/types';
 
 interface NewCategoryDialogProps {
   isOpen: boolean;
@@ -52,7 +51,7 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
 
     setIsLoading(true);
 
-    const categoryData = {
+    const categoryData: Omit<Category, 'id'> = {
         userId: user.uid,
         name: name.trim(),
         emoji: selectedEmoji,
@@ -61,32 +60,19 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
     
     const categoriesCollection = collection(firestore, 'users', user.uid, 'categories');
 
-    // Use non-blocking write with contextual error handling
-    addDoc(categoriesCollection, categoryData)
-      .then(() => {
-          toast({
-              title: 'Kategori Oluşturuldu! 🎉',
-              description: 'Yeni kategoriniz başarıyla eklendi.',
-          });
-          onOpenChange(false);
-          // Reset form
-          setName('');
-          setSelectedEmoji(emojis[0]);
-          setSelectedColor(colors[0]);
-      })
-      .catch(serverError => {
-          const permissionError = new FirestorePermissionError({
-              path: categoriesCollection.path,
-              operation: 'create',
-              requestResourceData: categoryData,
-          });
-          errorEmitter.emit('permission-error', permissionError);
-          // Optionally, show a generic error toast to the user
-          toast({ variant: "destructive", title: "Hata!", description: "Kategori oluşturulurken bir sorun oluştu."});
-      })
-      .finally(() => {
-          setIsLoading(false);
-      });
+    addDocumentNonBlocking(categoriesCollection, categoryData);
+
+    toast({
+        title: 'Kategori Oluşturuldu! 🎉',
+        description: 'Yeni kategoriniz başarıyla eklendi.',
+    });
+    
+    setIsLoading(false);
+    onOpenChange(false);
+    // Reset form
+    setName('');
+    setSelectedEmoji(emojis[0]);
+    setSelectedColor(colors[0]);
   };
 
   return (

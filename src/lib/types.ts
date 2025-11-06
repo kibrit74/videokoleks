@@ -5,7 +5,7 @@ export interface Category {
   name: string;
   emoji: string;
   color: string;
-  userId: string;
+  userId: string; // Essential for security rules
 }
 
 export interface Video {
