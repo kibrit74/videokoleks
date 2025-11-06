@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -7,21 +8,24 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
-    // Match any document in a user's private space.
-    match /users/{userId}/{document=**} {
-      // Allow read/write access only to the user who owns this path.
+    match /users/{userId} {
       allow read, write: if isOwner(userId);
     }
-    
-    // Explicit rules for creating documents to ensure data integrity.
+
     match /users/{userId}/categories/{categoryId} {
-      // Allow create only if the incoming data has the correct owner ID.
+      allow read, update, delete: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+    }
+    
+    match /users/{userId}/videos/{videoId} {
+      allow read, update, delete: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
     }
 
-    match /users/{userId}/videos/{videoId} {
-       // Allow create only if the incoming data has the correct owner ID.
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+    // This is the collection-level rule that was missing.
+    // It allows a user to LIST the documents in their own subcollections.
+    match /users/{userId}/{collection}/{doc=**} {
+      allow list: if isOwner(userId);
     }
   }
 }
