@@ -2,11 +2,13 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import type { Video, Platform } from '@/lib/types';
+import type { Video, Platform, Category } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -22,6 +24,15 @@ const platformColors: Record<Platform, string> = {
 
 export function VideoCard({ video }: { video: Video }) {
   const PlatformIcon = platformIcons[video.platform];
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  // Fetch the category data based on categoryId
+  const categoryDocRef = useMemoFirebase(() => 
+    user && video.categoryId ? doc(firestore, 'users', user.uid, 'categories', video.categoryId) : null,
+    [user, firestore, video.categoryId]
+  );
+  const { data: category } = useDoc<Category>(categoryDocRef);
 
   return (
     <Link href={`/videos/${video.id}`} className="group block">
@@ -46,9 +57,11 @@ export function VideoCard({ video }: { video: Video }) {
                 <Badge variant="secondary" className="bg-white/20 text-white backdrop-blur-sm">
                   {video.duration}
                 </Badge>
-                <Badge className={cn(video.category.color, "border-none text-white")}>
-                  {video.category.emoji} {video.category.name}
-                </Badge>
+                {category && (
+                  <Badge className={cn(category.color, "border-none text-white")}>
+                    {category.emoji} {category.name}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import type { Platform, Video } from '@/lib/types';
+import type { Platform, Video, Category } from '@/lib/types';
 import { useState, useMemo } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection, deleteDocumentNonBlocking } from '@/firebase';
 import { doc, collection, updateDoc, query, orderBy, getDocs, limit, startAfter, endBefore, limitToLast } from 'firebase/firestore';
@@ -70,6 +70,13 @@ export default function VideoDetailPage() {
   , [firestore, user, videoId]);
 
   const { data: currentVideo, isLoading: videoLoading } = useDoc<Video>(videoDocRef);
+  
+    // Fetch the category data based on categoryId
+  const categoryDocRef = useMemoFirebase(() => 
+    user && currentVideo?.categoryId ? doc(firestore, 'users', user.uid, 'categories', currentVideo.categoryId) : null,
+    [user, firestore, currentVideo?.categoryId]
+  );
+  const { data: category } = useDoc<Category>(categoryDocRef);
 
   // For next/prev navigation
   const videosQuery = useMemoFirebase(() =>
@@ -218,7 +225,7 @@ export default function VideoDetailPage() {
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm"><span className={cn("inline-block w-6 text-center mr-1 p-1 rounded-md", currentVideo.category.color)}>{currentVideo.category.emoji}</span> Kategori: {currentVideo.category.name}</p>
+                {category && <p className="text-sm"><span className={cn("inline-block w-6 text-center mr-1 p-1 rounded-md", category.color)}>{category.emoji}</span> Kategori: {category.name}</p>}
                 {currentVideo.notes && <p className="text-sm bg-white/10 p-2 rounded-md">📝 Notun: "{currentVideo.notes}"</p>}
                 <p className="text-xs text-neutral-400">📅 Kaydedildi: {formatDate(currentVideo.dateAdded)}</p>
               </div>

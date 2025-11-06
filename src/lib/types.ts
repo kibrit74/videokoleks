@@ -9,17 +9,16 @@ export interface Category {
 }
 
 export interface Video {
-  id: string;
+  id:string;
   title: string;
   thumbnailUrl: string;
   imageHint: string;
   platform: Platform;
   duration: string;
-  category: Category; // Denormalized for easier display
-  categoryId: string; // For filtering and querying
+  categoryId: string; // Correctly referencing by ID
   notes?: string;
   isFavorite: boolean;
   dateAdded: any; // Firestore Timestamp
   originalUrl: string;
-  userId: string;
+  userId: string; // Essential for security rules
 }

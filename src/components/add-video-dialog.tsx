@@ -124,15 +124,15 @@ export function AddVideoDialog({
     setIsSaving(true);
     const platform = getPlatformFromUrl(videoUrl);
 
-    const videoData = {
-        userId: user.uid, // This is crucial for security rules
+    // This is the correct structure for the Video object
+    const videoData: Omit<Video, 'id'> = {
+        userId: user.uid, // CRITICAL: Ensure userId is at the root level
         title: videoDetails.title,
         thumbnailUrl: videoDetails.thumbnailUrl,
         originalUrl: videoUrl,
         platform,
-        category: selectedCategory, // Denormalized category data
-        categoryId: selectedCategory.id,
-        duration: '0:00', // This could be fetched as well in a future version
+        categoryId: selectedCategory.id, // Store only the ID
+        duration: '0:00', // Placeholder
         notes: notes,
         isFavorite: false,
         dateAdded: serverTimestamp(),

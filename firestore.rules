@@ -12,19 +12,34 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
+    // Rules for the 'users' collection
     match /users/{userId} {
       allow read, write: if isSignedIn() && isOwner(userId);
     }
     
+    // Rules for the 'categories' subcollection
     match /users/{userId}/categories/{categoryId} {
+      // Allow creation if the user is signed in and the incoming data's userId matches their own uid.
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == request.auth.uid;
+      
+      // Allow list and read operations if the user is the owner of this collection path.
       allow list, read: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+
+      // Allow update and delete if the user is the owner of this collection path.
+      // These rules don't need to check request.resource.data.
       allow update, delete: if isSignedIn() && isOwner(userId);
     }
 
+    // Rules for the 'videos' subcollection
     match /users/{userId}/videos/{videoId} {
+      // Allow creation if the user is signed in and the incoming data's userId matches their own uid.
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == request.auth.uid;
+      
+      // Allow list and read operations if the user is the owner of this collection path.
       allow list, read: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+
+      // Allow update and delete if the user is the owner of this collection path.
+      // These rules don't need to check request.resource.data.
       allow update, delete: if isSignedIn() && isOwner(userId);
     }
   }
