@@ -122,7 +122,7 @@ export function VideoCard({ video, isSelectionMode = false, isSelected = false, 
             />
 
             {isSelectionMode ? (
-               <div className="absolute top-2 left-2 z-10">
+               <div className="absolute top-2 left-2 z-10" onClick={(e) => e.stopPropagation()}>
                 <Checkbox
                     checked={isSelected}
                     onCheckedChange={() => onSelect(video.id)}

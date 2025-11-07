@@ -173,12 +173,7 @@ export default function HomePage() {
   return (
     <div className={cn("container mx-auto max-w-5xl px-4 py-8", (isSelectionMode && selectedVideos.length > 0) && "pb-24")}>
       <header className="mb-8">
-        <div className='flex justify-between items-center mb-2'>
-         <h1 className="text-4xl font-bold font-headline text-center md:text-left">📦 VideoKoleks</h1>
-         <Button variant={isSelectionMode ? "destructive" : "outline"} onClick={toggleSelectionMode} disabled={isLoading}>
-            {isSelectionMode ? "İptal" : "Seç"}
-          </Button>
-        </div>
+        <h1 className="text-4xl font-bold font-headline text-center md:text-left mb-4">📦 VideoKoleks</h1>
         <div className="flex flex-col md:flex-row gap-4 items-center">
           <div className="relative flex-grow w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -196,71 +191,78 @@ export default function HomePage() {
         </div>
       </header>
 
-      <Tabs defaultValue="categories" className="w-full mb-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="categories" disabled={isSelectionMode}>Kategoriler</TabsTrigger>
-          <TabsTrigger value="platforms" disabled={isSelectionMode}>Platformlar</TabsTrigger>
-        </TabsList>
-        <TabsContent value="categories">
-           <div className="flex gap-2 overflow-x-auto py-2 -mx-4 px-4 mt-2">
-              <Button 
-                variant={selectedCategoryId === null ? 'secondary' : 'ghost'}
-                onClick={() => setSelectedCategoryId(null)}
-                size="sm"
-                className="shrink-0"
-              >
-                Tüm Kategoriler
-              </Button>
-              {categories && categories.map((cat) => {
-                const isSelected = selectedCategoryId === cat.id;
-                return (
-                  <Button
-                    key={cat.id} 
-                    variant={isSelected ? 'default' : 'ghost'}
-                    onClick={() => setSelectedCategoryId(cat.id)}
+      <div className="mb-6">
+        <div className="flex justify-end mb-2">
+            <Button variant={isSelectionMode ? "destructive" : "outline"} onClick={toggleSelectionMode} disabled={isLoading}>
+                {isSelectionMode ? "İptal" : "Seç"}
+            </Button>
+        </div>
+        <Tabs defaultValue="categories" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="categories" disabled={isSelectionMode}>Kategoriler</TabsTrigger>
+            <TabsTrigger value="platforms" disabled={isSelectionMode}>Platformlar</TabsTrigger>
+            </TabsList>
+            <TabsContent value="categories">
+            <div className="flex gap-2 overflow-x-auto py-2 -mx-4 px-4 mt-2">
+                <Button 
+                    variant={selectedCategoryId === null ? 'secondary' : 'ghost'}
+                    onClick={() => setSelectedCategoryId(null)}
                     size="sm"
-                    className={cn(
-                      'shrink-0',
-                      isSelected && `${cat.color} text-white hover:opacity-90`
-                    )}
-                  >
-                    <span className="mr-2">{cat.emoji}</span>
-                    {cat.name}
-                  </Button>
-                )
-              })}
-              {categoriesLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="w-24 h-9 rounded-md" />)}
-          </div>
-        </TabsContent>
-        <TabsContent value="platforms">
-          <div className="flex gap-2 overflow-x-auto py-2 -mx-4 px-4 mt-2">
-              <Button 
-                variant={selectedPlatform === null ? 'secondary' : 'ghost'}
-                onClick={() => setSelectedPlatform(null)}
-                size="sm"
-                className="shrink-0"
-              >
-                Tüm Platformlar
-              </Button>
-              {platformFilters.map((p) => {
-                const isSelected = selectedPlatform === p.platform;
-                const PlatformIcon = p.icon;
-                return (
-                  <Button
-                    key={p.platform} 
-                    variant={isSelected ? 'default' : 'ghost'}
-                    onClick={() => setSelectedPlatform(p.platform)}
+                    className="shrink-0"
+                >
+                    Tüm Kategoriler
+                </Button>
+                {categories && categories.map((cat) => {
+                    const isSelected = selectedCategoryId === cat.id;
+                    return (
+                    <Button
+                        key={cat.id} 
+                        variant={isSelected ? 'default' : 'ghost'}
+                        onClick={() => setSelectedCategoryId(cat.id)}
+                        size="sm"
+                        className={cn(
+                        'shrink-0',
+                        isSelected && `${cat.color} text-white hover:opacity-90`
+                        )}
+                    >
+                        <span className="mr-2">{cat.emoji}</span>
+                        {cat.name}
+                    </Button>
+                    )
+                })}
+                {categoriesLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="w-24 h-9 rounded-md" />)}
+            </div>
+            </TabsContent>
+            <TabsContent value="platforms">
+            <div className="flex gap-2 overflow-x-auto py-2 -mx-4 px-4 mt-2">
+                <Button 
+                    variant={selectedPlatform === null ? 'secondary' : 'ghost'}
+                    onClick={() => setSelectedPlatform(null)}
                     size="sm"
-                    className={cn('shrink-0')}
-                  >
-                    <PlatformIcon className="mr-2 h-4 w-4" />
-                    {p.platform.charAt(0).toUpperCase() + p.platform.slice(1)}
-                  </Button>
-                )
-              })}
-          </div>
-        </TabsContent>
-      </Tabs>
+                    className="shrink-0"
+                >
+                    Tüm Platformlar
+                </Button>
+                {platformFilters.map((p) => {
+                    const isSelected = selectedPlatform === p.platform;
+                    const PlatformIcon = p.icon;
+                    return (
+                    <Button
+                        key={p.platform} 
+                        variant={isSelected ? 'default' : 'ghost'}
+                        onClick={() => setSelectedPlatform(p.platform)}
+                        size="sm"
+                        className={cn('shrink-0')}
+                    >
+                        <PlatformIcon className="mr-2 h-4 w-4" />
+                        {p.platform.charAt(0).toUpperCase() + p.platform.slice(1)}
+                    </Button>
+                    )
+                })}
+            </div>
+            </TabsContent>
+        </Tabs>
+      </div>
 
         {isLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
