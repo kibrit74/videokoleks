@@ -64,12 +64,13 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
                 return `https://www.tiktok.com/embed/v2/${videoIdMatch[1]}`;
             }
         }
-        // Facebook uses a plugin for embeds, but Reels often don't work.
-        // We will return null for reels to show the fallback UI.
+        // Facebook uses a plugin for embeds, but Reels and fb.watch links often don't work.
+        // We will return null to show the fallback UI for these cases.
         if (platform === 'facebook') {
-            if (urlObject.pathname.includes('/reel/')) {
-                return null; // Force fallback for Reels
+            if (urlObject.hostname.includes('fb.watch') || urlObject.pathname.includes('/reel/')) {
+                return null; // Force fallback for Reels and fb.watch links
             }
+            // For other facebook video links, try to use the embed plugin.
             return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false&width=auto`;
         }
     } catch(e) {
