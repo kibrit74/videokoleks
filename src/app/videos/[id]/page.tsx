@@ -42,10 +42,8 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
 
 function getEmbedUrl(url: string, platform: Platform): string | null {
     try {
-        // For Instagram and Facebook, we will always force the fallback UI with the "Open Original" button
-        // because embedding is highly unreliable and often blocked by their security policies.
-        if (platform === 'instagram' || platform === 'facebook') {
-            return null;
+        if (platform === 'instagram') {
+            return null; // Instagram embedding is still unreliable.
         }
 
         const cleanedUrl = url.endsWith('/') ? url.slice(0, -1) : url;
@@ -53,7 +51,9 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
 
         if (platform === 'youtube') {
             let videoId = urlObject.searchParams.get('v');
-            if (!videoId) {
+            if (!videoId && urlObject.hostname === 'youtu.be') {
+                videoId = urlObject.pathname.slice(1);
+            } else if (!videoId) {
                 const pathParts = urlObject.pathname.split('/');
                 videoId = pathParts[pathParts.length - 1];
             }
@@ -66,6 +66,13 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
                 return `https://www.tiktok.com/embed/v2/${videoIdMatch[1]}`;
             }
         }
+        
+        if (platform === 'facebook') {
+            // Use Facebook's Embedded Video Player plugin URL format
+            const encodedUrl = encodeURIComponent(url);
+            return `https://www.facebook.com/plugins/video.php?href=${encodedUrl}&show_text=false&width=560`;
+        }
+
     } catch(e) {
         console.error("Invalid URL for embedding:", url, e);
         return null;
@@ -264,5 +271,3 @@ export default function VideoDetailPage() {
     </div>
   );
 }
-
-    
