@@ -17,6 +17,7 @@ import { Loader2, Download, Upload, AlertTriangle } from 'lucide-react';
 import type { Category, Video } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Progress } from './ui/progress';
+import { ScrollArea } from './ui/scroll-area';
 
 interface BackupRestoreDialogProps {
   isOpen: boolean;
@@ -158,7 +159,7 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
         
         data.categories.forEach(category => {
             const newDocRef = doc(collection(firestore, 'users', user.uid, 'categories'));
-            categoryBatch.set(newDocRef, { ...category, userId: user.uid });
+            categoryBatch.set(newDocRef, { ...category, userId: user.uid, id: newDocRef.id });
             newCategoryNameToIdMap.set(category.name, newDocRef.id);
         });
         await categoryBatch.commit();
@@ -180,10 +181,10 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
             };
             delete videoData.categoryName;
             
-            batch.set(newDocRef, videoData);
+            videoBatch.set(newDocRef, { ...videoData, id: newDocRef.id });
             setRestoreProgress(40 + Math.round(((index + 1) / totalVideos) * 60));
         });
-        await batch.commit();
+        await videoBatch.commit();
 
         toast({
             title: 'Geri Yükleme Başarılı!',
@@ -208,7 +209,7 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md grid-rows-[auto,1fr,auto] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">Yedekleme & Senkronizasyon</DialogTitle>
           <DialogDescription>
@@ -216,47 +217,49 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
           </DialogDescription>
         </DialogHeader>
 
-        {error && (
-            <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Hata</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-            </Alert>
-        )}
+        <ScrollArea className='-mr-6 pr-6'>
+            {error && (
+                <Alert variant="destructive" className='mb-4'>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Hata</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
 
-        <div className="space-y-4 py-4">
-            <div className='p-4 border rounded-lg'>
-                <h3 className="font-semibold mb-2 flex items-center gap-2"><Download className='w-5 h-5'/> Verileri Dışa Aktar</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                    Koleksiyonunuzun tamamını (`.json` dosyası) bilgisayarınıza yedekleyin.
-                </p>
-                <Button onClick={handleExport} disabled={isLoading || isRestoring} className="w-full">
-                    {isLoading ? <Loader2 className="animate-spin" /> : 'Yedeği İndir'}
-                </Button>
+            <div className="space-y-4 py-4">
+                <div className='p-4 border rounded-lg'>
+                    <h3 className="font-semibold mb-2 flex items-center gap-2"><Download className='w-5 h-5'/> Verileri Dışa Aktar</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                        Koleksiyonunuzun tamamını (`.json` dosyası) bilgisayarınıza yedekleyin.
+                    </p>
+                    <Button onClick={handleExport} disabled={isLoading || isRestoring} className="w-full">
+                        {isLoading ? <Loader2 className="animate-spin" /> : 'Yedeği İndir'}
+                    </Button>
+                </div>
+                
+                <div className='p-4 border rounded-lg'>
+                    <h3 className="font-semibold mb-2 flex items-center gap-2"><Upload className='w-5 h-5'/> Verileri İçe Aktar</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                    Bir yedekleme dosyasını geri yükleyin. 
+                    <span className="font-bold text-destructive"> Bu işlem mevcut tüm verilerinizi siler ve yedeklemedeki verilerle değiştirir.</span>
+                    </p>
+                    <Button asChild variant="outline" className="w-full" disabled={isLoading || isRestoring}>
+                        <label htmlFor="import-file">
+                            {isRestoring ? <Loader2 className="animate-spin" /> : 'Yedekten Geri Yükle'}
+                            <input type="file" id="import-file" accept=".json" onChange={handleImport} className="hidden" disabled={isLoading || isRestoring} />
+                        </label>
+                    </Button>
+                    {isRestoring && (
+                        <div className="mt-4 space-y-2">
+                            <Progress value={restoreProgress} />
+                            <p className="text-sm text-center text-muted-foreground">
+                                Geri yükleniyor... ({Math.round(restoreProgress)}%)
+                            </p>
+                        </div>
+                    )}
+                </div>
             </div>
-            
-             <div className='p-4 border rounded-lg'>
-                <h3 className="font-semibold mb-2 flex items-center gap-2"><Upload className='w-5 h-5'/> Verileri İçe Aktar</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                   Bir yedekleme dosyasını geri yükleyin. 
-                   <span className="font-bold text-destructive"> Bu işlem mevcut tüm verilerinizi siler ve yedeklemedeki verilerle değiştirir.</span>
-                </p>
-                <Button asChild variant="outline" className="w-full" disabled={isLoading || isRestoring}>
-                    <label htmlFor="import-file">
-                        {isRestoring ? <Loader2 className="animate-spin" /> : 'Yedekten Geri Yükle'}
-                        <input type="file" id="import-file" accept=".json" onChange={handleImport} className="hidden" disabled={isLoading || isRestoring} />
-                    </label>
-                </Button>
-                {isRestoring && (
-                    <div className="mt-4 space-y-2">
-                        <Progress value={restoreProgress} />
-                        <p className="text-sm text-center text-muted-foreground">
-                            Geri yükleniyor... ({Math.round(restoreProgress)}%)
-                        </p>
-                    </div>
-                )}
-            </div>
-        </div>
+        </ScrollArea>
 
         <DialogFooter>
           <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={isLoading || isRestoring}>Kapat</Button>
