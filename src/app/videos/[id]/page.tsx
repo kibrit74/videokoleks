@@ -42,8 +42,9 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
 
 function getEmbedUrl(url: string, platform: Platform): string | null {
     try {
-        if (platform === 'instagram') {
-            return null; // Instagram embedding is still unreliable.
+        // Instagram and Facebook embeds are unreliable. Force "Open Original".
+        if (platform === 'instagram' || platform === 'facebook') {
+            return null;
         }
 
         const cleanedUrl = url.endsWith('/') ? url.slice(0, -1) : url;
@@ -65,12 +66,6 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
             if (videoIdMatch && videoIdMatch[1]) {
                 return `https://www.tiktok.com/embed/v2/${videoIdMatch[1]}`;
             }
-        }
-        
-        if (platform === 'facebook') {
-            // Use Facebook's Embedded Video Player plugin URL format
-            const encodedUrl = encodeURIComponent(url);
-            return `https://www.facebook.com/plugins/video.php?href=${encodedUrl}&show_text=false&width=560`;
         }
 
     } catch(e) {
