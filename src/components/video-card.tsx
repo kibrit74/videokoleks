@@ -51,30 +51,31 @@ export function VideoCard({ video }: { video: Video }) {
     e.stopPropagation();
     const shareUrl = `${window.location.origin}/videos/${video.id}`;
     
-    if (navigator.share) {
-      try {
+    try {
+      if (navigator.share) {
         await navigator.share({
           title: video.title,
           text: `Şu videoya göz at: ${video.title}`,
           url: shareUrl,
         });
-      } catch (error) {
-        console.error('Share failed, falling back to clipboard:', error);
-        try {
-            await navigator.clipboard.writeText(shareUrl);
-            toast({ title: "Link panoya kopyalandı!" });
-        } catch (err) {
-            toast({ variant: 'destructive', title: "Paylaşılamadı", description: "Link paylaşılamadı veya panoya kopyalanamadı." });
-        }
+      } else {
+        // Fallback for browsers that do not support navigator.share
+        throw new Error('Web Share API not supported');
       }
-    } else {
-        // Fallback for browsers that don't support navigator.share
+    } catch (error: any) {
+      // Check if the error is a permission error or if the API is not supported
+      if (error.name === 'NotAllowedError' || error.message.includes('Web Share API not supported') || error.message.includes('Permission denied')) {
+        // Fallback to clipboard
         try {
             await navigator.clipboard.writeText(shareUrl);
-            toast({ title: "Link panoya kopyalandı!" });
+            toast({ title: "Paylaşım menüsü desteklenmiyor. Link panoya kopyalandı!" });
         } catch (err) {
             toast({ variant: 'destructive', title: "Paylaşılamadı", description: "Link paylaşılamadı veya panoya kopyalanamadı." });
         }
+      } else {
+         console.error('Share failed:', error);
+         toast({ variant: 'destructive', title: "Paylaşılamadı", description: "Beklenmedik bir hata oluştu." });
+      }
     }
   };
 
