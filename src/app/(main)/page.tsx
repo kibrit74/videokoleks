@@ -171,7 +171,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className={cn("container mx-auto max-w-5xl px-4 py-8", (isSelectionMode && selectedVideos.length > 0) && "pb-24")}>
+    <div className="container mx-auto max-w-5xl px-4 py-8">
       <header className="mb-8">
         <h1 className="text-4xl font-bold font-headline text-center md:text-left mb-4">📦 VideoKoleks</h1>
         <div className="flex flex-col md:flex-row gap-4 items-center">
