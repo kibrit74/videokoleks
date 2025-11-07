@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collectionGroup, query, where, orderBy, writeBatch, doc, limit } from 'firebase/firestore';
+import { collection, collectionGroup, query, where, orderBy, writeBatch, doc, limit } from 'firebase/firestore';
 
 import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
@@ -263,7 +263,7 @@ export default function HomePage() {
           </Tabs>
         </div>
 
-        <div className={cn("grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6", isSelectionMode && "pb-20")}>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 pb-20">
           {isLoading ? (
               Array.from({length: 10}).map((_, i) => (
                   <div key={i} className="aspect-[9/16] w-full">
@@ -301,7 +301,6 @@ export default function HomePage() {
         </div>
       </div>
       
-      {/* --- Bulk Actions Bar --- */}
       {isSelectionMode && selectedVideos.size > 0 && (
         <div className="fixed bottom-16 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm md:bottom-0">
            <div className="container mx-auto max-w-5xl px-4 h-16 flex items-center justify-between gap-4">
@@ -385,5 +384,3 @@ export default function HomePage() {
     </>
   );
 }
-
-    
