@@ -42,9 +42,13 @@ const videoMetadataPrompt = ai.definePrompt({
     name: 'videoMetadataPrompt',
     input: { schema: FetchVideoDetailsInputSchema },
     output: { schema: FetchVideoDetailsOutputSchema },
-    prompt: `You are an expert web metadata extractor. Given a URL, your task is to identify the primary title and thumbnail image for the video on that page.
+    prompt: `You are an expert web metadata extractor. Given a URL, your task is to identify the primary title and the main video thumbnail image for the video content on that page.
 
-    Prioritize extracting the 'og:title' for the title and 'og:image' for the thumbnail URL from the page's meta tags. If they are not available, use the main <title> tag and any other relevant image source.
+    Your primary goal is to find the 'og:image' meta tag for the thumbnail URL and the 'og:title' meta tag for the title.
+    
+    IMPORTANT: Ignore any images that are logos, profile pictures, or not directly representative of the video content itself (e.g., ignore images like 'mobile_nav_type_logo.png'). The thumbnail should be the actual preview of the video.
+
+    If 'og:image' or 'og:title' is not available, use the main <title> tag and the most relevant image that serves as the video's cover image.
     
     URL: {{{videoUrl}}}
     
