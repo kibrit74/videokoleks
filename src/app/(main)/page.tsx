@@ -29,34 +29,35 @@ export default function HomePage() {
   , [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
-   // Fetch videos for the current user
+   // Fetch videos for the current user based on the selected category
   const videosQuery = useMemoFirebase(() => {
     if (!user) return null;
     
-    // Removed orderBy to simplify the query and avoid needing a composite index, which might be the cause of permission errors.
     let q = query(collection(firestore, 'users', user.uid, 'videos'));
     
+    // If a category is selected, filter by it on the Firestore level
     if (selectedCategoryId) {
       q = query(q, where('categoryId', '==', selectedCategoryId));
     }
+    
+    // Always order by dateAdded descending
+    q = query(q, orderBy('dateAdded', 'desc'));
 
     return q;
   }, [firestore, user, selectedCategoryId]);
 
   const { data: videos, isLoading: videosLoading, error: videosError } = useCollection<Video>(videosQuery);
 
+  // Client-side search filtering on the results from Firestore
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
-    // Sort videos by dateAdded on the client-side
-    const sorted = [...videos].sort((a, b) => {
-        const dateA = a.dateAdded?.toDate() ?? 0;
-        const dateB = b.dateAdded?.toDate() ?? 0;
-        if (dateA > dateB) return -1;
-        if (dateA < dateB) return 1;
-        return 0;
-    });
+    
+    // The videos are already sorted by Firestore, so we just need to filter by search term.
+    if (!searchTerm) {
+        return videos; // No search term, return all videos from the query
+    }
 
-    return sorted.filter(video => 
+    return videos.filter(video => 
       video.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [videos, searchTerm]);
@@ -71,7 +72,7 @@ export default function HomePage() {
           <div className="relative flex-grow w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input 
-              placeholder="Video, kategori ara..." 
+              placeholder="Koleksiyonunda ara..." 
               className="pl-10 h-12 text-lg" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -101,6 +102,7 @@ export default function HomePage() {
                   onClick={() => setSelectedCategoryId(cat.id)}
                   size="sm"
                   className={cn(
+                    'shrink-0',
                     isSelected && `${cat.color} text-white hover:opacity-90`
                   )}
                 >
@@ -110,13 +112,6 @@ export default function HomePage() {
               )
             })}
             {categoriesLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="w-24 h-9 rounded-md" />)}
-        </div>
-        <div className="flex gap-2 items-center justify-center md:justify-start">
-            <Button variant="outline" size="sm"><FacebookIcon className="h-4 w-4 mr-2" /> Facebook</Button>
-            <Button variant="outline" size="sm" className="border-primary/50 text-primary hover:bg-primary/10 hover:text-primary"><InstagramIcon className="h-4 w-4 mr-2" /> Instagram</Button>
-            <Button variant="outline" size="sm"><YoutubeIcon className="h-4 w-4 mr-2" /> YouTube</Button>
-            <Button variant="outline" size="sm"><TiktokIcon className="h-4 w-4 mr-2" /> TikTok</Button>
-            <Button variant="outline" size="sm"><SlidersHorizontal className="h-4 w-4 mr-2"/>Filtreler</Button>
         </div>
       </div>
 
@@ -144,9 +139,11 @@ export default function HomePage() {
             </div>
         ) : (
          <div className="text-center py-20">
-            <h2 className="text-2xl font-semibold mb-2">Henüz video eklemediniz.</h2>
+            <h2 className="text-2xl font-semibold mb-2">
+              {searchTerm ? `"${searchTerm}" için sonuç bulunamadı` : "Henüz video eklemediniz"}
+            </h2>
             <p className="text-muted-foreground">
-              Başlamak için "Video Ekle" butonuna tıklayın.
+              {searchTerm ? "Farklı bir anahtar kelime deneyin." : 'Başlamak için "Video Ekle" butonuna tıklayın.'}
             </p>
           </div>
         )}
