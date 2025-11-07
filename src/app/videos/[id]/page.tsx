@@ -43,8 +43,9 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
 
 function getEmbedUrl(url: string, platform: Platform): string | null {
     try {
-        if (platform === 'instagram' || platform === 'facebook') {
-            return null; // We handle facebook with a special component, and instagram does not allow embeds easily.
+        // Only allow embedding for YouTube, as it is the most reliable.
+        if (platform !== 'youtube') {
+            return null;
         }
 
         const cleanedUrl = url.endsWith('/') ? url.slice(0, -1) : url;
@@ -55,17 +56,11 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
             if (!videoId && urlObject.hostname === 'youtu.be') {
                 videoId = urlObject.pathname.slice(1);
             } else if (!videoId) {
+                // Catches URLs like /v/VIDEO_ID, /embed/VIDEO_ID etc.
                 const pathParts = urlObject.pathname.split('/');
                 videoId = pathParts[pathParts.length - 1];
             }
             return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-        }
-        
-        if (platform === 'tiktok') {
-            const videoIdMatch = urlObject.pathname.match(/\/video\/(\d+)/);
-            if (videoIdMatch && videoIdMatch[1]) {
-                return `https://www.tiktok.com/embed/v2/${videoIdMatch[1]}`;
-            }
         }
 
     } catch(e) {
@@ -123,7 +118,6 @@ export default function VideoDetailPage() {
 
   const PlatformIcon = platformIcons[currentVideo.platform];
   const embedUrl = getEmbedUrl(currentVideo.originalUrl, currentVideo.platform);
-  const isFacebookVideo = currentVideo.platform === 'facebook';
 
   const toggleFavorite = () => {
       if (!videoDocRef || !currentVideo) return;
@@ -180,9 +174,7 @@ export default function VideoDetailPage() {
             </Button>
         </header>
         
-        {isFacebookVideo ? (
-          <FacebookVideoPlayer videoUrl={currentVideo.originalUrl} />
-        ) : embedUrl ? (
+        {embedUrl ? (
           <iframe
             key={embedUrl} // Add key to force re-render on URL change
             src={embedUrl}
