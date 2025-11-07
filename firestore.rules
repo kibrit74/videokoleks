@@ -20,9 +20,14 @@ service cloud.firestore {
       allow list: if isOwner(userId);
     }
     
+    // Rule for LISTING videos in the collection
+    match /users/{userId}/videos {
+      allow list: if isOwner(userId);
+    }
+    
+    // Rule for individual video documents (read, create, update, delete)
     match /users/{userId}/videos/{videoId} {
-      allow read, list: if isOwner(userId);
-      allow update, delete: if isOwner(userId);
+      allow read, update, delete: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
     }
   }
