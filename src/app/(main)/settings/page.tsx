@@ -23,19 +23,19 @@ import {
   Sun,
   Cloud,
 } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BackupRestoreDialog } from '@/components/backup-restore-dialog';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
-  const router = useRouter();
   const [isClient, setIsClient] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useLocalStorage('notificationsEnabled', true);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useLocalStorage('autoSaveEnabled', false);
   const [isBackupRestoreOpen, setBackupRestoreOpen] = useState(false);
 
   useEffect(() => {
@@ -89,7 +89,16 @@ export default function SettingsPage() {
           icon: Download,
           label: 'Otomatik Kaydetme',
           content: 'Paylaşılan videoları otomatik kaydet.',
-          action: () => toast({ title: 'Çok yakında!' }),
+          control: (
+             <Switch
+                checked={autoSaveEnabled}
+                onCheckedChange={(checked) => {
+                  setAutoSaveEnabled(checked)
+                  toast({ title: `Otomatik kaydetme ${checked ? 'açıldı' : 'kapatıldı'}.` })
+                }}
+                aria-label="Toggle auto-save"
+              />
+          )
         },
         {
           id: 'privacy',
@@ -154,7 +163,7 @@ export default function SettingsPage() {
                 {group.items.map((item) => (
                   <li key={item.id}>
                     <div
-                        onClick={item.action}
+                        onClick={() => item.action?.()}
                         className="flex items-center justify-between p-4 transition-colors hover:bg-muted/50"
                         role={item.action ? "button" : "listitem"}
                         tabIndex={item.action ? 0 : -1}
