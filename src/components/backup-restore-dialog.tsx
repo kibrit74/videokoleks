@@ -23,9 +23,17 @@ interface BackupRestoreDialogProps {
   onOpenChange: (isOpen: boolean) => void;
 }
 
+// Backup data structure now explicitly includes Category's original name for mapping
+interface BackupCategory extends Omit<Category, 'id' | 'userId'> {
+  name: string;
+}
+interface BackupVideo extends Omit<Video, 'id' | 'userId' | 'dateAdded'> {
+  categoryName: string; // Store category name instead of ID
+}
+
 interface BackupData {
-  categories: Omit<Category, 'id' | 'userId'>[];
-  videos: Omit<Video, 'id' | 'userId' | 'dateAdded'>[];
+  categories: BackupCategory[];
+  videos: BackupVideo[];
 }
 
 export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialogProps) {
@@ -55,17 +63,23 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
         getDocs(videosRef),
       ]);
 
-      const categories = categoriesSnapshot.docs.map(doc => {
-        const { id, userId, ...data } = doc.data() as Category;
+      const categoriesData = categoriesSnapshot.docs.map(doc => doc.data() as Category);
+      const categoryIdToNameMap = new Map(categoriesData.map(c => [c.id, c.name]));
+
+      const categories: BackupCategory[] = categoriesData.map(c => {
+        const { id, userId, ...data } = c;
         return data;
       });
 
-      const videos = videosSnapshot.docs.map(doc => {
-        const { id, userId, dateAdded, ...data } = doc.data() as Video;
-        return data;
+      const videos: BackupVideo[] = videosSnapshot.docs.map(doc => {
+        const { id, userId, dateAdded, categoryId, ...data } = doc.data() as Video;
+        return {
+            ...data,
+            categoryName: categoryIdToNameMap.get(categoryId) || "Uncategorized"
+        };
       });
 
-      const backupData = { categories, videos };
+      const backupData: BackupData = { categories, videos };
       
       const jsonString = JSON.stringify(backupData, null, 2);
       const blob = new Blob([jsonString], { type: 'application/json' });
@@ -121,72 +135,64 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
         }
         const data = JSON.parse(text) as BackupData;
         
-        // Validate data structure
         if (!data.categories || !data.videos || !Array.isArray(data.categories) || !Array.isArray(data.videos)) {
             throw new Error('Geçersiz yedekleme dosyası formatı. `categories` ve `videos` dizileri bulunmalı.');
         }
 
-        const batch = writeBatch(firestore);
-        
-        // 1. Delete existing data
+        // 1. Delete all existing data
+        const deleteBatch = writeBatch(firestore);
         const existingCategoriesRef = collection(firestore, 'users', user.uid, 'categories');
         const existingVideosRef = collection(firestore, 'users', user.uid, 'videos');
         const [existingCategoriesSnap, existingVideosSnap] = await Promise.all([
             getDocs(existingCategoriesRef),
             getDocs(existingVideosRef)
         ]);
+        existingCategoriesSnap.forEach(doc => deleteBatch.delete(doc.ref));
+        existingVideosSnap.forEach(doc => deleteBatch.delete(doc.ref));
+        await deleteBatch.commit();
+        setRestoreProgress(10); // Progress after deletion
 
-        existingCategoriesSnap.forEach(doc => batch.delete(doc.ref));
-        existingVideosSnap.forEach(doc => batch.delete(doc.ref));
-
-
-        // 2. Add new data from backup
-        const totalOperations = data.categories.length + data.videos.length;
-        let completedOperations = 0;
+        // 2. Restore Categories and create a name -> new ID map
+        const newCategoryNameToIdMap = new Map<string, string>();
+        const categoryBatch = writeBatch(firestore);
         
-        const newCategoryRefs: { [oldName: string]: string } = {};
-
-        // Add categories and map their old IDs to new IDs
         data.categories.forEach(category => {
             const newDocRef = doc(collection(firestore, 'users', user.uid, 'categories'));
-            batch.set(newDocRef, { ...category, userId: user.uid });
-            // This mapping is imperfect if names are not unique, but it's the best we can do without original IDs.
-            if(category.name) {
-              newCategoryRefs[category.name] = newDocRef.id;
-            }
-            completedOperations++;
-            setRestoreProgress((completedOperations / totalOperations) * 50); // 0-50 for additions
+            categoryBatch.set(newDocRef, { ...category, userId: user.uid });
+            newCategoryNameToIdMap.set(category.name, newDocRef.id);
         });
+        await categoryBatch.commit();
+        setRestoreProgress(40); // Progress after categories are restored
 
-        // Add videos, updating categoryId to the new one
-        data.videos.forEach(video => {
+        // 3. Restore Videos using the new category ID map
+        const videoBatch = writeBatch(firestore);
+        const totalVideos = data.videos.length;
+        data.videos.forEach((video, index) => {
             const newDocRef = doc(collection(firestore, 'users', user.uid, 'videos'));
-             // Find the original category to get its name
-            const originalCategory = data.categories.find(c => c.name && video.categoryId && c.name === video.categoryId);
-            const newCategoryId = originalCategory ? newCategoryRefs[originalCategory.name] : '';
-
+            const newCategoryId = newCategoryNameToIdMap.get(video.categoryName) || '';
             const videoData = { 
                 ...video, 
                 userId: user.uid, 
-                dateAdded: new Date(), // Use current date for restored items
-                categoryId: newCategoryId || video.categoryId // fallback to old ID if not found
+                dateAdded: new Date(), 
+                categoryId: newCategoryId,
+                // Remove categoryName property before writing to Firestore
+                categoryName: undefined
             };
+            delete videoData.categoryName;
+            
             batch.set(newDocRef, videoData);
-            completedOperations++;
-            setRestoreProgress(50 + (completedOperations / totalOperations) * 50); // 50-100 for additions
+            setRestoreProgress(40 + Math.round(((index + 1) / totalVideos) * 60));
         });
-        
         await batch.commit();
 
         toast({
             title: 'Geri Yükleme Başarılı!',
-            description: `${totalOperations} öğe koleksiyonunuza geri yüklendi.`,
+            description: `${data.categories.length} kategori ve ${data.videos.length} video koleksiyonunuza geri yüklendi.`,
         });
         
         onOpenChange(false);
         // Force a page reload to see the new data correctly
         window.location.reload();
-
 
       } catch (err: any) {
         console.error('Import error:', err);
@@ -194,13 +200,11 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
       } finally {
         setIsRestoring(false);
         setRestoreProgress(0);
-        // Reset file input
         if(event.target) event.target.value = '';
       }
     };
     reader.readAsText(file);
   };
-
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
