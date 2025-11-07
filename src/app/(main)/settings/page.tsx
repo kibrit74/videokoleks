@@ -132,10 +132,16 @@ export default function SettingsPage() {
               <ul className="divide-y divide-border">
                 {group.items.map((item) => (
                   <li key={item.id}>
-                    <button
+                    <div
                         onClick={item.action}
-                        className="w-full text-left flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
-                        disabled={!item.action && !item.control}
+                        className="flex items-center justify-between p-4 transition-colors hover:bg-muted/50"
+                        role={item.action ? "button" : "listitem"}
+                        tabIndex={item.action ? 0 : -1}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            item.action?.();
+                          }
+                        }}
                     >
                       <div className="flex items-start gap-4">
                         <item.icon className="h-6 w-6 text-primary mt-1" />
@@ -149,7 +155,7 @@ export default function SettingsPage() {
                       ) : (
                         item.action && <ChevronRight className="h-5 w-5 text-muted-foreground" />
                       )}
-                    </button>
+                    </div>
                   </li>
                 ))}
               </ul>
