@@ -184,9 +184,9 @@ export default function HomePage() {
       </header>
       
       <div className="flex justify-end mb-2">
-            <Button variant="ghost" onClick={toggleSelectionMode} disabled={isLoading || !videos || videos.length === 0}>
-              {isSelectionMode ? 'İptal' : 'Seç'}
-            </Button>
+        <Button variant="ghost" onClick={toggleSelectionMode} disabled={isLoading || !videos || videos.length === 0}>
+          {isSelectionMode ? 'İptal' : 'Seç'}
+        </Button>
       </div>
 
       <div className="mb-6">
@@ -257,16 +257,15 @@ export default function HomePage() {
         </Tabs>
       </div>
 
+      <div className={cn("grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6", (isSelectionMode && selectedVideos.size > 0) && "pb-24")}>
         {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                {Array.from({length: 10}).map((_, i) => (
-                    <div key={i} className="aspect-[9/16] w-full">
-                        <Skeleton className="w-full h-full rounded-lg" />
-                    </div>
-                ))}
-            </div>
+            Array.from({length: 10}).map((_, i) => (
+                <div key={i} className="aspect-[9/16] w-full">
+                    <Skeleton className="w-full h-full rounded-lg" />
+                </div>
+            ))
         ) : videosError ? (
-             <Alert variant="destructive" className="mb-8">
+             <Alert variant="destructive" className="col-span-full">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Hata!</AlertTitle>
               <AlertDescription>
@@ -274,19 +273,17 @@ export default function HomePage() {
               </AlertDescription>
             </Alert>
         ) : filteredVideos.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 pb-24">
-                {filteredVideos.map((video) => (
-                    <VideoCard 
-                      key={video.id} 
-                      video={video} 
-                      isSelectionMode={isSelectionMode}
-                      isSelected={selectedVideos.has(video.id)}
-                      onVideoSelect={() => handleVideoSelect(video.id)}
-                    />
-                ))}
-            </div>
+            filteredVideos.map((video) => (
+                <VideoCard 
+                  key={video.id} 
+                  video={video} 
+                  isSelectionMode={isSelectionMode}
+                  isSelected={selectedVideos.has(video.id)}
+                  onVideoSelect={() => handleVideoSelect(video.id)}
+                />
+            ))
         ) : (
-         <div className="text-center py-20">
+         <div className="text-center py-20 col-span-full">
             <h2 className="text-2xl font-semibold mb-2">
               {searchTerm || selectedCategoryId || selectedPlatform ? `Sonuç bulunamadı` : "Henüz video eklemediniz"}
             </h2>
@@ -295,10 +292,11 @@ export default function HomePage() {
             </p>
           </div>
         )}
+      </div>
 
       {/* --- Bulk Actions Bar --- */}
       {isSelectionMode && selectedVideos.size > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm">
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm">
             <div className="container mx-auto max-w-5xl px-4 h-16 flex items-center justify-between gap-4">
                 <div className='flex items-center gap-4'>
                     <Button variant="ghost" size="icon" onClick={toggleSelectionMode}>
