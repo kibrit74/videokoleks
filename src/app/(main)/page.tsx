@@ -9,10 +9,18 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Plus, AlertTriangle } from 'lucide-react';
 import { AddVideoDialog } from '@/components/add-video-dialog';
-import type { Video, Category } from '@/lib/types';
+import type { Video, Category, Platform } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon } from '@/components/icons';
+
+const platformFilters: { platform: Platform; icon: React.ComponentType<{ className?: string }> }[] = [
+    { platform: 'youtube', icon: YoutubeIcon },
+    { platform: 'tiktok', icon: TiktokIcon },
+    { platform: 'instagram', icon: InstagramIcon },
+    { platform: 'facebook', icon: FacebookIcon },
+];
 
 export default function HomePage() {
   const { user, isUserLoading } = useUser();
@@ -20,6 +28,7 @@ export default function HomePage() {
 
   const [isAddVideoOpen, setAddVideoOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch categories for the current user
@@ -44,11 +53,12 @@ export default function HomePage() {
     
     return videos.filter(video => {
       const matchesCategory = selectedCategoryId ? video.categoryId === selectedCategoryId : true;
+      const matchesPlatform = selectedPlatform ? video.platform === selectedPlatform : true;
       const matchesSearch = searchTerm ? video.title.toLowerCase().includes(searchTerm.toLowerCase()) : true;
-      return matchesCategory && matchesSearch;
+      return matchesCategory && matchesPlatform && matchesSearch;
     });
 
-  }, [videos, selectedCategoryId, searchTerm]);
+  }, [videos, selectedCategoryId, selectedPlatform, searchTerm]);
   
   const isLoading = isUserLoading || categoriesLoading || videosLoading;
 
@@ -79,7 +89,7 @@ export default function HomePage() {
               onClick={() => setSelectedCategoryId(null)}
               size="sm"
             >
-              Tümü
+              Tüm Kategoriler
             </Button>
             {categories && categories.map((cat) => {
               const isSelected = selectedCategoryId === cat.id;
@@ -100,6 +110,31 @@ export default function HomePage() {
               )
             })}
             {categoriesLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="w-24 h-9 rounded-md" />)}
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+            <Button 
+              variant={selectedPlatform === null ? 'secondary' : 'ghost'}
+              onClick={() => setSelectedPlatform(null)}
+              size="sm"
+            >
+              Tüm Platformlar
+            </Button>
+            {platformFilters.map((p) => {
+              const isSelected = selectedPlatform === p.platform;
+              const PlatformIcon = p.icon;
+              return (
+                <Button
+                  key={p.platform} 
+                  variant={isSelected ? 'default' : 'ghost'}
+                  onClick={() => setSelectedPlatform(p.platform)}
+                  size="sm"
+                  className={cn('shrink-0')}
+                >
+                  <PlatformIcon className="mr-2 h-4 w-4" />
+                  {p.platform.charAt(0).toUpperCase() + p.platform.slice(1)}
+                </Button>
+              )
+            })}
         </div>
       </div>
 
@@ -128,10 +163,10 @@ export default function HomePage() {
         ) : (
          <div className="text-center py-20">
             <h2 className="text-2xl font-semibold mb-2">
-              {searchTerm || selectedCategoryId ? `Sonuç bulunamadı` : "Henüz video eklemediniz"}
+              {searchTerm || selectedCategoryId || selectedPlatform ? `Sonuç bulunamadı` : "Henüz video eklemediniz"}
             </h2>
             <p className="text-muted-foreground">
-              {searchTerm || selectedCategoryId ? "Farklı bir arama veya filtre deneyin." : 'Başlamak için "Video Ekle" butonuna tıklayın.'}
+              {searchTerm || selectedCategoryId || selectedPlatform ? "Farklı bir arama veya filtre deneyin." : 'Başlamak için "Video Ekle" butonuna tıklayın.'}
             </p>
           </div>
         )}
