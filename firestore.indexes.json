@@ -1,3 +1,4 @@
+
 {
   "indexes": [
     {
@@ -6,6 +7,20 @@
       "fields": [
         {
           "fieldPath": "categoryId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dateAdded",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "videos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "isFavorite",
           "order": "ASCENDING"
         },
         {
