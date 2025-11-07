@@ -9,8 +9,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-// We no longer need the HTML parser
-// import { parse } from 'node-html-parser';
 
 const FetchVideoDetailsInputSchema = z.object({
   videoUrl: z.string().url().describe('The URL of the video.'),
