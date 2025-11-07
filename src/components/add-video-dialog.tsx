@@ -72,11 +72,26 @@ export function AddVideoDialog({
       return;
     }
 
+    // Basic URL validation
+    let isValidUrl = false;
+    try {
+        new URL(videoUrl);
+        isValidUrl = true;
+    } catch {
+        isValidUrl = false;
+    }
+
+    if (!isValidUrl) {
+        setVideoDetails(null);
+        return;
+    }
+
     const timer = setTimeout(async () => {
       setIsFetching(true);
       try {
         const details = await fetchVideoDetails({ videoUrl });
-        if (details.title && details.thumbnailUrl) {
+        // IMPORTANT: Check if BOTH title and thumbnailUrl are present.
+        if (details && details.title && details.thumbnailUrl) {
           setVideoDetails(details);
         } else {
           setVideoDetails(null);

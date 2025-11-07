@@ -62,22 +62,25 @@ const fetchVideoDetailsFlow = ai.defineFlow(
   async ({ videoUrl }) => {
     try {
         const { output } = await videoMetadataPrompt({ videoUrl });
-        // The model might return a title but no thumbnail or vice-versa. 
-        // We handle cases where the model can't find the data.
-        if (!output?.title || !output?.thumbnailUrl) {
-            console.warn(`AI could not extract full details for: ${videoUrl}`, output);
-            // Return an empty object or partial data if that's acceptable
-            return {
-                title: output?.title,
-                thumbnailUrl: output?.thumbnailUrl,
-            };
+
+        // If the model returns nothing, return explicit undefined fields.
+        if (!output) {
+            console.warn(`AI could not extract any details for: ${videoUrl}`);
+            return { title: undefined, thumbnailUrl: undefined };
         }
+
+        // If the model returns partial data, return it as is.
+        // The client will handle the missing fields.
+        if (!output.title || !output.thumbnailUrl) {
+            console.warn(`AI could only extract partial details for: ${videoUrl}`, output);
+        }
+        
         return output;
 
     } catch (error) {
       console.error('Error getting video details from AI:', error);
-      // Return an empty object on failure to prevent the app from crashing.
-      return {};
+      // On failure, return undefined fields to prevent the app from crashing.
+      return { title: undefined, thumbnailUrl: undefined };
     }
   }
 );
