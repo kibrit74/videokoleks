@@ -2,13 +2,12 @@
 
 import { useState, useMemo } from 'react';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 
 import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, SlidersHorizontal, AlertTriangle } from 'lucide-react';
-import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon } from '@/components/icons';
+import { Search, Plus, AlertTriangle } from 'lucide-react';
 import { AddVideoDialog } from '@/components/add-video-dialog';
 import type { Video, Category } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,42 +28,27 @@ export default function HomePage() {
   , [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
-   // Fetch videos for the current user based on the selected category
+  // ALWAYS fetch all videos for the user, ordered by date.
+  // Filtering will be done on the client-side.
   const videosQuery = useMemoFirebase(() => {
     if (!user) return null;
-    
     const videosCollection = collection(firestore, 'users', user.uid, 'videos');
-
-    // If a category is selected, filter by it and order by date.
-    // This requires a composite index on (categoryId, dateAdded).
-    if (selectedCategoryId) {
-      return query(
-        videosCollection, 
-        where('categoryId', '==', selectedCategoryId),
-        orderBy('dateAdded', 'desc')
-      );
-    }
-    
-    // If no category is selected, just order all videos by date.
     return query(videosCollection, orderBy('dateAdded', 'desc'));
-
-  }, [firestore, user, selectedCategoryId]);
+  }, [firestore, user]);
 
   const { data: videos, isLoading: videosLoading, error: videosError } = useCollection<Video>(videosQuery);
 
-  // Client-side search filtering on the results from Firestore
+  // Client-side filtering logic
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
     
-    // The videos are already sorted by Firestore, so we just need to filter by search term.
-    if (!searchTerm) {
-        return videos; // No search term, return all videos from the query
-    }
+    return videos.filter(video => {
+      const matchesCategory = selectedCategoryId ? video.categoryId === selectedCategoryId : true;
+      const matchesSearch = searchTerm ? video.title.toLowerCase().includes(searchTerm.toLowerCase()) : true;
+      return matchesCategory && matchesSearch;
+    });
 
-    return videos.filter(video => 
-      video.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [videos, searchTerm]);
+  }, [videos, selectedCategoryId, searchTerm]);
   
   const isLoading = isUserLoading || categoriesLoading || videosLoading;
 
@@ -132,7 +116,7 @@ export default function HomePage() {
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Hata!</AlertTitle>
               <AlertDescription>
-                Videolar yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin veya bir indeks oluşturmanız gerekip gerekmediğini kontrol edin.
+                Videolar yüklenirken bir hata oluştu: {videosError.message}
               </AlertDescription>
             </Alert>
         ) : filteredVideos.length > 0 ? (
@@ -144,10 +128,10 @@ export default function HomePage() {
         ) : (
          <div className="text-center py-20">
             <h2 className="text-2xl font-semibold mb-2">
-              {searchTerm ? `"${searchTerm}" için sonuç bulunamadı` : "Henüz video eklemediniz"}
+              {searchTerm || selectedCategoryId ? `Sonuç bulunamadı` : "Henüz video eklemediniz"}
             </h2>
             <p className="text-muted-foreground">
-              {searchTerm ? "Farklı bir anahtar kelime deneyin." : 'Başlamak için "Video Ekle" butonuna tıklayın.'}
+              {searchTerm || selectedCategoryId ? "Farklı bir arama veya filtre deneyin." : 'Başlamak için "Video Ekle" butonuna tıklayın.'}
             </p>
           </div>
         )}
