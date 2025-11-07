@@ -36,7 +36,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'www.instagram.com',
+        hostname: 'cdn.iframe.ly',
         port: '',
         pathname: '/**',
       },
@@ -54,7 +54,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'scontent-*.xx.fbcdn.net',
+        hostname: '*.fbcdn.net',
         port: '',
         pathname: '/**',
       },

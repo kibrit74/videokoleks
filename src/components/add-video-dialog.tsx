@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Script from 'next/script';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,12 @@ import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
 import { collection, serverTimestamp } from 'firebase/firestore';
-import { fetchVideoMetadata } from '@/lib/actions/fetch-video-metadata';
+
+declare global {
+  interface Window {
+    iframely: any;
+  }
+}
 
 interface AddVideoDialogProps {
   isOpen: boolean;
@@ -40,19 +46,24 @@ export function AddVideoDialog({
   const [videoDetails, setVideoDetails] = useState<{
     title?: string;
     thumbnailUrl?: string;
+    duration?: string;
   } | null>(null);
   const [isFetching, setIsFetching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-    null
-  );
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [notes, setNotes] = useState('');
+  const [isIframelyReady, setIsIframelyReady] = useState(false);
 
   const categoriesQuery = useMemoFirebase(() =>
     user ? collection(firestore, 'users', user.uid, 'categories') : null
   , [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
+  const handleIframelyLoad = () => {
+    setIsIframelyReady(true);
+    // Optional: You can set a default key here if needed
+    // window.iframely.setKey('YOUR_IFRAMELY_API_KEY');
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -67,63 +78,62 @@ export function AddVideoDialog({
   }, [isOpen]);
 
   useEffect(() => {
-    if (!videoUrl) {
+    if (!videoUrl || !isIframelyReady) {
       setVideoDetails(null);
       return;
     }
 
-    // Basic URL validation
-    let isValidUrl = false;
-    try {
-        new URL(videoUrl);
-        isValidUrl = true;
-    } catch {
-        isValidUrl = false;
-    }
-
-    if (!isValidUrl) {
-        setVideoDetails(null);
-        return;
-    }
-
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       setIsFetching(true);
-      try {
-        const details = await fetchVideoMetadata({ videoUrl });
-        // IMPORTANT: Check if BOTH title and thumbnailUrl are present.
-        if (details && details.title && details.thumbnailUrl) {
-          setVideoDetails(details);
-        } else {
-          setVideoDetails(null);
+      setVideoDetails(null);
+      
+      window.iframely.getPageData(videoUrl, (error: any, data: any) => {
+        setIsFetching(false);
+        if (error) {
+          console.error('Iframely error:', error);
           toast({
             variant: 'destructive',
             title: 'Detaylar Alınamadı',
-            description:
-              'Video detayları alınamadı. Lütfen URL’yi kontrol edin veya farklı bir video deneyin.',
+            description: 'Lütfen URL’yi kontrol edin veya farklı bir video deneyin.',
+          });
+          return;
+        }
+
+        const thumbnail = data.links?.thumbnail?.[0]?.href;
+        const title = data.meta?.title;
+        const duration = data.meta?.duration;
+        
+        const formatDuration = (seconds: number) => {
+          if (!seconds) return '0:00';
+          const minutes = Math.floor(seconds / 60);
+          const remainingSeconds = Math.floor(seconds % 60);
+          return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+        };
+
+        if (title && thumbnail) {
+          setVideoDetails({ 
+            title, 
+            thumbnailUrl: thumbnail,
+            duration: formatDuration(duration)
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Detaylar Alınamadı',
+            description: 'Bu video için başlık veya küçük resim bulunamadı.',
           });
         }
-      } catch (error) {
-        console.error('Error fetching video details:', error);
-        setVideoDetails(null);
-        toast({
-          variant: 'destructive',
-          title: 'Hata',
-          description: 'Video detayları alınırken bir hata oluştu.',
-        });
-      } finally {
-        setIsFetching(false);
-      }
+      });
     }, 1000); // Debounce for 1 second
 
     return () => clearTimeout(timer);
-  }, [videoUrl, toast]);
+  }, [videoUrl, isIframelyReady, toast]);
 
   const getPlatformFromUrl = (url: string): Platform => {
     if (url.includes('instagram.com')) return 'instagram';
     if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
     if (url.includes('tiktok.com')) return 'tiktok';
     if (url.includes('facebook.com') || url.includes('fb.watch')) return 'facebook';
-    // Return a default platform if none match
     return 'instagram'; 
   };
 
@@ -140,15 +150,14 @@ export function AddVideoDialog({
     setIsSaving(true);
     const platform = getPlatformFromUrl(videoUrl);
 
-    // This is the correct structure for the Video object
     const videoData: Omit<Video, 'id'> = {
-        userId: user.uid, // CRITICAL: Ensure userId is at the root level
+        userId: user.uid,
         title: videoDetails.title,
         thumbnailUrl: videoDetails.thumbnailUrl,
         originalUrl: videoUrl,
         platform,
-        categoryId: selectedCategory.id, // Store only the ID
-        duration: '0:00', // Placeholder
+        categoryId: selectedCategory.id,
+        duration: videoDetails.duration || '0:00',
         notes: notes,
         isFavorite: false,
         dateAdded: serverTimestamp(),
@@ -171,97 +180,107 @@ export function AddVideoDialog({
   const isLoading = isFetching || isSaving;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] grid-rows-[auto,1fr,auto] max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle className="font-headline text-2xl">Video Ekle</DialogTitle>
-          <DialogDescription>
-            Kaydetmek istediğiniz videonun linkini yapıştırın.
-          </DialogDescription>
-        </DialogHeader>
-        <ScrollArea className="pr-6 -mr-6">
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="video-url">Video Linki</Label>
-              <Input
-                id="video-url"
-                placeholder="https://www.instagram.com/reels/..."
-                value={videoUrl}
-                onChange={e => setVideoUrl(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-
-            {isFetching && (
-              <div className="flex items-center justify-center h-24">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2">Video bilgileri getiriliyor...</span>
+    <>
+      <Script
+        src="//cdn.iframe.ly/embed.js"
+        strategy="lazyOnload"
+        onLoad={handleIframelyLoad}
+      />
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[425px] grid-rows-[auto,1fr,auto] max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="font-headline text-2xl">Video Ekle</DialogTitle>
+            <DialogDescription>
+              Kaydetmek istediğiniz videonun linkini yapıştırın.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="pr-6 -mr-6">
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="video-url">Video Linki</Label>
+                <Input
+                  id="video-url"
+                  placeholder="https://www.instagram.com/reels/..."
+                  value={videoUrl}
+                  onChange={e => setVideoUrl(e.target.value)}
+                  disabled={isLoading}
+                />
               </div>
-            )}
 
-            {videoDetails && (
-              <div className="space-y-4">
-                {videoDetails.thumbnailUrl && (
-                  <div className="relative aspect-video w-full overflow-hidden rounded-md">
-                    <Image
-                      src={videoDetails.thumbnailUrl}
-                      alt="Video thumbnail"
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                )}
-                <p className="font-semibold text-sm">{videoDetails.title}</p>
+              {isFetching && (
+                <div className="flex items-center justify-center h-24">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <span className="ml-2">Video bilgileri getiriliyor...</span>
+                </div>
+              )}
+
+              {videoDetails && (
+                <div className="space-y-4">
+                  {videoDetails.thumbnailUrl && (
+                    <div className="relative aspect-video w-full overflow-hidden rounded-md">
+                      <Image
+                        src={videoDetails.thumbnailUrl}
+                        alt="Video thumbnail"
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
+                  <p className="font-semibold text-sm">{videoDetails.title}</p>
+                   {videoDetails.duration && (
+                    <p className="text-xs text-muted-foreground">Süre: {videoDetails.duration}</p>
+                   )}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Kategori seç</Label>
+                <div className="flex flex-wrap gap-2">
+                  {categoriesLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                      categories?.map(cat => (
+                          <Button
+                              key={cat.id}
+                              variant={
+                              selectedCategory?.id === cat.id ? 'default' : 'outline'
+                              }
+                              size="sm"
+                              onClick={() => setSelectedCategory(cat)}
+                              className="transition-all"
+                              disabled={isLoading}
+                          >
+                              {cat.emoji} {cat.name}
+                          </Button>
+                      ))
+                  )}
+                  <Button variant="outline" size="sm" disabled>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Yeni Kategori
+                  </Button>
+                </div>
               </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>Kategori seç</Label>
-              <div className="flex flex-wrap gap-2">
-                {categoriesLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                    categories?.map(cat => (
-                        <Button
-                            key={cat.id}
-                            variant={
-                            selectedCategory?.id === cat.id ? 'default' : 'outline'
-                            }
-                            size="sm"
-                            onClick={() => setSelectedCategory(cat)}
-                            className="transition-all"
-                            disabled={isLoading}
-                        >
-                            {cat.emoji} {cat.name}
-                        </Button>
-                    ))
-                )}
-                <Button variant="outline" size="sm" disabled>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Yeni Kategori
-                </Button>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Not ekle (opsiyonel)</Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Bu videoyla ilgili notlarınız..."
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  disabled={isLoading}
+                />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="notes">Not ekle (opsiyonel)</Label>
-              <Textarea
-                id="notes"
-                placeholder="Bu videoyla ilgili notlarınız..."
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-        </ScrollArea>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-            İptal
-          </Button>
-          <Button onClick={handleSave} disabled={!videoDetails || !selectedCategory || isLoading}>
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Kaydet'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+              İptal
+            </Button>
+            <Button onClick={handleSave} disabled={!videoDetails || !selectedCategory || isLoading}>
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Kaydet'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
