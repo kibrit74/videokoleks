@@ -168,7 +168,7 @@ export default function SettingsPage() {
                           <p className="text-sm text-muted-foreground">{item.content}</p>
                         </div>
                       </div>
-                       <div onClick={(e) => item.action && e.stopPropagation()}>
+                       <div onClick={(e) => item.control && e.stopPropagation()}>
                         {!isClient && item.control ? <Skeleton className="w-20 h-6" /> : null}
                         {isClient && item.control ? item.control : null}
                         {!item.control && item.action && <ChevronRight className="h-5 w-5 text-muted-foreground" />}
