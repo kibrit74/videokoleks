@@ -1,4 +1,4 @@
-export type Platform = 'instagram' | 'youtube' | 'tiktok';
+export type Platform = 'instagram' | 'youtube' | 'tiktok' | 'facebook';
 
 export interface Category {
   id: string;

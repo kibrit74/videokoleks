@@ -105,9 +105,9 @@ export function AddVideoDialog({
 
   const getPlatformFromUrl = (url: string): Platform => {
     if (url.includes('instagram.com')) return 'instagram';
-    if (url.includes('youtube.com') || url.includes('youtu.be'))
-      return 'youtube';
+    if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
     if (url.includes('tiktok.com')) return 'tiktok';
+    if (url.includes('facebook.com') || url.includes('fb.watch')) return 'facebook';
     // Return a default platform if none match
     return 'instagram'; 
   };

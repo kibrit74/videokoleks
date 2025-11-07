@@ -5,7 +5,7 @@ import Link from 'next/link';
 import type { Video, Platform, Category } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
+import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
@@ -14,12 +14,14 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
   instagram: InstagramIcon,
   youtube: YoutubeIcon,
   tiktok: TiktokIcon,
+  facebook: FacebookIcon,
 };
 
 const platformColors: Record<Platform, string> = {
   instagram: 'bg-[#E1306C]',
   youtube: 'bg-[#FF0000]',
   tiktok: 'bg-[#00F2EA] text-black',
+  facebook: 'bg-[#1877F2]',
 };
 
 export function VideoCard({ video }: { video: Video }) {

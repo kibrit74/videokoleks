@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
+import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import type { Platform, Video, Category } from '@/lib/types';
 import { useMemo } from 'react';
@@ -37,6 +37,7 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
   instagram: InstagramIcon,
   youtube: YoutubeIcon,
   tiktok: TiktokIcon,
+  facebook: FacebookIcon,
 };
 
 function getEmbedUrl(url: string, platform: Platform): string | null {
@@ -62,6 +63,10 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
             if (videoIdMatch && videoIdMatch[1]) {
                 return `https://www.tiktok.com/embed/v2/${videoIdMatch[1]}`;
             }
+        }
+        if (platform === 'facebook') {
+            // Facebook uses a plugin for embeds which requires the original URL to be encoded
+            return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false`;
         }
     } catch(e) {
         console.error("Invalid URL for embedding:", url, e);

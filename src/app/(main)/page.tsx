@@ -8,7 +8,7 @@ import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Plus, SlidersHorizontal, AlertTriangle } from 'lucide-react';
-import { InstagramIcon, YoutubeIcon, TiktokIcon } from '@/components/icons';
+import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon } from '@/components/icons';
 import { AddVideoDialog } from '@/components/add-video-dialog';
 import type { Video, Category } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -112,6 +112,7 @@ export default function HomePage() {
             {categoriesLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="w-24 h-9 rounded-md" />)}
         </div>
         <div className="flex gap-2 items-center justify-center md:justify-start">
+            <Button variant="outline" size="sm"><FacebookIcon className="h-4 w-4 mr-2" /> Facebook</Button>
             <Button variant="outline" size="sm" className="border-primary/50 text-primary hover:bg-primary/10 hover:text-primary"><InstagramIcon className="h-4 w-4 mr-2" /> Instagram</Button>
             <Button variant="outline" size="sm"><YoutubeIcon className="h-4 w-4 mr-2" /> YouTube</Button>
             <Button variant="outline" size="sm"><TiktokIcon className="h-4 w-4 mr-2" /> TikTok</Button>
