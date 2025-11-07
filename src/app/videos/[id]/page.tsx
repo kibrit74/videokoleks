@@ -10,6 +10,7 @@ import {
   ExternalLink,
   Trash2,
   AlertTriangle,
+  Share2,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -155,6 +156,29 @@ export default function VideoDetailPage() {
       });
   }
 
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: currentVideo.title,
+          text: `Şu videoya göz at: ${currentVideo.title}`,
+          url: shareUrl,
+        });
+      } else {
+        throw new Error('Web Share API not supported');
+      }
+    } catch (error) {
+      console.error('Share failed, falling back to clipboard:', error);
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({ title: "Link panoya kopyalandı!" });
+      } catch (err) {
+        toast({ variant: 'destructive', title: "Paylaşılamadı", description: "Link paylaşılamadı veya panoya kopyalanamadı." });
+      }
+    }
+  };
+
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'Bilinmiyor';
     if (timestamp.toDate) {
@@ -221,10 +245,15 @@ export default function VideoDetailPage() {
             {category && <p className="text-sm mt-2"><span className={cn("inline-block w-6 text-center mr-1 p-1 rounded-md", category.color)}>{category.emoji}</span> Kategori: {category.name}</p>}
             {currentVideo.notes && <p className="text-sm bg-muted p-2 rounded-md mt-2">📝 Not: "{currentVideo.notes}"</p>}
 
-            <div className="flex justify-between items-center pt-3 mt-3 border-t">
+            <div className="flex justify-around items-center pt-3 mt-3 border-t">
                 <Button variant="ghost" className="flex-col h-auto text-muted-foreground gap-1 hover:text-primary" onClick={toggleFavorite}>
                     <Heart className={cn("w-5 h-5", currentVideo.isFavorite && "fill-red-500 text-red-500")} />
                     <span className="text-xs">Favori</span>
+                </Button>
+
+                <Button variant="ghost" className="flex-col h-auto text-muted-foreground gap-1 hover:text-primary" onClick={handleShare}>
+                    <Share2 className="w-5 h-5"/>
+                    <span className="text-xs">Paylaş</span>
                 </Button>
                 
                 <Button asChild variant="ghost" className="flex-col h-auto text-muted-foreground gap-1 hover:text-primary">
