@@ -18,6 +18,7 @@ import { collection } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import type { Category } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from './ui/scroll-area';
 
 interface NewCategoryDialogProps {
   isOpen: boolean;
@@ -81,58 +82,60 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] grid-rows-[auto,1fr,auto] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">Yeni Kategori</DialogTitle>
           <DialogDescription>
             Koleksiyonunuzu düzenlemek için yeni bir kategori oluşturun.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-6 py-4">
-           <div className="space-y-2">
-            <Label htmlFor="category-name">Kategori Adı</Label>
-            <Input 
-                id="category-name" 
-                placeholder="Örn: Dans Videoları" 
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Emoji seç</Label>
-            <div className="flex flex-wrap gap-2">
-              {emojis.map((emoji) => (
-                <Button 
-                    key={emoji} 
-                    variant={selectedEmoji === emoji ? 'secondary' : 'outline'} 
-                    size="icon" 
-                    className="text-xl"
-                    onClick={() => setSelectedEmoji(emoji)}
-                >
-                  {emoji}
-                </Button>
-              ))}
+        <ScrollArea className='-mr-6 pr-6'>
+          <div className="grid gap-6 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="category-name">Kategori Adı</Label>
+              <Input 
+                  id="category-name" 
+                  placeholder="Örn: Dans Videoları" 
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Emoji seç</Label>
+              <div className="flex flex-wrap gap-2">
+                {emojis.map((emoji) => (
+                  <Button 
+                      key={emoji} 
+                      variant={selectedEmoji === emoji ? 'secondary' : 'outline'} 
+                      size="icon" 
+                      className="text-xl"
+                      onClick={() => setSelectedEmoji(emoji)}
+                  >
+                    {emoji}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Renk Seç</Label>
+              <div className="flex flex-wrap gap-3">
+                {colors.map((color) => (
+                  <button
+                      key={color}
+                      type="button"
+                      onClick={() => setSelectedColor(color)}
+                      className={cn(
+                          'w-8 h-8 rounded-full transition-transform hover:scale-110 focus:outline-none',
+                          color,
+                          selectedColor === color && `ring-2 ring-offset-2 ring-offset-background ${toRingColor(color)}`
+                      )}
+                      aria-label={`Select ${color} color`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Renk Seç</Label>
-            <div className="flex flex-wrap gap-3">
-              {colors.map((color) => (
-                <button
-                    key={color}
-                    type="button"
-                    onClick={() => setSelectedColor(color)}
-                    className={cn(
-                        'w-8 h-8 rounded-full transition-transform hover:scale-110 focus:outline-none',
-                        color,
-                        selectedColor === color && `ring-2 ring-offset-2 ring-offset-background ${toRingColor(color)}`
-                    )}
-                    aria-label={`Select ${color} color`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
+        </ScrollArea>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>İptal</Button>
           <Button onClick={handleCreate} disabled={isLoading}>
