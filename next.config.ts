@@ -54,6 +54,12 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: '*.tiktokcdn-eu.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: '*.fbcdn.net',
         port: '',
         pathname: '/**',
