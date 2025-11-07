@@ -2,12 +2,12 @@
 
 import { useState, useMemo } from 'react';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, writeBatch, doc } from 'firebase/firestore';
 
 import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, AlertTriangle } from 'lucide-react';
+import { Search, Plus, AlertTriangle, X, Trash2, FolderSymlink, Star } from 'lucide-react';
 import { AddVideoDialog } from '@/components/add-video-dialog';
 import type { Video, Category, Platform } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,6 +15,30 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon } from '@/components/icons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from '@/hooks/use-toast';
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+
 
 const platformFilters: { platform: Platform; icon: React.ComponentType<{ className?: string }> }[] = [
     { platform: 'youtube', icon: YoutubeIcon },
@@ -26,11 +50,17 @@ const platformFilters: { platform: Platform; icon: React.ComponentType<{ classNa
 export default function HomePage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const [isAddVideoOpen, setAddVideoOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // --- Bulk Actions State ---
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedVideos, setSelectedVideos] = useState<Set<string>>(new Set());
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Fetch categories for the current user
   const categoriesQuery = useMemoFirebase(() =>
@@ -39,7 +69,6 @@ export default function HomePage() {
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
   // ALWAYS fetch all videos for the user, ordered by date.
-  // Filtering will be done on the client-side.
   const videosQuery = useMemoFirebase(() => {
     if (!user) return null;
     const videosCollection = collection(firestore, 'users', user.uid, 'videos');
@@ -63,6 +92,77 @@ export default function HomePage() {
   
   const isLoading = isUserLoading || categoriesLoading || videosLoading;
 
+  // --- Bulk Actions Logic ---
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    setSelectedVideos(new Set()); // Clear selections on mode change
+  };
+
+  const handleVideoSelect = (videoId: string) => {
+    setSelectedVideos(prevSelected => {
+      const newSelected = new Set(prevSelected);
+      if (newSelected.has(videoId)) {
+        newSelected.delete(videoId);
+      } else {
+        newSelected.add(videoId);
+      }
+      return newSelected;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (!user || !firestore || selectedVideos.size === 0) return;
+    try {
+      const batch = writeBatch(firestore);
+      selectedVideos.forEach(videoId => {
+        const videoRef = doc(firestore, 'users', user.uid, 'videos', videoId);
+        batch.delete(videoRef);
+      });
+      await batch.commit();
+      toast({ title: `${selectedVideos.size} video silindi.` });
+      toggleSelectionMode();
+    } catch (error) {
+      console.error("Bulk delete error:", error);
+      toast({ variant: "destructive", title: "Hata", description: "Videolar silinirken bir sorun oluştu." });
+    }
+  };
+
+  const handleBulkMove = async (newCategoryId: string) => {
+    if (!user || !firestore || selectedVideos.size === 0) return;
+     try {
+      const batch = writeBatch(firestore);
+      selectedVideos.forEach(videoId => {
+        const videoRef = doc(firestore, 'users', user.uid, 'videos', videoId);
+        batch.update(videoRef, { categoryId: newCategoryId });
+      });
+      await batch.commit();
+      toast({ title: `${selectedVideos.size} video yeni kategoriye taşındı.` });
+      toggleSelectionMode();
+    } catch (error) {
+      console.error("Bulk move error:", error);
+      toast({ variant: "destructive", title: "Hata", description: "Videolar taşınırken bir sorun oluştu." });
+    }
+  }
+
+  const handleBulkFavorite = async (isFavorite: boolean) => {
+    if (!user || !firestore || selectedVideos.size === 0) return;
+    try {
+      const batch = writeBatch(firestore);
+      selectedVideos.forEach(videoId => {
+        const videoRef = doc(firestore, 'users', user.uid, 'videos', videoId);
+        batch.update(videoRef, { isFavorite: isFavorite });
+      });
+      await batch.commit();
+      toast({ title: `${selectedVideos.size} video favori durumu güncellendi.` });
+      toggleSelectionMode();
+    } catch (error) {
+      console.error("Bulk favorite error:", error);
+      toast({ variant: "destructive", title: "Hata", description: "Favori durumu güncellenirken bir sorun oluştu." });
+    }
+  };
+  // --- End Bulk Actions Logic ---
+
+
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
       <header className="mb-8">
@@ -82,6 +182,12 @@ export default function HomePage() {
           </Button>
         </div>
       </header>
+      
+      <div className="flex justify-end mb-2">
+            <Button variant="ghost" onClick={toggleSelectionMode} disabled={isLoading || !videos || videos.length === 0}>
+              {isSelectionMode ? 'İptal' : 'Seç'}
+            </Button>
+      </div>
 
       <div className="mb-6">
         <Tabs defaultValue="categories" className="w-full">
@@ -168,11 +274,14 @@ export default function HomePage() {
               </AlertDescription>
             </Alert>
         ) : filteredVideos.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 pb-24">
                 {filteredVideos.map((video) => (
                     <VideoCard 
                       key={video.id} 
                       video={video} 
+                      isSelectionMode={isSelectionMode}
+                      isSelected={selectedVideos.has(video.id)}
+                      onVideoSelect={() => handleVideoSelect(video.id)}
                     />
                 ))}
             </div>
@@ -186,6 +295,83 @@ export default function HomePage() {
             </p>
           </div>
         )}
+
+      {/* --- Bulk Actions Bar --- */}
+      {isSelectionMode && selectedVideos.size > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm">
+            <div className="container mx-auto max-w-5xl px-4 h-16 flex items-center justify-between gap-4">
+                <div className='flex items-center gap-4'>
+                    <Button variant="ghost" size="icon" onClick={toggleSelectionMode}>
+                        <X className="h-5 w-5" />
+                    </Button>
+                    <span className="font-semibold">{selectedVideos.size} video seçildi</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="icon" aria-label="Seçilenleri taşı veya favorilere ekle">
+                                <FolderSymlink />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                             <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                <Star className="mr-2 h-4 w-4" />
+                                <span>Favori Durumu</span>
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem onClick={() => handleBulkFavorite(true)}>Favorilere Ekle</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleBulkFavorite(false)}>Favorilerden Çıkar</DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                            <DropdownMenuSeparator />
+                             <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <FolderSymlink className="mr-2 h-4 w-4" />
+                                    <span>Kategoriye Taşı</span>
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                {categories && categories.length > 0 ? (
+                                    categories.map(cat => (
+                                    <DropdownMenuItem key={cat.id} onClick={() => handleBulkMove(cat.id)}>
+                                        <span className='mr-2'>{cat.emoji}</span>
+                                        {cat.name}
+                                    </DropdownMenuItem>
+                                    ))
+                                ) : (
+                                    <DropdownMenuItem disabled>Kategori yok</DropdownMenuItem>
+                                )}
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon" aria-label="Seçilenleri sil">
+                          <Trash2 />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{selectedVideos.size} videoyu silmek istediğinizden emin misiniz?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Bu işlem geri alınamaz. Seçilen tüm videolar kalıcı olarak koleksiyonunuzdan silinecektir.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>İptal</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleBulkDelete}>
+                            Sil
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            </div>
+        </div>
+      )}
+
 
       <AddVideoDialog 
         isOpen={isAddVideoOpen} 

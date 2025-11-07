@@ -16,8 +16,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from './ui/button';
-import { MoreVertical, Share2, Eye } from 'lucide-react';
+import { MoreVertical, Share2, Eye, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from './ui/checkbox';
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -35,9 +36,12 @@ const platformColors: Record<Platform, string> = {
 
 interface VideoCardProps {
   video: Video;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onVideoSelect?: () => void;
 }
 
-export function VideoCard({ video }: VideoCardProps) {
+export function VideoCard({ video, isSelectionMode = false, isSelected = false, onVideoSelect }: VideoCardProps) {
   const PlatformIcon = platformIcons[video.platform];
   const { user } = useUser();
   const firestore = useFirestore();
@@ -62,13 +66,10 @@ export function VideoCard({ video }: VideoCardProps) {
           url: shareUrl,
         });
       } else {
-        // Fallback for browsers that do not support navigator.share
         throw new Error('Web Share API not supported');
       }
     } catch (error: any) {
-      // Check if the error is a permission error or if the API is not supported
       if (error.name === 'NotAllowedError' || error.message.includes('Web Share API not supported') || error.message.includes('Permission denied')) {
-        // Fallback to clipboard
         try {
             await navigator.clipboard.writeText(shareUrl);
             toast({ title: "Paylaşım menüsü desteklenmiyor. Link panoya kopyalandı!" });
@@ -82,23 +83,52 @@ export function VideoCard({ video }: VideoCardProps) {
     }
   };
 
-  const handleCardClick = () => {
-    router.push(`/videos/${video.id}`);
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (isSelectionMode) {
+      e.preventDefault();
+      onVideoSelect?.();
+    } else {
+      router.push(`/videos/${video.id}`);
+    }
   };
+
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onVideoSelect?.();
+  }
 
 
   return (
       <Card 
-        className="group overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1 cursor-pointer"
+        className={cn(
+          "group overflow-hidden transition-all duration-300 ease-in-out cursor-pointer",
+          isSelectionMode ? "hover:shadow-md" : "hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1",
+          isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+        )}
         onClick={handleCardClick}
       >
         <CardContent className="p-0">
           <div className="relative aspect-[9/16] w-full">
+            {isSelectionMode && (
+                 <div 
+                    className="absolute inset-0 bg-black/30 z-20 flex items-start justify-start p-2"
+                    onClick={handleCheckboxClick}
+                  >
+                    <Checkbox
+                        checked={isSelected}
+                        className='h-6 w-6 border-2 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground'
+                        aria-label="Select video"
+                    />
+                 </div>
+            )}
             <Image
               src={video.thumbnailUrl}
               alt={video.title}
               fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              className={cn(
+                "object-cover transition-transform duration-300",
+                !isSelectionMode && "group-hover:scale-105"
+                )}
               data-ai-hint={video.imageHint}
             />
              <div 
@@ -111,28 +141,30 @@ export function VideoCard({ video }: VideoCardProps) {
                 >
                   <PlatformIcon className="mr-1 h-3 w-3" />
                 </Badge>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="secondary"
-                      size="icon"
-                      className="h-7 w-7 rounded-full bg-black/40 text-white border-none hover:bg-black/60 opacity-100 transition-opacity"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenuItem onClick={() => router.push(`/videos/${video.id}`)}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      Detayları Gör
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleShare}>
-                      <Share2 className="mr-2 h-4 w-4" />
-                      Paylaş
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {!isSelectionMode && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="secondary"
+                        size="icon"
+                        className="h-7 w-7 rounded-full bg-black/40 text-white border-none hover:bg-black/60 opacity-100 transition-opacity"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuItem onClick={() => router.push(`/videos/${video.id}`)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Detayları Gör
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleShare}>
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Paylaş
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             
             <div 
