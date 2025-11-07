@@ -17,11 +17,11 @@ import { PlusCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Video, Category, Platform } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { fetchVideoDetails } from '@/ai/flows/fetch-video-details';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
 import { collection, serverTimestamp } from 'firebase/firestore';
+import { fetchVideoMetadata } from '@/lib/actions/fetch-video-metadata';
 
 interface AddVideoDialogProps {
   isOpen: boolean;
@@ -89,7 +89,7 @@ export function AddVideoDialog({
     const timer = setTimeout(async () => {
       setIsFetching(true);
       try {
-        const details = await fetchVideoDetails({ videoUrl });
+        const details = await fetchVideoMetadata({ videoUrl });
         // IMPORTANT: Check if BOTH title and thumbnailUrl are present.
         if (details && details.title && details.thumbnailUrl) {
           setVideoDetails(details);
