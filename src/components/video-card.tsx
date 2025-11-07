@@ -101,7 +101,7 @@ export function VideoCard({ video }: { video: Video }) {
                   <Button 
                     variant="secondary"
                     size="icon"
-                    className="h-7 w-7 rounded-full bg-black/40 text-white border-none hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-7 w-7 rounded-full bg-black/40 text-white border-none hover:bg-black/60 opacity-100 transition-opacity"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <MoreVertical className="h-4 w-4" />
@@ -126,7 +126,7 @@ export function VideoCard({ video }: { video: Video }) {
               style={{ cursor: 'pointer' }}
             >
               <div className="flex items-end justify-between">
-                <Badge variant="secondary" className="bg-white/20 text-white backdrop-blur-sm">
+                <Badge variant="secondary" className="bg-black/20 text-white backdrop-blur-sm">
                   {video.duration}
                 </Badge>
                 {category && (
