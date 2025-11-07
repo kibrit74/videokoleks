@@ -13,8 +13,8 @@ service cloud.firestore {
     }
 
     // Rules for the 'categories' subcollection
-    // This rule allows a user to LIST their own categories.
     match /users/{userId}/categories {
+      // This rule allows a user to LIST their own categories.
       allow list: if isOwner(userId);
     }
     match /users/{userId}/categories/{categoryId} {
@@ -25,8 +25,8 @@ service cloud.firestore {
     }
     
     // Rules for the 'videos' subcollection
-    // This rule allows a user to LIST their own videos. This is the critical fix.
     match /users/{userId}/videos {
+      // This rule allows a user to LIST their own videos. This is the critical fix.
       allow list: if isOwner(userId);
     }
     match /users/{userId}/videos/{videoId} {
