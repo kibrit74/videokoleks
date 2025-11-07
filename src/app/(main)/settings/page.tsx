@@ -25,11 +25,19 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const settingsItems = [
     {
@@ -151,7 +159,9 @@ export default function SettingsPage() {
                         </div>
                       </div>
                       {item.control ? (
-                         <div onClick={(e) => e.stopPropagation()}>{item.control}</div>
+                         <div onClick={(e) => e.stopPropagation()}>
+                            {!isClient ? <Skeleton className="w-20 h-6" /> : item.control}
+                         </div>
                       ) : (
                         item.action && <ChevronRight className="h-5 w-5 text-muted-foreground" />
                       )}
