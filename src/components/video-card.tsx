@@ -16,10 +16,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from './ui/button';
-import { MoreVertical, Share2, Eye, CheckCircle2 } from 'lucide-react';
+import { MoreVertical, Share2, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Checkbox } from './ui/checkbox';
-
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -37,12 +35,9 @@ const platformColors: Record<Platform, string> = {
 
 interface VideoCardProps {
   video: Video;
-  isSelectionMode?: boolean;
-  isSelected?: boolean;
-  onSelect?: (videoId: string) => void;
 }
 
-export function VideoCard({ video, isSelectionMode = false, isSelected = false, onSelect = () => {} }: VideoCardProps) {
+export function VideoCard({ video }: VideoCardProps) {
   const PlatformIcon = platformIcons[video.platform];
   const { user } = useUser();
   const firestore = useFirestore();
@@ -88,21 +83,13 @@ export function VideoCard({ video, isSelectionMode = false, isSelected = false, 
   };
 
   const handleCardClick = () => {
-    if (isSelectionMode) {
-      onSelect(video.id);
-    } else {
-      router.push(`/videos/${video.id}`);
-    }
+    router.push(`/videos/${video.id}`);
   };
 
 
   return (
       <Card 
-        className={cn(
-          "group overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1",
-          isSelectionMode && "cursor-pointer",
-          isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
-        )}
+        className="group overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1 cursor-pointer"
         onClick={handleCardClick}
       >
         <CardContent className="p-0">
@@ -111,26 +98,13 @@ export function VideoCard({ video, isSelectionMode = false, isSelected = false, 
               src={video.thumbnailUrl}
               alt={video.title}
               fill
-              className={cn("object-cover transition-transform duration-300 group-hover:scale-105", isSelected && "scale-105")}
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
               data-ai-hint={video.imageHint}
             />
              <div 
-              className={cn(
-                "absolute inset-0 bg-gradient-to-t from-black/60 to-transparent",
-                isSelected && "bg-black/40"
-              )}
+              className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"
             />
 
-            {isSelectionMode ? (
-               <div className="absolute top-2 left-2 z-10" onClick={(e) => e.stopPropagation()}>
-                <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => onSelect(video.id)}
-                    className="h-6 w-6 border-white bg-black/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary-foreground"
-                    aria-label="Select video"
-                />
-              </div>
-            ) : (
               <div className="absolute top-2 right-2 flex gap-1 z-10">
                 <Badge
                   className={cn("border-none", platformColors[video.platform])}
@@ -160,7 +134,6 @@ export function VideoCard({ video, isSelectionMode = false, isSelected = false, 
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-            )}
             
             <div 
               className="absolute bottom-2 left-2 right-2"
