@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Script from 'next/script';
 import {
   Dialog,
   DialogContent,
@@ -24,12 +23,7 @@ import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebas
 import { collection, serverTimestamp, addDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-
-declare global {
-  interface Window {
-    iframely: any;
-  }
-}
+import { getVideoMetadata } from '@/app/actions';
 
 interface AddVideoDialogProps {
   isOpen: boolean;
@@ -54,16 +48,11 @@ export function AddVideoDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [notes, setNotes] = useState('');
-  const [isIframelyReady, setIsIframelyReady] = useState(false);
 
   const categoriesQuery = useMemoFirebase(() =>
     user ? collection(firestore, 'users', user.uid, 'categories') : null
   , [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
-
-  const handleIframelyLoad = () => {
-    setIsIframelyReady(true);
-  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -78,65 +67,53 @@ export function AddVideoDialog({
   }, [isOpen]);
 
   useEffect(() => {
-    if (!videoUrl || !isIframelyReady) {
+    if (!videoUrl) {
       setVideoDetails(null);
       return;
     }
 
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       setIsFetching(true);
       setVideoDetails(null);
       
-      if (window.iframely && typeof window.iframely.getPageData === 'function') {
-        window.iframely.getPageData(videoUrl, (error: any, data: any) => {
-          setIsFetching(false);
-          if (error) {
-            console.error('Iframely error:', error);
-            toast({
-              variant: 'destructive',
-              title: 'Detaylar Alınamadı',
-              description: 'Lütfen URL’yi kontrol edin veya farklı bir video deneyin.',
-            });
-            return;
-          }
+      try {
+        const metadata = await getVideoMetadata(videoUrl);
 
-          const thumbnail = data.links?.thumbnail?.[0]?.href;
-          const title = data.meta?.title;
-          const duration = data.meta?.duration;
-          
-          const formatDuration = (seconds: number) => {
-            if (!seconds) return '0:00';
+        if (metadata && metadata.title) {
+          // Simple duration formatting - unfurl doesn't provide it
+           const formatDuration = (seconds: number | undefined) => {
+            if (!seconds) return undefined;
             const minutes = Math.floor(seconds / 60);
             const remainingSeconds = Math.floor(seconds % 60);
             return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
           };
 
-          if (title) {
-            setVideoDetails({ 
-              title, 
-              thumbnailUrl: thumbnail,
-              duration: formatDuration(duration)
-            });
-          } else {
-            toast({
-              variant: 'destructive',
-              title: 'Detaylar Alınamadı',
-              description: 'Bu video için başlık veya küçük resim bulunamadı.',
-            });
-          }
-        });
-      } else {
-         setIsFetching(false);
-         toast({
-            variant: 'destructive',
-            title: 'Hata',
-            description: 'Video detay servisi yüklenemedi. Lütfen sayfayı yenileyin.',
+          setVideoDetails({
+            title: metadata.title,
+            thumbnailUrl: metadata.thumbnail,
+            duration: formatDuration(metadata.duration)
           });
+        } else {
+           toast({
+            variant: 'destructive',
+            title: 'Detaylar Alınamadı',
+            description: 'Bu video için başlık bulunamadı. Lütfen URL’yi kontrol edin.',
+          });
+        }
+      } catch (error) {
+        console.error('Fetch metadata error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Detaylar Alınamadı',
+          description: 'Lütfen URL’yi kontrol edin veya farklı bir video deneyin.',
+        });
+      } finally {
+        setIsFetching(false);
       }
     }, 1000); // Debounce for 1 second
 
     return () => clearTimeout(timer);
-  }, [videoUrl, isIframelyReady, toast]);
+  }, [videoUrl, toast]);
 
   const getPlatformFromUrl = (url: string): Platform => {
     if (url.includes('instagram.com')) return 'instagram';
@@ -190,6 +167,12 @@ export function AddVideoDialog({
             requestResourceData: videoData,
         });
         errorEmitter.emit('permission-error', permissionError);
+        // Also show a toast to the user
+        toast({
+          variant: 'destructive',
+          title: 'Kaydedilemedi',
+          description: 'Video kaydedilirken bir hata oluştu. İzinlerinizi kontrol edin.'
+        });
     } finally {
         setIsSaving(false);
     }
@@ -199,11 +182,6 @@ export function AddVideoDialog({
 
   return (
     <>
-      <Script
-        src="//cdn.iframe.ly/embed.js"
-        strategy="lazyOnload"
-        onLoad={handleIframelyLoad}
-      />
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[425px] grid-rows-[auto,1fr,auto] max-h-[90vh]">
           <DialogHeader>
