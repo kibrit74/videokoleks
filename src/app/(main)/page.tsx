@@ -259,7 +259,7 @@ export default function HomePage() {
           </Tabs>
         </div>
 
-        <div className={cn("grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6", (isSelectionMode && selectedVideos.size > 0) && "pb-24")}>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 pb-20">
           {isLoading ? (
               Array.from({length: 10}).map((_, i) => (
                   <div key={i} className="aspect-[9/16] w-full">
@@ -299,8 +299,8 @@ export default function HomePage() {
       
       {/* --- Bulk Actions Bar --- */}
       {isSelectionMode && selectedVideos.size > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm">
-            <div className="container mx-auto max-w-5xl px-4 h-16 flex items-center justify-between gap-4">
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm md:bottom-auto">
+           <div className="container mx-auto max-w-5xl px-4 h-16 flex items-center justify-between gap-4">
                 <div className='flex items-center gap-4'>
                     <Button variant="ghost" size="icon" onClick={toggleSelectionMode}>
                         <X className="h-5 w-5" />
