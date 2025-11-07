@@ -21,11 +21,8 @@ service cloud.firestore {
     }
     
     match /users/{userId}/videos/{videoId} {
-      allow read, update, delete: if isOwner(userId);
+      allow read, list, update, delete: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
-    }
-    match /users/{userId}/videos {
-      allow list: if isOwner(userId);
     }
   }
 }
