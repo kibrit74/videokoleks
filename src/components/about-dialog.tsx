@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Package, Link as LinkIcon, List, Star, Mail } from 'lucide-react';
+import { ScrollArea } from './ui/scroll-area';
 
 interface AboutDialogProps {
   isOpen: boolean;
@@ -43,7 +44,7 @@ export function AboutDialog({ isOpen, onOpenChange }: AboutDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md grid-rows-[auto,1fr,auto] max-h-[90vh]">
         <DialogHeader className="items-center text-center space-y-4">
           <div className="rounded-full bg-primary/10 p-4 inline-block">
             <Package className="h-10 w-10 text-primary" />
@@ -56,27 +57,31 @@ export function AboutDialog({ isOpen, onOpenChange }: AboutDialogProps) {
           </div>
         </DialogHeader>
 
-        <Separator className="my-4" />
+        <ScrollArea className="pr-6 -mr-6">
+          <div className='py-4'>
+            <Separator className="my-4" />
 
-        <div className="space-y-4">
-            <h3 className="font-semibold text-center">Ana Özellikler</h3>
-            <ul className="space-y-3 text-sm text-muted-foreground">
-                {features.map((feature) => (
-                    <li key={feature.title} className="flex items-start gap-3">
-                        <feature.icon className="w-5 h-5 mt-0.5 text-primary shrink-0" />
-                        <div>
-                           <span className="font-semibold text-foreground">{feature.title}:</span> {feature.description}
-                        </div>
-                    </li>
-                ))}
-            </ul>
-        </div>
-        
-        <Separator className="my-4" />
+            <div className="space-y-4">
+                <h3 className="font-semibold text-center">Ana Özellikler</h3>
+                <ul className="space-y-3 text-sm text-muted-foreground">
+                    {features.map((feature) => (
+                        <li key={feature.title} className="flex items-start gap-3">
+                            <feature.icon className="w-5 h-5 mt-0.5 text-primary shrink-0" />
+                            <div>
+                              <span className="font-semibold text-foreground">{feature.title}:</span> {feature.description}
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+            
+            <Separator className="my-4" />
 
-        <div className="text-center text-xs text-muted-foreground">
-          Versiyon 1.0.0
-        </div>
+            <div className="text-center text-xs text-muted-foreground">
+              Versiyon 1.0.0
+            </div>
+          </div>
+        </ScrollArea>
         
         <DialogFooter className="mt-4 gap-2 sm:gap-0">
            <Button variant="ghost" onClick={handleFeedbackClick} className="w-full">
