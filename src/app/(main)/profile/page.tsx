@@ -6,16 +6,8 @@ import {
   FolderKanban,
   Star,
   Settings,
-  Bell,
-  Paintbrush,
-  Download,
-  Lock,
-  Cloud,
-  Gem,
   Mail,
   Info,
-  Sun,
-  Moon,
   LogOut,
   Loader2,
   Unplug,
@@ -46,7 +38,6 @@ import { AboutDialog } from '@/components/about-dialog';
 
 export default function ProfilePage() {
   const { toast } = useToast();
-  const { theme, setTheme } = useTheme();
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -98,42 +89,11 @@ export default function ProfilePage() {
     { icon: Star, label: 'Favori', value: favoriteCount },
   ];
 
-  const handleThemeChange = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(newTheme);
-  };
-
   const settingsItems = [
-    { icon: Settings, label: 'Ayarlar' },
-    { icon: Bell, label: 'Bildirimler' },
-    { icon: Paintbrush, label: 'Tema', isTheme: true },
-    { icon: Download, label: 'Otomatik Kaydetme' },
-    { icon: Lock, label: 'Gizlilik' },
-    { icon: Cloud, label: 'Yedekleme & Senkronizasyon' },
-    { icon: Gem, label: "Premium'a Geç", isPremium: true },
-    { icon: Mail, label: 'Destek & Geri Bildirim' },
-    { icon: Info, label: 'Hakkında' },
+    { icon: Settings, label: 'Ayarlar', action: () => router.push('/settings') },
+    { icon: Mail, label: 'Destek & Geri Bildirim', action: () => window.location.href = 'mailto:destek@videokoleks.com' },
+    { icon: Info, label: 'Hakkında', action: () => setAboutOpen(true) },
   ];
-
-  const handleSettingClick = (item: { label: string }) => {
-    switch (item.label) {
-      case 'Tema':
-        handleThemeChange();
-        break;
-      case 'Destek & Geri Bildirim':
-        window.location.href = 'mailto:destek@videokoleks.com';
-        break;
-      case 'Hakkında':
-        setAboutOpen(true);
-        break;
-      default:
-        toast({
-          title: 'Çok yakında!',
-          description: `${item.label} özelliği yakında aktif olacak.`,
-        });
-        break;
-    }
-  };
 
   const handleLogout = async () => {
     if (!auth) return;
@@ -230,31 +190,14 @@ export default function ProfilePage() {
                   <Button
                     variant="ghost"
                     className="w-full justify-start h-14 px-4 text-base"
-                    onClick={() => handleSettingClick(item)}
+                    onClick={item.action}
                   >
                     <item.icon
-                      className={`w-5 h-5 mr-4 ${
-                        item.isPremium
-                          ? 'text-purple-400'
-                          : 'text-muted-foreground'
-                      }`}
+                      className='w-5 h-5 mr-4 text-muted-foreground'
                     />
-                    <span
-                      className={
-                        item.isPremium ? 'text-purple-400 font-semibold' : ''
-                      }
-                    >
+                    <span>
                       {item.label}
                     </span>
-                    {item.isTheme && (
-                      <div className="ml-auto">
-                        {theme === 'dark' ? (
-                          <Sun className="h-5 w-5 text-muted-foreground" />
-                        ) : (
-                          <Moon className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </div>
-                    )}
                   </Button>
                 </li>
               ))}

@@ -23,13 +23,17 @@ export function BottomNav() {
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           
+          // Profil linki ve alt sayfaları için özel kontrol
+          const isProfileActive = item.href === '/profile' && (pathname === '/profile' || pathname === '/settings');
+
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
                 'flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary',
-                isActive && 'text-primary'
+                isActive && 'text-primary',
+                isProfileActive && 'text-primary'
               )}
             >
               <item.icon className="h-6 w-6" />
