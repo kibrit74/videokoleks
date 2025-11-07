@@ -158,24 +158,30 @@ export default function VideoDetailPage() {
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
-    try {
-      if (navigator.share) {
+    if (navigator.share) {
+      try {
         await navigator.share({
           title: currentVideo.title,
           text: `Şu videoya göz at: ${currentVideo.title}`,
           url: shareUrl,
         });
-      } else {
-        throw new Error('Web Share API not supported');
+      } catch (error) {
+        console.error('Share failed, falling back to clipboard:', error);
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            toast({ title: "Link panoya kopyalandı!" });
+        } catch (err) {
+            toast({ variant: 'destructive', title: "Paylaşılamadı", description: "Link paylaşılamadı veya panoya kopyalanamadı." });
+        }
       }
-    } catch (error) {
-      console.error('Share failed, falling back to clipboard:', error);
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        toast({ title: "Link panoya kopyalandı!" });
-      } catch (err) {
-        toast({ variant: 'destructive', title: "Paylaşılamadı", description: "Link paylaşılamadı veya panoya kopyalanamadı." });
-      }
+    } else {
+        // Fallback for browsers that don't support navigator.share
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            toast({ title: "Link panoya kopyalandı!" });
+        } catch (err) {
+            toast({ variant: 'destructive', title: "Paylaşılamadı", description: "Link paylaşılamadı veya panoya kopyalanamadı." });
+        }
     }
   };
 
