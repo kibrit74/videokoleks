@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, writeBatch, doc, limit } from 'firebase/firestore';
+import { collectionGroup, query, where, orderBy, writeBatch, doc, limit } from 'firebase/firestore';
 
 import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
@@ -68,11 +68,15 @@ export default function HomePage() {
   , [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
-  // ALWAYS fetch all videos for the user, ordered by date.
+  // Use a collection group query to fetch videos for the user across all subcollections
   const videosQuery = useMemoFirebase(() => {
     if (!user) return null;
-    const videosCollection = collection(firestore, 'users', user.uid, 'videos');
-    return query(videosCollection, orderBy('dateAdded', 'desc'), limit(10));
+    return query(
+      collectionGroup(firestore, 'videos'),
+      where('userId', '==', user.uid),
+      orderBy('dateAdded', 'desc'),
+      limit(10)
+    );
   }, [firestore, user]);
 
   const { data: videos, isLoading: videosLoading, error: videosError } = useCollection<Video>(videosQuery);
@@ -259,7 +263,7 @@ export default function HomePage() {
           </Tabs>
         </div>
 
-        <div className={cn("grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6", (isSelectionMode && selectedVideos.size > 0) && "pb-24")}>
+        <div className={cn("grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6", isSelectionMode && "pb-20")}>
           {isLoading ? (
               Array.from({length: 10}).map((_, i) => (
                   <div key={i} className="aspect-[9/16] w-full">
@@ -381,3 +385,5 @@ export default function HomePage() {
     </>
   );
 }
+
+    

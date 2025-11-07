@@ -3,6 +3,20 @@
   "indexes": [
     {
       "collectionGroup": "videos",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dateAdded",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "videos",
       "queryScope": "COLLECTION",
       "fields": [
         {
@@ -28,16 +42,8 @@
           "order": "DESCENDING"
         }
       ]
-    },
-    {
-      "collectionGroup": "videos",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "dateAdded",
-          "order": "DESCENDING"
-        }
-      ]
     }
   ]
 }
+
+    

@@ -4,31 +4,44 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Function to check if the user is the owner of the document.
+    // It compares the UID from the auth token with a given userId.
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
 
+    // Rules for the 'users' collection.
+    // A user can read or write to their own user document.
     match /users/{userId} {
       allow read, write: if isOwner(userId);
     }
-
+    
+    // Rules for the 'categories' subcollection.
+    // A user can manage their own categories.
     match /users/{userId}/categories/{categoryId} {
       allow read, update, delete: if isOwner(userId);
+      // For creation, also ensure the data being written has the correct userId.
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
     }
+    // A user can list their own categories.
     match /users/{userId}/categories {
       allow list: if isOwner(userId);
     }
     
-    // Rule for LISTING videos in the collection
-    match /users/{userId}/videos {
-      allow list: if isOwner(userId);
+    // Rules for the 'videos' subcollection (now as a collection group).
+    // This allows querying across all 'videos' collections.
+    match /videos/{videoId} {
+      // A user can read/list a video if their UID matches the 'userId' field in the video document.
+      allow read: if request.auth.uid == resource.data.userId;
+      
+      // A user can create a video if their UID matches the 'userId' they are trying to set.
+      allow create: if request.auth.uid == request.resource.data.userId;
+
+      // A user can update or delete a video if they are the owner (based on the existing document's userId).
+      allow update, delete: if request.auth.uid == resource.data.userId;
     }
     
-    // Rule for individual video documents (read, create, update, delete)
-    match /users/{userId}/videos/{videoId} {
-      allow read, update, delete: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-    }
   }
 }
+
+    
