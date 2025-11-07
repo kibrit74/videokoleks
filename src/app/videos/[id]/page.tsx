@@ -42,6 +42,12 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
 
 function getEmbedUrl(url: string, platform: Platform): string | null {
     try {
+        // For Instagram and Facebook, we will always force the fallback UI with the "Open Original" button
+        // because embedding is highly unreliable and often blocked by their security policies.
+        if (platform === 'instagram' || platform === 'facebook') {
+            return null;
+        }
+
         const cleanedUrl = url.endsWith('/') ? url.slice(0, -1) : url;
         const urlObject = new URL(cleanedUrl);
 
@@ -53,25 +59,12 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
             }
             return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
         }
-        if (platform === 'instagram') {
-             if (urlObject.pathname.includes('/p/') || urlObject.pathname.includes('/reel/')) {
-                 return `https://www.instagram.com${urlObject.pathname}/embed`;
-            }
-        }
+        
         if (platform === 'tiktok') {
             const videoIdMatch = urlObject.pathname.match(/\/video\/(\d+)/);
             if (videoIdMatch && videoIdMatch[1]) {
                 return `https://www.tiktok.com/embed/v2/${videoIdMatch[1]}`;
             }
-        }
-        // Facebook uses a plugin for embeds, but Reels and fb.watch links often don't work.
-        // We will return null to show the fallback UI for these cases.
-        if (platform === 'facebook') {
-            if (urlObject.hostname.includes('fb.watch') || urlObject.pathname.includes('/reel/')) {
-                return null; // Force fallback for Reels and fb.watch links
-            }
-            // For other facebook video links, try to use the embed plugin.
-            return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false&width=auto`;
         }
     } catch(e) {
         console.error("Invalid URL for embedding:", url, e);
@@ -271,3 +264,5 @@ export default function VideoDetailPage() {
     </div>
   );
 }
+
+    
