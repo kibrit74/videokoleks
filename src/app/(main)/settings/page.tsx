@@ -34,6 +34,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   useEffect(() => {
     setIsClient(true);
@@ -65,7 +66,16 @@ export default function SettingsPage() {
           icon: Bell,
           label: 'Bildirimler',
           content: 'Anlık bildirim ayarlarını yönetin.',
-          action: () => toast({ title: 'Çok yakında!', description: 'Bildirim ayarları yakında aktif olacak.' }),
+          control: (
+             <Switch
+                checked={notificationsEnabled}
+                onCheckedChange={(checked) => {
+                  setNotificationsEnabled(checked)
+                  toast({ title: `Bildirimler ${checked ? 'açıldı' : 'kapatıldı'}.` })
+                }}
+                aria-label="Toggle notifications"
+              />
+          )
         },
       ],
     },
@@ -158,13 +168,11 @@ export default function SettingsPage() {
                           <p className="text-sm text-muted-foreground">{item.content}</p>
                         </div>
                       </div>
-                      {item.control ? (
-                         <div onClick={(e) => e.stopPropagation()}>
-                            {!isClient ? <Skeleton className="w-20 h-6" /> : item.control}
-                         </div>
-                      ) : (
-                        item.action && <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                      )}
+                       <div onClick={(e) => item.action && e.stopPropagation()}>
+                        {!isClient && item.control ? <Skeleton className="w-20 h-6" /> : null}
+                        {isClient && item.control ? item.control : null}
+                        {!item.control && item.action && <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+                      </div>
                     </div>
                   </li>
                 ))}
