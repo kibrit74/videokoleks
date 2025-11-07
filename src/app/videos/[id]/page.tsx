@@ -64,9 +64,9 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
                 return `https://www.tiktok.com/embed/v2/${videoIdMatch[1]}`;
             }
         }
+        // Facebook uses a plugin for embeds which requires the original URL to be encoded
         if (platform === 'facebook') {
-            // Facebook uses a plugin for embeds which requires the original URL to be encoded
-            return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false`;
+            return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false&width=auto`;
         }
     } catch(e) {
         console.error("Invalid URL for embedding:", url, e);
@@ -183,10 +183,10 @@ export default function VideoDetailPage() {
           <iframe
             src={embedUrl}
             className="w-full h-full border-0 flex-1"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
             allowFullScreen
             title={currentVideo.title}
-            sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
+            scrolling="no"
           ></iframe>
         ) : (
            <div className="flex-1 relative flex items-center justify-center bg-zinc-900">

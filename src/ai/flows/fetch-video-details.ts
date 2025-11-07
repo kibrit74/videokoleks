@@ -49,9 +49,10 @@ const fetchVideoDetailsFlow = ai.defineFlow(
     try {
       let fetchUrl = videoUrl;
       const isInstagram = videoUrl.includes('instagram.com');
+      const isFacebook = videoUrl.includes('facebook.com') || videoUrl.includes('fb.watch');
       
-      // For Instagram, use a CORS proxy to fetch the HTML content.
-      if (isInstagram) {
+      // For Instagram and Facebook, use a CORS proxy to fetch the HTML content.
+      if (isInstagram || isFacebook) {
         fetchUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(videoUrl)}`;
       }
 
@@ -70,10 +71,8 @@ const fetchVideoDetailsFlow = ai.defineFlow(
       let html = await response.text();
 
       // If using the proxy, the actual HTML is inside a JSON response's "contents" field.
-      // We need to handle both cases: where the response is JSON, and where it's raw HTML.
-      if (isInstagram) {
+      if (isInstagram || isFacebook) {
         try {
-            // Attempt to parse as JSON. If it fails, we assume it's raw HTML.
             const jsonResponse = JSON.parse(html);
             html = jsonResponse.contents;
         } catch (e) {
@@ -88,25 +87,20 @@ const fetchVideoDetailsFlow = ai.defineFlow(
 
       const root = parse(html);
 
-      // Extract title and thumbnail using Open Graph (og) meta tags.
-      // Fallback to the main <title> tag if og:title is not found.
       const title =
         root.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
         root.querySelector('title')?.text;
       
-      // For thumbnail, try multiple Open Graph properties as Instagram sometimes uses alternatives.
       const thumbnailUrl = 
         root.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
         root.querySelector('meta[property="og:image:secure_url"]')?.getAttribute('content');
 
       return {
-        // Trim and take the first line to get a cleaner title.
         title: title?.trim().split('\n')[0],
         thumbnailUrl,
       };
     } catch (error) {
       console.error('Error scraping video URL:', error);
-      // Return empty if any step fails, so the client can handle it gracefully.
       return {};
     }
   }
