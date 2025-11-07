@@ -165,136 +165,138 @@ export default function HomePage() {
 
 
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-8">
-      <header className="mb-8">
-        <h1 className="text-4xl font-bold font-headline text-center md:text-left mb-4">📦 VideoKoleks</h1>
-        <div className="flex flex-col md:flex-row gap-4 items-center">
-          <div className="relative flex-grow w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input 
-              placeholder="Koleksiyonunda ara..." 
-              className="pl-10 h-12 text-lg" 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+    <>
+      <div className="container mx-auto max-w-5xl px-4 py-8">
+        <header className="mb-8">
+          <h1 className="text-4xl font-bold font-headline text-center md:text-left mb-4">📦 VideoKoleks</h1>
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            <div className="relative flex-grow w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input 
+                placeholder="Koleksiyonunda ara..." 
+                className="pl-10 h-12 text-lg" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Button size="lg" className="w-full md:w-auto" onClick={() => setAddVideoOpen(true)} disabled={!user}>
+              <Plus className="mr-2 h-5 w-5" /> Video Ekle
+            </Button>
           </div>
-          <Button size="lg" className="w-full md:w-auto" onClick={() => setAddVideoOpen(true)} disabled={!user}>
-            <Plus className="mr-2 h-5 w-5" /> Video Ekle
+        </header>
+        
+        <div className="flex justify-end mb-2">
+          <Button variant="ghost" onClick={toggleSelectionMode} disabled={isLoading || !videos || videos.length === 0}>
+            {isSelectionMode ? 'İptal' : 'Seç'}
           </Button>
         </div>
-      </header>
+
+        <div className="mb-6">
+          <Tabs defaultValue="categories" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="categories">Kategoriler</TabsTrigger>
+              <TabsTrigger value="platforms">Platformlar</TabsTrigger>
+              </TabsList>
+              <TabsContent value="categories">
+              <div className="flex gap-2 overflow-x-auto py-2 -mx-4 px-4 mt-2">
+                  <Button 
+                      variant={selectedCategoryId === null ? 'secondary' : 'ghost'}
+                      onClick={() => setSelectedCategoryId(null)}
+                      size="sm"
+                      className="shrink-0"
+                  >
+                      Tüm Kategoriler
+                  </Button>
+                  {categories && categories.map((cat) => {
+                      const isSelected = selectedCategoryId === cat.id;
+                      return (
+                      <Button
+                          key={cat.id} 
+                          variant={isSelected ? 'default' : 'ghost'}
+                          onClick={() => setSelectedCategoryId(cat.id)}
+                          size="sm"
+                          className={cn(
+                          'shrink-0',
+                          isSelected && `${cat.color} text-white hover:opacity-90`
+                          )}
+                      >
+                          <span className="mr-2">{cat.emoji}</span>
+                          {cat.name}
+                      </Button>
+                      )
+                  })}
+                  {categoriesLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="w-24 h-9 rounded-md" />)}
+              </div>
+              </TabsContent>
+              <TabsContent value="platforms">
+              <div className="flex gap-2 overflow-x-auto py-2 -mx-4 px-4 mt-2">
+                  <Button 
+                      variant={selectedPlatform === null ? 'secondary' : 'ghost'}
+                      onClick={() => setSelectedPlatform(null)}
+                      size="sm"
+                      className="shrink-0"
+                  >
+                      Tüm Platformlar
+                  </Button>
+                  {platformFilters.map((p) => {
+                      const isSelected = selectedPlatform === p.platform;
+                      const PlatformIcon = p.icon;
+                      return (
+                      <Button
+                          key={p.platform} 
+                          variant={isSelected ? 'default' : 'ghost'}
+                          onClick={() => setSelectedPlatform(p.platform)}
+                          size="sm"
+                          className={cn('shrink-0')}
+                      >
+                          <PlatformIcon className="mr-2 h-4 w-4" />
+                          {p.platform.charAt(0).toUpperCase() + p.platform.slice(1)}
+                      </Button>
+                      )
+                  })}
+              </div>
+              </TabsContent>
+          </Tabs>
+        </div>
+
+        <div className={cn("grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6", (isSelectionMode && selectedVideos.size > 0) && "pb-24")}>
+          {isLoading ? (
+              Array.from({length: 10}).map((_, i) => (
+                  <div key={i} className="aspect-[9/16] w-full">
+                      <Skeleton className="w-full h-full rounded-lg" />
+                  </div>
+              ))
+          ) : videosError ? (
+              <Alert variant="destructive" className="col-span-full">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Hata!</AlertTitle>
+                <AlertDescription>
+                  Videolar yüklenirken bir hata oluştu: {videosError.message}
+                </AlertDescription>
+              </Alert>
+          ) : filteredVideos.length > 0 ? (
+              filteredVideos.map((video) => (
+                  <VideoCard 
+                    key={video.id} 
+                    video={video} 
+                    isSelectionMode={isSelectionMode}
+                    isSelected={selectedVideos.has(video.id)}
+                    onVideoSelect={() => handleVideoSelect(video.id)}
+                  />
+              ))
+          ) : (
+          <div className="text-center py-20 col-span-full">
+              <h2 className="text-2xl font-semibold mb-2">
+                {searchTerm || selectedCategoryId || selectedPlatform ? `Sonuç bulunamadı` : "Henüz video eklemediniz"}
+              </h2>
+              <p className="text-muted-foreground">
+                {searchTerm || selectedCategoryId || selectedPlatform ? "Farklı bir arama veya filtre deneyin." : 'Başlamak için "Video Ekle" butonuna tıklayın.'}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
       
-      <div className="flex justify-end mb-2">
-        <Button variant="ghost" onClick={toggleSelectionMode} disabled={isLoading || !videos || videos.length === 0}>
-          {isSelectionMode ? 'İptal' : 'Seç'}
-        </Button>
-      </div>
-
-      <div className="mb-6">
-        <Tabs defaultValue="categories" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="categories">Kategoriler</TabsTrigger>
-            <TabsTrigger value="platforms">Platformlar</TabsTrigger>
-            </TabsList>
-            <TabsContent value="categories">
-            <div className="flex gap-2 overflow-x-auto py-2 -mx-4 px-4 mt-2">
-                <Button 
-                    variant={selectedCategoryId === null ? 'secondary' : 'ghost'}
-                    onClick={() => setSelectedCategoryId(null)}
-                    size="sm"
-                    className="shrink-0"
-                >
-                    Tüm Kategoriler
-                </Button>
-                {categories && categories.map((cat) => {
-                    const isSelected = selectedCategoryId === cat.id;
-                    return (
-                    <Button
-                        key={cat.id} 
-                        variant={isSelected ? 'default' : 'ghost'}
-                        onClick={() => setSelectedCategoryId(cat.id)}
-                        size="sm"
-                        className={cn(
-                        'shrink-0',
-                        isSelected && `${cat.color} text-white hover:opacity-90`
-                        )}
-                    >
-                        <span className="mr-2">{cat.emoji}</span>
-                        {cat.name}
-                    </Button>
-                    )
-                })}
-                {categoriesLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="w-24 h-9 rounded-md" />)}
-            </div>
-            </TabsContent>
-            <TabsContent value="platforms">
-            <div className="flex gap-2 overflow-x-auto py-2 -mx-4 px-4 mt-2">
-                <Button 
-                    variant={selectedPlatform === null ? 'secondary' : 'ghost'}
-                    onClick={() => setSelectedPlatform(null)}
-                    size="sm"
-                    className="shrink-0"
-                >
-                    Tüm Platformlar
-                </Button>
-                {platformFilters.map((p) => {
-                    const isSelected = selectedPlatform === p.platform;
-                    const PlatformIcon = p.icon;
-                    return (
-                    <Button
-                        key={p.platform} 
-                        variant={isSelected ? 'default' : 'ghost'}
-                        onClick={() => setSelectedPlatform(p.platform)}
-                        size="sm"
-                        className={cn('shrink-0')}
-                    >
-                        <PlatformIcon className="mr-2 h-4 w-4" />
-                        {p.platform.charAt(0).toUpperCase() + p.platform.slice(1)}
-                    </Button>
-                    )
-                })}
-            </div>
-            </TabsContent>
-        </Tabs>
-      </div>
-
-      <div className={cn("grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6", (isSelectionMode && selectedVideos.size > 0) && "pb-24")}>
-        {isLoading ? (
-            Array.from({length: 10}).map((_, i) => (
-                <div key={i} className="aspect-[9/16] w-full">
-                    <Skeleton className="w-full h-full rounded-lg" />
-                </div>
-            ))
-        ) : videosError ? (
-             <Alert variant="destructive" className="col-span-full">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Hata!</AlertTitle>
-              <AlertDescription>
-                Videolar yüklenirken bir hata oluştu: {videosError.message}
-              </AlertDescription>
-            </Alert>
-        ) : filteredVideos.length > 0 ? (
-            filteredVideos.map((video) => (
-                <VideoCard 
-                  key={video.id} 
-                  video={video} 
-                  isSelectionMode={isSelectionMode}
-                  isSelected={selectedVideos.has(video.id)}
-                  onVideoSelect={() => handleVideoSelect(video.id)}
-                />
-            ))
-        ) : (
-         <div className="text-center py-20 col-span-full">
-            <h2 className="text-2xl font-semibold mb-2">
-              {searchTerm || selectedCategoryId || selectedPlatform ? `Sonuç bulunamadı` : "Henüz video eklemediniz"}
-            </h2>
-            <p className="text-muted-foreground">
-              {searchTerm || selectedCategoryId || selectedPlatform ? "Farklı bir arama veya filtre deneyin." : 'Başlamak için "Video Ekle" butonuna tıklayın.'}
-            </p>
-          </div>
-        )}
-      </div>
-
       {/* --- Bulk Actions Bar --- */}
       {isSelectionMode && selectedVideos.size > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm">
@@ -376,6 +378,6 @@ export default function HomePage() {
         isOpen={isAddVideoOpen} 
         onOpenChange={setAddVideoOpen}
       />
-    </div>
+    </>
   );
 }
