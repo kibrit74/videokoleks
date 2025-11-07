@@ -16,29 +16,20 @@ service cloud.firestore {
       allow read, write: if isSignedIn() && isOwner(userId);
     }
     
-    match /users/{userId}/categories/{categoryId} {
-      // Allow create if the user is signed in and the incoming document's userId matches their own.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      
-      // Allow read, update, delete if the user is signed in and owns this path.
-      // No need to check resource.data on read/delete.
-      allow read, update, delete: if isSignedIn() && isOwner(userId);
-      
-      // Allow list only for the owner of the collection.
+    match /users/{userId}/categories {
       allow list: if isSignedIn() && isOwner(userId);
     }
-
-    match /users/{userId}/videos/{videoId} {
-      // Allow create if the user is signed in and the incoming document's userId matches their own.
+    match /users/{userId}/categories/{categoryId} {
       allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-
-      // Allow read, update, delete if the user is signed in and owns this path.
-      // This is the key fix: read/delete operations do not need to inspect resource.data.
-      // Authorization is based on the path.
       allow read, update, delete: if isSignedIn() && isOwner(userId);
+    }
 
-      // Allow list only for the owner of the collection.
+    match /users/{userId}/videos {
       allow list: if isSignedIn() && isOwner(userId);
+    }
+    match /users/{userId}/videos/{videoId} {
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow read, update, delete: if isSignedIn() && isOwner(userId);
     }
   }
 }
