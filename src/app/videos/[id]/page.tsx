@@ -32,6 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { FacebookVideoPlayer } from '@/components/facebook-video-player';
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -42,9 +43,8 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
 
 function getEmbedUrl(url: string, platform: Platform): string | null {
     try {
-        // Instagram and Facebook embeds are unreliable. Force "Open Original".
         if (platform === 'instagram' || platform === 'facebook') {
-            return null;
+            return null; // We handle facebook with a special component, and instagram does not allow embeds easily.
         }
 
         const cleanedUrl = url.endsWith('/') ? url.slice(0, -1) : url;
@@ -123,6 +123,7 @@ export default function VideoDetailPage() {
 
   const PlatformIcon = platformIcons[currentVideo.platform];
   const embedUrl = getEmbedUrl(currentVideo.originalUrl, currentVideo.platform);
+  const isFacebookVideo = currentVideo.platform === 'facebook';
 
   const toggleFavorite = () => {
       if (!videoDocRef || !currentVideo) return;
@@ -178,9 +179,12 @@ export default function VideoDetailPage() {
               </Link>
             </Button>
         </header>
-
-        {embedUrl ? (
+        
+        {isFacebookVideo ? (
+          <FacebookVideoPlayer videoUrl={currentVideo.originalUrl} />
+        ) : embedUrl ? (
           <iframe
+            key={embedUrl} // Add key to force re-render on URL change
             src={embedUrl}
             className="w-full h-full border-0 flex-1"
             allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
