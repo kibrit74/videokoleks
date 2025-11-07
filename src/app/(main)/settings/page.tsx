@@ -27,6 +27,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { BackupRestoreDialog } from '@/components/backup-restore-dialog';
 
 
 export default function SettingsPage() {
@@ -35,6 +36,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [isBackupRestoreOpen, setBackupRestoreOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -101,7 +103,7 @@ export default function SettingsPage() {
           icon: Cloud,
           label: 'Yedekleme & Senkronizasyon',
           content: 'Verilerinizi yedekleyin ve geri yükleyin.',
-          action: () => toast({ title: 'Çok yakında!' }),
+          action: () => setBackupRestoreOpen(true),
         },
       ],
     },
@@ -120,6 +122,7 @@ export default function SettingsPage() {
   ];
 
   return (
+    <>
     <div className="container mx-auto max-w-2xl px-4 py-8">
       <header className="mb-8">
         <h1 className="text-4xl font-bold font-headline">Ayarlar</h1>
@@ -182,5 +185,7 @@ export default function SettingsPage() {
         ))}
       </div>
     </div>
+    <BackupRestoreDialog isOpen={isBackupRestoreOpen} onOpenChange={setBackupRestoreOpen} />
+    </>
   );
 }
