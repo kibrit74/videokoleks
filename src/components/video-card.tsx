@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { Video, Platform, Category } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +10,15 @@ import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon } from '@/componen
 import { cn } from '@/lib/utils';
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from './ui/button';
+import { MoreVertical, Share2, Eye } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -28,17 +38,41 @@ export function VideoCard({ video }: { video: Video }) {
   const PlatformIcon = platformIcons[video.platform];
   const { user } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
+  const { toast } = useToast();
 
-  // Fetch the category data based on categoryId
   const categoryDocRef = useMemoFirebase(() => 
     user && video.categoryId ? doc(firestore, 'users', user.uid, 'categories', video.categoryId) : null,
     [user, firestore, video.categoryId]
   );
   const { data: category } = useDoc<Category>(categoryDocRef);
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareUrl = `${window.location.origin}/videos/${video.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: video.title,
+          text: `Şu videoya göz at: ${video.title}`,
+          url: shareUrl,
+        });
+      } catch (error) {
+        console.error('Paylaşım hatası:', error);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({ title: "Link panoya kopyalandı!" });
+      } catch (err) {
+        toast({ variant: 'destructive', title: "Kopyalanamadı", description: "Link panoya kopyalanamadı." });
+      }
+    }
+  };
+
+
   return (
-    <Link href={`/videos/${video.id}`} className="group block">
-      <Card className="overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1">
+      <Card className="group overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1">
         <CardContent className="p-0">
           <div className="relative aspect-[9/16] w-full">
             <Image
@@ -47,14 +81,50 @@ export function VideoCard({ video }: { video: Video }) {
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               data-ai-hint={video.imageHint}
+              onClick={() => router.push(`/videos/${video.id}`)}
+              style={{ cursor: 'pointer' }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-            <Badge
-              className={cn("absolute right-2 top-2 border-none", platformColors[video.platform])}
+            <div 
+              className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" 
+              onClick={() => router.push(`/videos/${video.id}`)}
+              style={{ cursor: 'pointer' }}
+            />
+
+            <div className="absolute top-2 right-2 flex gap-1">
+               <Badge
+                className={cn("border-none", platformColors[video.platform])}
+              >
+                <PlatformIcon className="mr-1 h-3 w-3" />
+              </Badge>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="secondary"
+                    size="icon"
+                    className="h-7 w-7 rounded-full bg-black/40 text-white border-none hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenuItem onClick={() => router.push(`/videos/${video.id}`)}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    Detayları Gör
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleShare}>
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Paylaş
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            
+            <div 
+              className="absolute bottom-2 left-2 right-2"
+              onClick={() => router.push(`/videos/${video.id}`)}
+              style={{ cursor: 'pointer' }}
             >
-              <PlatformIcon className="mr-1 h-3 w-3" />
-            </Badge>
-            <div className="absolute bottom-2 left-2 right-2">
               <div className="flex items-end justify-between">
                 <Badge variant="secondary" className="bg-white/20 text-white backdrop-blur-sm">
                   {video.duration}
@@ -69,6 +139,5 @@ export function VideoCard({ video }: { video: Video }) {
           </div>
         </CardContent>
       </Card>
-    </Link>
   );
 }
