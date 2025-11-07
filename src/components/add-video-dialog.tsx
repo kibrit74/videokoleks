@@ -21,7 +21,9 @@ import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
-import { collection, serverTimestamp } from 'firebase/firestore';
+import { collection, serverTimestamp, addDoc } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 declare global {
   interface Window {
@@ -44,7 +46,7 @@ export function AddVideoDialog({
 
   const [videoUrl, setVideoUrl] = useState('');
   const [videoDetails, setVideoDetails] = useState<{
-    title?: string;
+    title: string;
     thumbnailUrl?: string;
     duration?: string;
   } | null>(null);
@@ -61,8 +63,6 @@ export function AddVideoDialog({
 
   const handleIframelyLoad = () => {
     setIsIframelyReady(true);
-    // Optional: You can set a default key here if needed
-    // window.iframely.setKey('YOUR_IFRAMELY_API_KEY');
   };
 
   useEffect(() => {
@@ -87,43 +87,52 @@ export function AddVideoDialog({
       setIsFetching(true);
       setVideoDetails(null);
       
-      window.iframely.getPageData(videoUrl, (error: any, data: any) => {
-        setIsFetching(false);
-        if (error) {
-          console.error('Iframely error:', error);
-          toast({
-            variant: 'destructive',
-            title: 'Detaylar Alınamadı',
-            description: 'Lütfen URL’yi kontrol edin veya farklı bir video deneyin.',
-          });
-          return;
-        }
+      if (window.iframely && typeof window.iframely.getPageData === 'function') {
+        window.iframely.getPageData(videoUrl, (error: any, data: any) => {
+          setIsFetching(false);
+          if (error) {
+            console.error('Iframely error:', error);
+            toast({
+              variant: 'destructive',
+              title: 'Detaylar Alınamadı',
+              description: 'Lütfen URL’yi kontrol edin veya farklı bir video deneyin.',
+            });
+            return;
+          }
 
-        const thumbnail = data.links?.thumbnail?.[0]?.href;
-        const title = data.meta?.title;
-        const duration = data.meta?.duration;
-        
-        const formatDuration = (seconds: number) => {
-          if (!seconds) return '0:00';
-          const minutes = Math.floor(seconds / 60);
-          const remainingSeconds = Math.floor(seconds % 60);
-          return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-        };
+          const thumbnail = data.links?.thumbnail?.[0]?.href;
+          const title = data.meta?.title;
+          const duration = data.meta?.duration;
+          
+          const formatDuration = (seconds: number) => {
+            if (!seconds) return '0:00';
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+          };
 
-        if (title && thumbnail) {
-          setVideoDetails({ 
-            title, 
-            thumbnailUrl: thumbnail,
-            duration: formatDuration(duration)
-          });
-        } else {
-          toast({
+          if (title) {
+            setVideoDetails({ 
+              title, 
+              thumbnailUrl: thumbnail,
+              duration: formatDuration(duration)
+            });
+          } else {
+            toast({
+              variant: 'destructive',
+              title: 'Detaylar Alınamadı',
+              description: 'Bu video için başlık veya küçük resim bulunamadı.',
+            });
+          }
+        });
+      } else {
+         setIsFetching(false);
+         toast({
             variant: 'destructive',
-            title: 'Detaylar Alınamadı',
-            description: 'Bu video için başlık veya küçük resim bulunamadı.',
+            title: 'Hata',
+            description: 'Video detay servisi yüklenemedi. Lütfen sayfayı yenileyin.',
           });
-        }
-      });
+      }
     }, 1000); // Debounce for 1 second
 
     return () => clearTimeout(timer);
@@ -138,11 +147,11 @@ export function AddVideoDialog({
   };
 
   const handleSave = async () => {
-    if (!user || !firestore || !videoUrl || !selectedCategory || !videoDetails?.title || !videoDetails?.thumbnailUrl) {
+    if (!user || !firestore || !videoUrl || !selectedCategory || !videoDetails?.title) {
       toast({
         variant: 'destructive',
         title: 'Eksik Bilgi',
-        description: 'Lütfen video linki ve kategori girdiğinizden emin olun.',
+        description: 'Lütfen video linki, başlık ve kategori girdiğinizden emin olun.',
       });
       return;
     }
@@ -153,7 +162,8 @@ export function AddVideoDialog({
     const videoData: Omit<Video, 'id'> = {
         userId: user.uid,
         title: videoDetails.title,
-        thumbnailUrl: videoDetails.thumbnailUrl,
+        thumbnailUrl: videoDetails.thumbnailUrl || `https://picsum.photos/seed/${new Date().getTime()}/480/854`,
+        imageHint: "video thumbnail",
         originalUrl: videoUrl,
         platform,
         categoryId: selectedCategory.id,
@@ -161,20 +171,28 @@ export function AddVideoDialog({
         notes: notes,
         isFavorite: false,
         dateAdded: serverTimestamp(),
-        imageHint: "video thumbnail"
     };
 
-    const videosCollection = collection(firestore, 'users', user.uid, 'videos');
-    
-    addDocumentNonBlocking(videosCollection, videoData);
-    
-    toast({
-      title: 'Video Kaydedildi! ✨',
-      description: 'Videonuz koleksiyonunuza eklendi.',
-    });
-    
-    setIsSaving(false);
-    onOpenChange(false);
+    try {
+        const videosCollection = collection(firestore, 'users', user.uid, 'videos');
+        await addDoc(videosCollection, videoData);
+        
+        toast({
+          title: 'Video Kaydedildi! ✨',
+          description: 'Videonuz koleksiyonunuza eklendi.',
+        });
+        
+        onOpenChange(false);
+    } catch(serverError: any) {
+         const permissionError = new FirestorePermissionError({
+            path: `users/${user.uid}/videos`,
+            operation: 'create',
+            requestResourceData: videoData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    } finally {
+        setIsSaving(false);
+    }
   };
   
   const isLoading = isFetching || isSaving;
@@ -275,7 +293,7 @@ export function AddVideoDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               İptal
             </Button>
-            <Button onClick={handleSave} disabled={!videoDetails || !selectedCategory || isLoading}>
+            <Button onClick={handleSave} disabled={!videoDetails?.title || !selectedCategory || isLoading}>
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Kaydet'}
             </Button>
           </DialogFooter>
