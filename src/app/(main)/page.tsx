@@ -99,6 +99,7 @@ export default function HomePage() {
   };
 
   const handleVideoSelect = (videoId: string) => {
+    if (!isSelectionMode) return;
     setSelectedVideos(prevSelected => {
       const newSelected = new Set(prevSelected);
       if (newSelected.has(videoId)) {
