@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { collection, getDocs, writeBatch, doc } from 'firebase/firestore';
-import { Loader2, Download, Upload, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Loader2, Download, Upload, AlertTriangle } from 'lucide-react';
 import type { Category, Video } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Progress } from './ui/progress';
@@ -56,23 +56,23 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
       ]);
 
       const categories = categoriesSnapshot.docs.map(doc => {
-        const { id, userId, ...data } = doc.data();
+        const { id, userId, ...data } = doc.data() as Category;
         return data;
-      }) as Omit<Category, 'id' | 'userId'>[];
+      });
 
       const videos = videosSnapshot.docs.map(doc => {
-        const { id, userId, dateAdded, ...data } = doc.data();
+        const { id, userId, dateAdded, ...data } = doc.data() as Video;
         return data;
-      }) as Omit<Video, 'id' | 'userId' | 'dateAdded'>[];
+      });
 
-      const backupData: BackupData = { categories, videos };
+      const backupData = { categories, videos };
       
       const jsonString = JSON.stringify(backupData, null, 2);
       const blob = new Blob([jsonString], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'videokoleks_backup.json';
+      a.download = `videokoleks_backup_${new Date().toISOString().slice(0,10)}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -99,6 +99,15 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
     const file = event.target.files?.[0];
     if (!file) return;
 
+    const confirmed = window.confirm(
+        'Emin misiniz? Bu işlem mevcut tüm kategorilerinizi ve videolarınızı silecek ve yedekleme dosyasındaki verilerle değiştirecektir. Bu işlem geri alınamaz.'
+    );
+
+    if (!confirmed) {
+        event.target.value = ''; // Reset file input
+        return;
+    }
+
     setIsRestoring(true);
     setError(null);
     setRestoreProgress(0);
@@ -114,31 +123,57 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
         
         // Validate data structure
         if (!data.categories || !data.videos || !Array.isArray(data.categories) || !Array.isArray(data.videos)) {
-            throw new Error('Geçersiz yedekleme dosyası formatı.');
+            throw new Error('Geçersiz yedekleme dosyası formatı. `categories` ve `videos` dizileri bulunmalı.');
         }
 
         const batch = writeBatch(firestore);
+        
+        // 1. Delete existing data
+        const existingCategoriesRef = collection(firestore, 'users', user.uid, 'categories');
+        const existingVideosRef = collection(firestore, 'users', user.uid, 'videos');
+        const [existingCategoriesSnap, existingVideosSnap] = await Promise.all([
+            getDocs(existingCategoriesRef),
+            getDocs(existingVideosRef)
+        ]);
+
+        existingCategoriesSnap.forEach(doc => batch.delete(doc.ref));
+        existingVideosSnap.forEach(doc => batch.delete(doc.ref));
+
+
+        // 2. Add new data from backup
         const totalOperations = data.categories.length + data.videos.length;
         let completedOperations = 0;
-
-        // Note: This process will overwrite existing data.
-        // A more robust solution might delete old data first or merge.
         
-        // Add categories
+        const newCategoryRefs: { [oldName: string]: string } = {};
+
+        // Add categories and map their old IDs to new IDs
         data.categories.forEach(category => {
             const newDocRef = doc(collection(firestore, 'users', user.uid, 'categories'));
             batch.set(newDocRef, { ...category, userId: user.uid });
+            // This mapping is imperfect if names are not unique, but it's the best we can do without original IDs.
+            if(category.name) {
+              newCategoryRefs[category.name] = newDocRef.id;
+            }
             completedOperations++;
-            setRestoreProgress((completedOperations / totalOperations) * 100);
+            setRestoreProgress((completedOperations / totalOperations) * 50); // 0-50 for additions
         });
 
-        // Add videos
+        // Add videos, updating categoryId to the new one
         data.videos.forEach(video => {
             const newDocRef = doc(collection(firestore, 'users', user.uid, 'videos'));
-             const videoData = { ...video, userId: user.uid, dateAdded: new Date() };
+             // Find the original category to get its name
+            const originalCategory = data.categories.find(c => c.name && video.categoryId && c.name === video.categoryId);
+            const newCategoryId = originalCategory ? newCategoryRefs[originalCategory.name] : '';
+
+            const videoData = { 
+                ...video, 
+                userId: user.uid, 
+                dateAdded: new Date(), // Use current date for restored items
+                categoryId: newCategoryId || video.categoryId // fallback to old ID if not found
+            };
             batch.set(newDocRef, videoData);
             completedOperations++;
-            setRestoreProgress((completedOperations / totalOperations) * 100);
+            setRestoreProgress(50 + (completedOperations / totalOperations) * 50); // 50-100 for additions
         });
         
         await batch.commit();
@@ -149,6 +184,9 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
         });
         
         onOpenChange(false);
+        // Force a page reload to see the new data correctly
+        window.location.reload();
+
 
       } catch (err: any) {
         console.error('Import error:', err);
@@ -157,7 +195,7 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
         setIsRestoring(false);
         setRestoreProgress(0);
         // Reset file input
-        event.target.value = '';
+        if(event.target) event.target.value = '';
       }
     };
     reader.readAsText(file);
@@ -196,7 +234,8 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
              <div className='p-4 border rounded-lg'>
                 <h3 className="font-semibold mb-2 flex items-center gap-2"><Upload className='w-5 h-5'/> Verileri İçe Aktar</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                   Daha önce oluşturulmuş bir yedekleme dosyasını geri yükleyin. Bu işlem mevcut verilerinizin üzerine yazmaz, ekler.
+                   Bir yedekleme dosyasını geri yükleyin. 
+                   <span className="font-bold text-destructive"> Bu işlem mevcut tüm verilerinizi siler ve yedeklemedeki verilerle değiştirir.</span>
                 </p>
                 <Button asChild variant="outline" className="w-full" disabled={isLoading || isRestoring}>
                     <label htmlFor="import-file">
