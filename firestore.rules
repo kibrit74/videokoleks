@@ -20,7 +20,6 @@ service cloud.firestore {
     // A user can manage their own categories.
     match /users/{userId}/categories/{categoryId} {
       allow read, update, delete: if isOwner(userId);
-      // For creation, also ensure the data being written has the correct userId.
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
     }
     // A user can list their own categories.
@@ -28,7 +27,7 @@ service cloud.firestore {
       allow list: if isOwner(userId);
     }
     
-    // Rules for the 'videos' subcollection (now as a collection group).
+    // Rules for the 'videos' collection (as a collection group).
     // This allows querying across all 'videos' collections.
     match /videos/{videoId} {
       // A user can read/list a video if their UID matches the 'userId' field in the video document.
@@ -43,5 +42,3 @@ service cloud.firestore {
     
   }
 }
-
-    

@@ -17,22 +17,12 @@
     },
     {
       "collectionGroup": "videos",
-      "queryScope": "COLLECTION",
+      "queryScope": "COLLECTION_GROUP",
       "fields": [
         {
-          "fieldPath": "categoryId",
+          "fieldPath": "userId",
           "order": "ASCENDING"
         },
-        {
-          "fieldPath": "dateAdded",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "videos",
-      "queryScope": "COLLECTION",
-      "fields": [
         {
           "fieldPath": "isFavorite",
           "order": "ASCENDING"
@@ -45,5 +35,3 @@
     }
   ]
 }
-
-    

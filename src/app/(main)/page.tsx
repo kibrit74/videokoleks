@@ -275,7 +275,7 @@ export default function HomePage() {
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Hata!</AlertTitle>
                 <AlertDescription>
-                  Videolar yüklenirken bir hata oluştu: {videosError.message}
+                  Videolar yüklenirken bir hata oluştu. Lütfen güvenlik kurallarınızı ve veritabanı dizinlerinizi kontrol edin.
                 </AlertDescription>
               </Alert>
           ) : filteredVideos.length > 0 ? (
@@ -302,7 +302,7 @@ export default function HomePage() {
       </div>
       
       {isSelectionMode && selectedVideos.size > 0 && (
-        <div className="fixed bottom-16 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm md:bottom-0">
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm">
            <div className="container mx-auto max-w-5xl px-4 h-16 flex items-center justify-between gap-4">
                 <div className='flex items-center gap-4'>
                     <Button variant="ghost" size="icon" onClick={toggleSelectionMode}>
