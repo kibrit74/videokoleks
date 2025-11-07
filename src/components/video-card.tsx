@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Video, Platform, Category } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,8 +16,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from './ui/button';
-import { MoreVertical, Share2, Eye } from 'lucide-react';
+import { MoreVertical, Share2, Eye, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from './ui/checkbox';
+
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -34,7 +35,14 @@ const platformColors: Record<Platform, string> = {
   facebook: 'bg-[#1877F2]',
 };
 
-export function VideoCard({ video }: { video: Video }) {
+interface VideoCardProps {
+  video: Video;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: (videoId: string) => void;
+}
+
+export function VideoCard({ video, isSelectionMode = false, isSelected = false, onSelect = () => {} }: VideoCardProps) {
   const PlatformIcon = platformIcons[video.platform];
   const { user } = useUser();
   const firestore = useFirestore();
@@ -79,60 +87,83 @@ export function VideoCard({ video }: { video: Video }) {
     }
   };
 
+  const handleCardClick = () => {
+    if (isSelectionMode) {
+      onSelect(video.id);
+    } else {
+      router.push(`/videos/${video.id}`);
+    }
+  };
+
 
   return (
-      <Card className="group overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1">
+      <Card 
+        className={cn(
+          "group overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1",
+          isSelectionMode && "cursor-pointer",
+          isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+        )}
+        onClick={handleCardClick}
+      >
         <CardContent className="p-0">
           <div className="relative aspect-[9/16] w-full">
             <Image
               src={video.thumbnailUrl}
               alt={video.title}
               fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              className={cn("object-cover transition-transform duration-300 group-hover:scale-105", isSelected && "scale-105")}
               data-ai-hint={video.imageHint}
-              onClick={() => router.push(`/videos/${video.id}`)}
-              style={{ cursor: 'pointer' }}
             />
-            <div 
-              className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" 
-              onClick={() => router.push(`/videos/${video.id}`)}
-              style={{ cursor: 'pointer' }}
+             <div 
+              className={cn(
+                "absolute inset-0 bg-gradient-to-t from-black/60 to-transparent",
+                isSelected && "bg-black/40"
+              )}
             />
 
-            <div className="absolute top-2 right-2 flex gap-1">
-               <Badge
-                className={cn("border-none", platformColors[video.platform])}
-              >
-                <PlatformIcon className="mr-1 h-3 w-3" />
-              </Badge>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="secondary"
-                    size="icon"
-                    className="h-7 w-7 rounded-full bg-black/40 text-white border-none hover:bg-black/60 opacity-100 transition-opacity"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenuItem onClick={() => router.push(`/videos/${video.id}`)}>
-                    <Eye className="mr-2 h-4 w-4" />
-                    Detayları Gör
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleShare}>
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Paylaş
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {isSelectionMode ? (
+               <div className="absolute top-2 left-2 z-10">
+                <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => onSelect(video.id)}
+                    className="h-6 w-6 border-white bg-black/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary-foreground"
+                    aria-label="Select video"
+                />
+              </div>
+            ) : (
+              <div className="absolute top-2 right-2 flex gap-1 z-10">
+                <Badge
+                  className={cn("border-none", platformColors[video.platform])}
+                >
+                  <PlatformIcon className="mr-1 h-3 w-3" />
+                </Badge>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="secondary"
+                      size="icon"
+                      className="h-7 w-7 rounded-full bg-black/40 text-white border-none hover:bg-black/60 opacity-100 transition-opacity"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenuItem onClick={() => router.push(`/videos/${video.id}`)}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      Detayları Gör
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleShare}>
+                      <Share2 className="mr-2 h-4 w-4" />
+                      Paylaş
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
             
             <div 
               className="absolute bottom-2 left-2 right-2"
-              onClick={() => router.push(`/videos/${video.id}`)}
-              style={{ cursor: 'pointer' }}
             >
               <div className="flex items-end justify-between">
                 <Badge variant="secondary" className="bg-black/20 text-white backdrop-blur-sm">
