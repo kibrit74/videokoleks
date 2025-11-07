@@ -33,17 +33,21 @@ export default function HomePage() {
   const videosQuery = useMemoFirebase(() => {
     if (!user) return null;
     
-    let q = query(collection(firestore, 'users', user.uid, 'videos'));
-    
-    // If a category is selected, filter by it on the Firestore level
+    const videosCollection = collection(firestore, 'users', user.uid, 'videos');
+
+    // If a category is selected, filter by it and order by date.
+    // This requires a composite index on (categoryId, dateAdded).
     if (selectedCategoryId) {
-      q = query(q, where('categoryId', '==', selectedCategoryId));
+      return query(
+        videosCollection, 
+        where('categoryId', '==', selectedCategoryId),
+        orderBy('dateAdded', 'desc')
+      );
     }
     
-    // Always order by dateAdded descending
-    q = query(q, orderBy('dateAdded', 'desc'));
+    // If no category is selected, just order all videos by date.
+    return query(videosCollection, orderBy('dateAdded', 'desc'));
 
-    return q;
   }, [firestore, user, selectedCategoryId]);
 
   const { data: videos, isLoading: videosLoading, error: videosError } = useCollection<Video>(videosQuery);
@@ -128,7 +132,7 @@ export default function HomePage() {
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Hata!</AlertTitle>
               <AlertDescription>
-                Videolar yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.
+                Videolar yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin veya bir indeks oluşturmanız gerekip gerekmediğini kontrol edin.
               </AlertDescription>
             </Alert>
         ) : filteredVideos.length > 0 ? (
