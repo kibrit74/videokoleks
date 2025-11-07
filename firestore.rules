@@ -12,28 +12,20 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
-    // Rules for the 'categories' subcollection
-    match /users/{userId}/categories {
-      // This rule allows a user to LIST their own categories.
-      allow list: if isOwner(userId);
-    }
     match /users/{userId}/categories/{categoryId} {
-      // Allow read, update, delete on a SPECIFIC category they own
       allow read, update, delete: if isOwner(userId);
-      // Allow a user to CREATE a category for themselves, ensuring data integrity
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
+    }
+    match /users/{userId}/categories {
+      allow list: if isOwner(userId);
     }
     
-    // Rules for the 'videos' subcollection
-    match /users/{userId}/videos {
-      // This rule allows a user to LIST their own videos. This is the critical fix.
-      allow list: if isOwner(userId);
-    }
     match /users/{userId}/videos/{videoId} {
-      // Allow read, update, delete on a SPECIFIC video they own
       allow read, update, delete: if isOwner(userId);
-      // Allow a user to CREATE a video for themselves, ensuring data integrity
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
+    }
+    match /users/{userId}/videos {
+      allow list: if isOwner(userId);
     }
   }
 }
