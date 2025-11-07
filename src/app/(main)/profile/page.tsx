@@ -104,27 +104,34 @@ export default function ProfilePage() {
   };
 
   const settingsItems = [
-    { icon: Settings, label: 'Ayarlar', action: 'toast' },
-    { icon: Bell, label: 'Bildirimler', action: 'toast' },
-    { icon: Paintbrush, label: 'Tema', action: handleThemeChange, isTheme: true },
-    { icon: Download, label: 'Otomatik Kaydetme', action: 'toast' },
-    { icon: Lock, label: 'Gizlilik', action: 'toast' },
-    { icon: Cloud, label: 'Yedekleme & Senkronizasyon', action: 'toast' },
-    { icon: Gem, label: "Premium'a Geç", isPremium: true, action: 'toast' },
-    { icon: Mail, label: 'Destek & Geri Bildirim', action: 'mail' },
-    { icon: Info, label: 'Hakkında', action: () => setAboutOpen(true) },
+    { icon: Settings, label: 'Ayarlar' },
+    { icon: Bell, label: 'Bildirimler' },
+    { icon: Paintbrush, label: 'Tema', isTheme: true },
+    { icon: Download, label: 'Otomatik Kaydetme' },
+    { icon: Lock, label: 'Gizlilik' },
+    { icon: Cloud, label: 'Yedekleme & Senkronizasyon' },
+    { icon: Gem, label: "Premium'a Geç", isPremium: true },
+    { icon: Mail, label: 'Destek & Geri Bildirim' },
+    { icon: Info, label: 'Hakkında' },
   ];
 
-  const handleSettingClick = (item: (typeof settingsItems)[number]) => {
-    if (typeof item.action === 'function') {
-      item.action();
-    } else if (item.action === 'mail') {
-      window.location.href = 'mailto:destek@videokoleks.com';
-    } else {
-      toast({
-        title: 'Çok yakında!',
-        description: `${item.label} özelliği yakında aktif olacak.`,
-      });
+  const handleSettingClick = (item: { label: string }) => {
+    switch (item.label) {
+      case 'Tema':
+        handleThemeChange();
+        break;
+      case 'Destek & Geri Bildirim':
+        window.location.href = 'mailto:destek@videokoleks.com';
+        break;
+      case 'Hakkında':
+        setAboutOpen(true);
+        break;
+      default:
+        toast({
+          title: 'Çok yakında!',
+          description: `${item.label} özelliği yakında aktif olacak.`,
+        });
+        break;
     }
   };
 
