@@ -101,11 +101,6 @@ export default function ProfilePage() {
   const handleThemeChange = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
-    toast({
-      title: `Tema değiştirildi: ${
-        newTheme === 'dark' ? 'Karanlık' : 'Aydınlık'
-      }`,
-    });
   };
 
   const settingsItems = [
