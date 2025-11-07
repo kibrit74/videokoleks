@@ -64,8 +64,12 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
                 return `https://www.tiktok.com/embed/v2/${videoIdMatch[1]}`;
             }
         }
-        // Facebook uses a plugin for embeds which requires the original URL to be encoded
+        // Facebook uses a plugin for embeds, but Reels often don't work.
+        // We will return null for reels to show the fallback UI.
         if (platform === 'facebook') {
+            if (urlObject.pathname.includes('/reel/')) {
+                return null; // Force fallback for Reels
+            }
             return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false&width=auto`;
         }
     } catch(e) {
