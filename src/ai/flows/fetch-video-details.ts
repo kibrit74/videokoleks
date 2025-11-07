@@ -1,15 +1,16 @@
 'use server';
 
 /**
- * @fileOverview A Genkit flow for fetching video details (title, thumbnail) from a URL.
+ * @fileOverview A Genkit flow for fetching video details (title, thumbnail) from a URL using Gemini.
  *
- * This is a server-side flow that scrapes the video URL to extract metadata.
- * It uses a proxy for Instagram to bypass CORS and falls back to direct fetch for others.
+ * This is a server-side flow that leverages an AI prompt to extract metadata,
+ * which is more robust than traditional scraping.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { parse } from 'node-html-parser';
+// We no longer need the HTML parser
+// import { parse } from 'node-html-parser';
 
 const FetchVideoDetailsInputSchema = z.object({
   videoUrl: z.string().url().describe('The URL of the video.'),
@@ -38,7 +39,22 @@ export async function fetchVideoDetails(
   return fetchVideoDetailsFlow(input);
 }
 
-// This flow is defined to run on the server and can use Node.js APIs.
+// Define a new prompt that uses AI to extract the details.
+const videoMetadataPrompt = ai.definePrompt({
+    name: 'videoMetadataPrompt',
+    input: { schema: FetchVideoDetailsInputSchema },
+    output: { schema: FetchVideoDetailsOutputSchema },
+    prompt: `You are an expert web metadata extractor. Given a URL, your task is to identify the primary title and thumbnail image for the video on that page.
+
+    Prioritize extracting the 'og:title' for the title and 'og:image' for the thumbnail URL from the page's meta tags. If they are not available, use the main <title> tag and any other relevant image source.
+    
+    URL: {{{videoUrl}}}
+    
+    Return only the JSON object with the title and thumbnailUrl.`,
+});
+
+
+// The flow now calls the AI prompt instead of scraping.
 const fetchVideoDetailsFlow = ai.defineFlow(
   {
     name: 'fetchVideoDetailsFlow',
@@ -47,60 +63,22 @@ const fetchVideoDetailsFlow = ai.defineFlow(
   },
   async ({ videoUrl }) => {
     try {
-      let fetchUrl = videoUrl;
-      const isInstagram = videoUrl.includes('instagram.com');
-      const isFacebook = videoUrl.includes('facebook.com') || videoUrl.includes('fb.watch');
-      
-      // For Instagram and Facebook, use a CORS proxy to fetch the HTML content.
-      if (isInstagram || isFacebook) {
-        fetchUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(videoUrl)}`;
-      }
-
-      const response = await fetch(fetchUrl, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch URL: ${response.statusText}`);
-      }
-
-      let html = await response.text();
-
-      // If using the proxy, the actual HTML is inside a JSON response's "contents" field.
-      if (isInstagram || isFacebook) {
-        try {
-            const jsonResponse = JSON.parse(html);
-            html = jsonResponse.contents;
-        } catch (e) {
-            // If JSON.parse fails, it's likely because the response was already raw HTML.
-            // No action needed, just proceed with the html as is.
+        const { output } = await videoMetadataPrompt({ videoUrl });
+        // The model might return a title but no thumbnail or vice-versa. 
+        // We handle cases where the model can't find the data.
+        if (!output?.title || !output?.thumbnailUrl) {
+            console.warn(`AI could not extract full details for: ${videoUrl}`, output);
+            // Return an empty object or partial data if that's acceptable
+            return {
+                title: output?.title,
+                thumbnailUrl: output?.thumbnailUrl,
+            };
         }
-      }
-      
-      if (!html) {
-        throw new Error('No HTML content received from proxy or direct fetch.');
-      }
+        return output;
 
-      const root = parse(html);
-
-      const title =
-        root.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
-        root.querySelector('title')?.text;
-      
-      const thumbnailUrl = 
-        root.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
-        root.querySelector('meta[property="og:image:secure_url"]')?.getAttribute('content');
-
-      return {
-        title: title?.trim().split('\n')[0],
-        thumbnailUrl,
-      };
     } catch (error) {
-      console.error('Error scraping video URL:', error);
+      console.error('Error getting video details from AI:', error);
+      // Return an empty object on failure to prevent the app from crashing.
       return {};
     }
   }
