@@ -28,7 +28,7 @@ import {
   useMemoFirebase,
   useUser
 } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collectionGroup, query, where } from 'firebase/firestore';
 import type { Video, Category } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -49,34 +49,35 @@ export default function ProfilePage() {
       router.push('/login');
     }
   }, [isUserLoading, user, router]);
-
+  
+  // Query for all videos of the user
   const videosQuery = useMemoFirebase(
-    () => (user ? collection(firestore, 'users', user.uid, 'videos') : null),
+    () => (user ? query(collectionGroup(firestore, 'videos'), where('userId', '==', user.uid)) : null),
     [firestore, user]
   );
-  const { data: videos, isLoading: videosLoading } =
-    useCollection<Video>(videosQuery);
+  const { data: videos, isLoading: videosLoading } = useCollection<Video>(videosQuery);
 
+  // Query for all categories of the user
   const categoriesQuery = useMemoFirebase(
     () =>
-      user ? collection(firestore, 'users', user.uid, 'categories') : null,
+      user ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null,
     [firestore, user]
   );
-  const { data: categories, isLoading: categoriesLoading } =
-    useCollection<Category>(categoriesQuery);
-
+  const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
+  
+  // Query for all favorite videos of the user
   const favoriteVideosQuery = useMemoFirebase(
     () =>
       user
         ? query(
-            collection(firestore, 'users', user.uid, 'videos'),
+            collectionGroup(firestore, 'videos'),
+            where('userId', '==', user.uid),
             where('isFavorite', '==', true)
           )
         : null,
     [firestore, user]
   );
-  const { data: favoriteVideos, isLoading: favoritesLoading } =
-    useCollection<Video>(favoriteVideosQuery);
+  const { data: favoriteVideos, isLoading: favoritesLoading } = useCollection<Video>(favoriteVideosQuery);
 
   const videoCount = videos?.length ?? 0;
   const categoryCount = categories?.length ?? 0;
