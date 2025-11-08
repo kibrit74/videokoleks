@@ -98,16 +98,18 @@ export default function VideoDetailPage() {
     let isMounted = true;
     if (!currentVideo || currentVideo.platform !== 'facebook') return;
   
+    setFbPlayerLoading(true);
+
     const initFacebookSdk = () => {
       if (!isMounted) return;
-  
+
+      // If SDK is already loaded and initialized, just parse the new video
       if (window.FB) {
-        // If SDK is already there, just parse
         window.FB.XFBML.parse(videoPlayerRef.current, () => {
-            if (isMounted) setFbPlayerLoading(false);
+          if (isMounted) setFbPlayerLoading(false);
         });
       } else {
-        // Define fbAsyncInit if it's not already defined
+        // If SDK is not loaded, define fbAsyncInit and load the script
         window.fbAsyncInit = function() {
           if (!isMounted || !window.FB) return;
           window.FB.init({
@@ -115,12 +117,13 @@ export default function VideoDetailPage() {
             xfbml: true,
             version: 'v20.0'
           });
+          // After init, parse the video player
           window.FB.XFBML.parse(videoPlayerRef.current, () => {
             if (isMounted) setFbPlayerLoading(false);
           });
         };
   
-        // Load the SDK script
+        // Load the SDK script if it doesn't exist
         if (!document.getElementById('facebook-jssdk')) {
           const script = document.createElement('script');
           script.id = 'facebook-jssdk';
@@ -129,18 +132,29 @@ export default function VideoDetailPage() {
           script.defer = true;
           script.crossOrigin = 'anonymous';
           script.onerror = () => {
-            if (isMounted) setFbPlayerLoading(false); // Stop loading on error
+            if (isMounted) {
+              console.error("Facebook SDK could not be loaded.");
+              setFbPlayerLoading(false); 
+            }
           };
-          document.body.appendChild(script);
+          document.head.appendChild(script);
         }
       }
     };
   
-    setFbPlayerLoading(true);
     initFacebookSdk();
   
     return () => {
       isMounted = false;
+      // Clean up the dynamically added elements if necessary
+      const script = document.getElementById('facebook-jssdk');
+      if (script && script.parentElement === document.head) {
+        // In some strict React modes, this might be too aggressive if another component needs it
+        // but for this single-purpose page, it's safer.
+        // document.head.removeChild(script);
+      }
+      // @ts-ignore
+      delete window.fbAsyncInit;
     };
   }, [currentVideo]);
 
@@ -382,3 +396,5 @@ export default function VideoDetailPage() {
     </div>
   );
 }
+
+    
