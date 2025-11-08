@@ -11,6 +11,7 @@ import {
   Trash2,
   AlertTriangle,
   Share2,
+  Loader2
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -26,7 +27,7 @@ import {
 import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import type { Platform, Video, Category } from '@/lib/types';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState, useRef } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -91,6 +92,63 @@ export default function VideoDetailPage() {
     [firestore, user?.uid, currentVideo?.categoryId]
   );
   const { data: category } = useDoc<Category>(categoryDocRef);
+  
+  const [fbPlayerLoading, setFbPlayerLoading] = useState(true);
+  const videoPlayerRef = useRef<HTMLDivElement>(null);
+
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!currentVideo || currentVideo.platform !== 'facebook') return;
+
+    const loadAndInitFbSdk = () => {
+      setFbPlayerLoading(true);
+      if (document.getElementById('facebook-jssdk') && window.FB) {
+        window.FB.XFBML.parse(videoPlayerRef.current, () => {
+          if (isMounted) setFbPlayerLoading(false);
+        });
+        return;
+      }
+
+      window.fbAsyncInit = function() {
+        window.FB.init({
+          xfbml: true,
+          version: 'v19.0'
+        });
+        if(videoPlayerRef.current) {
+            window.FB.XFBML.parse(videoPlayerRef.current, () => {
+                 if (isMounted) setFbPlayerLoading(false);
+            });
+        }
+      };
+
+      const script = document.createElement('script');
+      script.id = 'facebook-jssdk';
+      script.src = "https://connect.facebook.net/en_US/sdk.js";
+      script.async = true;
+      script.defer = true;
+      script.crossOrigin = 'anonymous';
+      script.onload = () => {
+        // SDK is loaded, fbAsyncInit will be called by it.
+      };
+      script.onerror = () => {
+        if(isMounted) setFbPlayerLoading(false); // Stop loading on error
+      };
+      document.body.appendChild(script);
+    };
+
+    loadAndInitFbSdk();
+
+    return () => {
+      isMounted = false;
+      const script = document.getElementById('facebook-jssdk');
+      if (script && script.parentElement) {
+       // Optional: you might want to remove the script on unmount
+       // script.parentElement.removeChild(script);
+      }
+    };
+  }, [currentVideo]);
+
 
   if (videoLoading) {
     return (
@@ -196,7 +254,29 @@ export default function VideoDetailPage() {
 
   const renderVideoPlayer = () => {
     if (currentVideo.platform === 'facebook') {
-      return <FacebookVideoPlayer videoUrl={currentVideo.originalUrl} />;
+      return (
+        <div ref={videoPlayerRef} className="w-full h-full flex-1 flex items-center justify-center bg-black relative">
+            {fbPlayerLoading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground z-10">
+                    <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                    <span>Facebook oynatıcı yükleniyor...</span>
+                </div>
+            )}
+            <div
+                className={cn("fb-video", fbPlayerLoading && "hidden")}
+                data-href={currentVideo.originalUrl}
+                data-width="auto"
+                data-height="auto"
+                data-allowfullscreen="true"
+                data-autoplay="false"
+                data-lazy="true"
+            >
+              <blockquote cite={currentVideo.originalUrl} className="fb-xfbml-parse-ignore">
+                <a href={currentVideo.originalUrl}>Facebook Video</a>
+              </blockquote>
+            </div>
+        </div>
+      );
     }
     
     if (embedUrl) {
@@ -240,7 +320,7 @@ export default function VideoDetailPage() {
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-2 md:p-4">
       <div className="relative w-full max-w-sm aspect-[9/16] bg-card overflow-hidden rounded-lg shadow-2xl shadow-primary/20 flex flex-col">
-        <header className="absolute top-0 left-0 right-0 z-10 p-2 flex justify-between items-center bg-gradient-to-b from-black/50 to-transparent">
+        <header className="absolute top-0 left-0 right-0 z-20 p-2 flex justify-between items-center bg-gradient-to-b from-black/50 to-transparent">
             <Button asChild variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 text-white rounded-full">
               <Link href="/">
                 <ArrowLeft />
@@ -310,5 +390,3 @@ export default function VideoDetailPage() {
     </div>
   );
 }
-
-    
