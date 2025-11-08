@@ -1,0 +1,32 @@
+{
+  "theme_color": "#8b5cf6",
+  "background_color": "#18181b",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "name": "VideoKoleks",
+  "short_name": "VideoKoleks",
+  "description": "T\u00fcm videolar\u0131n\u0131z\u0131 tek bir yerde toplay\u0131n, d\u00fczenleyin ve kolayca eri\u015fin.",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-256x256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
