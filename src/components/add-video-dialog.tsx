@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, addDoc, query, where, collectionGroup } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { getVideoMetadata } from '@/app/actions';
@@ -50,7 +50,7 @@ export function AddVideoDialog({
   const [notes, setNotes] = useState('');
 
   const categoriesQuery = useMemoFirebase(() =>
-    user ? collection(firestore, 'users', user.uid, 'categories') : null
+    user ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null
   , [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
