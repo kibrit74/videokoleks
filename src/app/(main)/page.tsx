@@ -310,7 +310,7 @@ export default function HomePage() {
       </div>
       
       {isSelectionMode && selectedVideos.size > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm">
+        <div className="fixed bottom-0 left-0 right-0 z-[60] border-t bg-background/95 backdrop-blur-sm">
            <div className="container mx-auto max-w-5xl px-4 h-16 flex items-center justify-between gap-4">
                 <div className='flex items-center gap-4'>
                     <Button variant="ghost" size="icon" onClick={toggleSelectionMode}>
