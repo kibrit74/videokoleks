@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { firebaseConfig } from '@/firebase/config';
 
 interface FacebookVideoPlayerProps {
   videoUrl: string;
@@ -13,40 +14,37 @@ export function FacebookVideoPlayer({ videoUrl }: FacebookVideoPlayerProps) {
 
   useEffect(() => {
     let isMounted = true;
-    
-    // Ensure FB SDK script is loaded
-    if (!document.getElementById('facebook-jssdk')) {
-      const script = document.createElement('script');
-      script.id = 'facebook-jssdk';
-      script.src = "https://connect.facebook.net/en_US/sdk.js";
-      script.async = true;
-      script.defer = true;
-      script.crossOrigin = 'anonymous';
-      document.body.appendChild(script);
-    }
-    
-    // Define fbAsyncInit
-    window.fbAsyncInit = function() {
-      window.FB.init({
-        xfbml      : true,
-        version    : 'v19.0'
-      });
 
-      // Parse video once SDK is ready
-      if (isMounted) {
-         setLoading(false);
-         if (containerRef.current) {
-            window.FB.XFBML.parse(containerRef.current);
-         }
+    const initializePlayer = () => {
+      if (!isMounted || !window.FB) return;
+      setLoading(false);
+      if (containerRef.current) {
+        window.FB.XFBML.parse(containerRef.current);
       }
     };
-
-    // If SDK is already loaded, parse immediately
+    
     if (window.FB) {
-        setLoading(false);
-        if (containerRef.current) {
-            window.FB.XFBML.parse(containerRef.current);
-        }
+      initializePlayer();
+    } else {
+      window.fbAsyncInit = function() {
+        if (!window.FB) return;
+        window.FB.init({
+          appId: firebaseConfig.facebookAppId,
+          xfbml: true,
+          version: 'v20.0'
+        });
+        initializePlayer();
+      };
+      
+      if (!document.getElementById('facebook-jssdk')) {
+        const script = document.createElement('script');
+        script.id = 'facebook-jssdk';
+        script.src = "https://connect.facebook.net/en_US/sdk.js";
+        script.async = true;
+        script.defer = true;
+        script.crossOrigin = 'anonymous';
+        document.body.appendChild(script);
+      }
     }
     
     return () => {

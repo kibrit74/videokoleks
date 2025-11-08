@@ -10,8 +10,7 @@ import {
   ExternalLink,
   Trash2,
   AlertTriangle,
-  Share2,
-  Loader2
+  Share2
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -27,14 +26,13 @@ import {
 import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import type { Platform, Video, Category } from '@/lib/types';
-import { useMemo, useEffect, useState, useRef } from 'react';
+import { useMemo } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { firebaseConfig } from '@/firebase/config';
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -90,73 +88,6 @@ export default function VideoDetailPage() {
     [firestore, user?.uid, currentVideo?.categoryId]
   );
   const { data: category } = useDoc<Category>(categoryDocRef);
-  
-  const [fbPlayerLoading, setFbPlayerLoading] = useState(true);
-  const videoPlayerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    if (!currentVideo || currentVideo.platform !== 'facebook') return;
-  
-    setFbPlayerLoading(true);
-
-    const initFacebookSdk = () => {
-      if (!isMounted) return;
-
-      // If SDK is already loaded and initialized, just parse the new video
-      if (window.FB) {
-        window.FB.XFBML.parse(videoPlayerRef.current, () => {
-          if (isMounted) setFbPlayerLoading(false);
-        });
-      } else {
-        // If SDK is not loaded, define fbAsyncInit and load the script
-        window.fbAsyncInit = function() {
-          if (!isMounted || !window.FB) return;
-          window.FB.init({
-            appId: firebaseConfig.facebookAppId,
-            xfbml: true,
-            version: 'v20.0'
-          });
-          // After init, parse the video player
-          window.FB.XFBML.parse(videoPlayerRef.current, () => {
-            if (isMounted) setFbPlayerLoading(false);
-          });
-        };
-  
-        // Load the SDK script if it doesn't exist
-        if (!document.getElementById('facebook-jssdk')) {
-          const script = document.createElement('script');
-          script.id = 'facebook-jssdk';
-          script.src = "https://connect.facebook.net/en_US/sdk.js";
-          script.async = true;
-          script.defer = true;
-          script.crossOrigin = 'anonymous';
-          script.onerror = () => {
-            if (isMounted) {
-              console.error("Facebook SDK could not be loaded.");
-              setFbPlayerLoading(false); 
-            }
-          };
-          document.head.appendChild(script);
-        }
-      }
-    };
-  
-    initFacebookSdk();
-  
-    return () => {
-      isMounted = false;
-      // Clean up the dynamically added elements if necessary
-      const script = document.getElementById('facebook-jssdk');
-      if (script && script.parentElement === document.head) {
-        // In some strict React modes, this might be too aggressive if another component needs it
-        // but for this single-purpose page, it's safer.
-        // document.head.removeChild(script);
-      }
-      // @ts-ignore
-      delete window.fbAsyncInit;
-    };
-  }, [currentVideo]);
 
 
   if (videoLoading) {
@@ -259,32 +190,6 @@ export default function VideoDetailPage() {
   }
 
   const renderVideoPlayer = () => {
-    if (currentVideo.platform === 'facebook') {
-      return (
-        <div ref={videoPlayerRef} className="w-full h-full flex-1 flex items-center justify-center bg-black relative">
-            {fbPlayerLoading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground z-10">
-                    <Loader2 className="h-8 w-8 animate-spin mb-2" />
-                    <span>Facebook oynatıcı yükleniyor...</span>
-                </div>
-            )}
-            <div
-                className={cn("fb-video", fbPlayerLoading && "hidden")}
-                data-href={currentVideo.originalUrl}
-                data-width="auto"
-                data-height="auto"
-                data-allowfullscreen="true"
-                data-autoplay="false"
-                data-lazy="true"
-            >
-              <blockquote cite={currentVideo.originalUrl} className="fb-xfbml-parse-ignore">
-                <a href={currentVideo.originalUrl}>Facebook Video</a>
-              </blockquote>
-            </div>
-        </div>
-      );
-    }
-    
     if (embedUrl) {
       return (
         <iframe
@@ -396,5 +301,3 @@ export default function VideoDetailPage() {
     </div>
   );
 }
-
-    
