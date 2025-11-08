@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, getDocs, where } from 'firebase/firestore';
+import { collection, query, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlusCircle, MoreVertical, Loader2 } from 'lucide-react';
@@ -20,7 +20,7 @@ export default function CategoriesPage() {
   const router = useRouter();
 
   const categoriesQuery = useMemoFirebase(() => 
-    (user?.uid && firestore) ? query(collection(firestore, 'categories'), where('userId', '==', user.uid)) : null
+    (user?.uid && firestore) ? query(collection(firestore, 'users', user.uid, 'categories')) : null
   , [firestore, user?.uid]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
@@ -37,8 +37,7 @@ export default function CategoriesPage() {
         setCountsLoading(true);
         const counts: Record<string, number> = {};
         
-        // This query now correctly filters by userId, which is required by security rules
-        const allVideosQuery = query(collection(firestore, 'videos'), where('userId', '==', user.uid));
+        const allVideosQuery = query(collection(firestore, 'users', user.uid, 'videos'));
         
         try {
             const videoSnapshot = await getDocs(allVideosQuery);

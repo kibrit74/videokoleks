@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, serverTimestamp, setDoc, doc, where, query } from 'firebase/firestore';
+import { collection, serverTimestamp, setDoc, doc, query } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { getVideoMetadata } from '@/app/actions';
@@ -50,7 +50,7 @@ export function AddVideoDialog({
   const [notes, setNotes] = useState('');
 
   const categoriesQuery = useMemoFirebase(() =>
-    (user?.uid && firestore) ? query(collection(firestore, 'categories'), where('userId', '==', user.uid)) : null
+    (user?.uid && firestore) ? query(collection(firestore, 'users', user.uid, 'categories')) : null
   , [firestore, user?.uid]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
@@ -136,11 +136,9 @@ export function AddVideoDialog({
     setIsSaving(true);
     const platform = getPlatformFromUrl(videoUrl);
     
-    const newVideoRef = doc(collection(firestore, 'videos'));
+    const newVideoRef = doc(collection(firestore, 'users', user.uid, 'videos'));
 
-    const videoData: Video = {
-        id: newVideoRef.id,
-        userId: user.uid,
+    const videoData: Omit<Video, 'id'> = {
         title: videoDetails.title,
         thumbnailUrl: videoDetails.thumbnailUrl || `https://picsum.photos/seed/${new Date().getTime()}/480/854`,
         imageHint: "video thumbnail",
@@ -166,7 +164,7 @@ export function AddVideoDialog({
          const permissionError = new FirestorePermissionError({
             path: newVideoRef.path,
             operation: 'create',
-            requestResourceData: videoData,
+            requestResourceData: { ...videoData, id: newVideoRef.id },
         });
         errorEmitter.emit('permission-error', permissionError);
         // Also show a toast to the user

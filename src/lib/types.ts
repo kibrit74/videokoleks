@@ -2,7 +2,6 @@ export type Platform = 'instagram' | 'youtube' | 'tiktok' | 'facebook';
 
 export interface Category {
   id: string;
-  userId: string;
   name: string;
   emoji: string;
   color: string;
@@ -10,7 +9,6 @@ export interface Category {
 
 export interface Video {
   id:string;
-  userId: string;
   title: string;
   thumbnailUrl: string;
   imageHint: string;

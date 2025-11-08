@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from './ui/button';
-import { MoreVertical, Share2, Eye, Check } from 'lucide-react';
+import { MoreVertical, Share2, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from './ui/checkbox';
 
@@ -35,7 +35,7 @@ const platformColors: Record<Platform, string> = {
 };
 
 interface VideoCardProps {
-  video: Video & {id: string};
+  video: Video;
   isSelectionMode?: boolean;
   isSelected?: boolean;
   onVideoSelect?: () => void;
@@ -49,8 +49,8 @@ export function VideoCard({ video, isSelectionMode = false, isSelected = false, 
   const { toast } = useToast();
 
   const categoryDocRef = useMemoFirebase(() => 
-    (firestore && video.categoryId) ? doc(firestore, 'categories', video.categoryId) : null,
-    [firestore, video.categoryId]
+    (firestore && user?.uid && video.categoryId) ? doc(firestore, 'users', user.uid, 'categories', video.categoryId) : null,
+    [firestore, user?.uid, video.categoryId]
   );
   const { data: category } = useDoc<Category>(categoryDocRef);
 

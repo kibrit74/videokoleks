@@ -59,18 +59,16 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
 
     setIsLoading(true);
 
-    const newCategoryRef = doc(collection(firestore, 'categories'));
+    const newCategoryRef = doc(collection(firestore, 'users', user.uid, 'categories'));
 
-    const categoryData: Category = {
-        id: newCategoryRef.id,
-        userId: user.uid,
+    const categoryData: Omit<Category, 'id'> = {
         name: name.trim(),
         emoji: selectedEmoji,
         color: selectedColor
     };
     
     try {
-        await setDoc(newCategoryRef, categoryData);
+        await setDoc(newCategoryRef, { ...categoryData, id: newCategoryRef.id });
         toast({
             title: 'Kategori Oluşturuldu! 🎉',
             description: 'Yeni kategoriniz başarıyla eklendi.',
@@ -86,7 +84,7 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
         const permissionError = new FirestorePermissionError({
             path: newCategoryRef.path,
             operation: 'create',
-            requestResourceData: categoryData,
+            requestResourceData: { ...categoryData, id: newCategoryRef.id },
         });
         errorEmitter.emit('permission-error', permissionError);
         toast({
