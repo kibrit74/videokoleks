@@ -93,7 +93,7 @@ export default function VideoDetailPage() {
   if (videoLoading) {
     return (
         <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white">
-             <div className="relative w-full max-w-md aspect-[9/16] bg-card overflow-hidden rounded-lg">
+             <div className="relative w-full max-w-xl aspect-[9/16] bg-card overflow-hidden rounded-lg">
                 <Skeleton className="w-full h-full" />
              </div>
         </div>
@@ -216,9 +216,8 @@ export default function VideoDetailPage() {
           data-ai-hint={currentVideo.imageHint}
         />
         <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center text-center p-4">
-          <AlertTriangle className="w-10 h-10 text-yellow-400 mb-2"/>
-          <p className="text-white font-semibold">Bu video uygulama içinde oynatılamıyor.</p>
-          <Button asChild size="sm" className="mt-4">
+          <p className="text-white font-semibold mb-4">Bu video uygulama içinde oynatılamıyor.</p>
+          <Button asChild size="lg" className="mt-4">
             <Link href={currentVideo.originalUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="mr-2 h-4 w-4"/> Orijinali Aç
             </Link>
@@ -230,7 +229,7 @@ export default function VideoDetailPage() {
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-2 md:p-4">
-      <div className="relative w-full max-w-md aspect-[9/16] bg-card overflow-hidden rounded-lg shadow-2xl shadow-primary/20 flex flex-col">
+      <div className="relative w-full max-w-xl aspect-[9/16] bg-card overflow-hidden rounded-lg shadow-2xl shadow-primary/20 flex flex-col">
         <header className="absolute top-0 left-0 right-0 z-20 p-2 flex justify-between items-center bg-gradient-to-b from-black/50 to-transparent">
             <Button asChild variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 text-white rounded-full">
               <Link href="/">
