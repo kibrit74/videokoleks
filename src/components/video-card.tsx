@@ -56,9 +56,11 @@ export function VideoCard({ video, isSelectionMode = false, isSelected = false, 
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Correctly construct the share URL for the specific video
     const shareUrl = `${window.location.origin}/videos/${video.id}`;
     
     try {
+      // Use Web Share API if available
       if (navigator.share) {
         await navigator.share({
           title: video.title,
@@ -66,20 +68,18 @@ export function VideoCard({ video, isSelectionMode = false, isSelected = false, 
           url: shareUrl,
         });
       } else {
-        throw new Error('Web Share API not supported');
+        // Fallback to clipboard if Web Share API is not supported
+        await navigator.clipboard.writeText(shareUrl);
+        toast({ title: "Paylaşım menüsü desteklenmiyor. Link panoya kopyalandı!" });
       }
     } catch (error: any) {
-      if (error.name === 'NotAllowedError' || error.message.includes('Web Share API not supported') || error.message.includes('Permission denied')) {
-        try {
-            await navigator.clipboard.writeText(shareUrl);
-            toast({ title: "Paylaşım menüsü desteklenmiyor. Link panoya kopyalandı!" });
-        } catch (err) {
-            toast({ variant: 'destructive', title: "Paylaşılamadı", description: "Link paylaşılamadı veya panoya kopyalanamadı." });
-        }
-      } else {
-         console.error('Share failed:', error);
-         toast({ variant: 'destructive', title: "Paylaşılamadı", description: "Beklenmedik bir hata oluştu." });
-      }
+        // Handle cases where sharing or copying fails
+        console.error('Share/Copy failed:', error);
+        toast({ 
+            variant: 'destructive', 
+            title: "Paylaşılamadı", 
+            description: "Link paylaşılamadı veya panoya kopyalanamadı." 
+        });
     }
   };
 
