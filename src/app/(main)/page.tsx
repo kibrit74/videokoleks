@@ -62,9 +62,9 @@ export default function HomePage() {
   const [selectedVideos, setSelectedVideos] = useState<Set<string>>(new Set());
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  // Fetch categories for the current user
+  // Fetch categories for the current user using a collection group query
   const categoriesQuery = useMemoFirebase(() =>
-    user ? collection(firestore, 'users', user.uid, 'categories') : null
+    user ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null
   , [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
