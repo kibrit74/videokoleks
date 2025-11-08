@@ -52,7 +52,7 @@ export default function ProfilePage() {
   
   // Query for all videos of the user
   const videosQuery = useMemoFirebase(
-    () => (user ? query(collectionGroup(firestore, 'videos'), where('userId', '==', user.uid)) : null),
+    () => (user && firestore) ? query(collectionGroup(firestore, 'videos'), where('userId', '==', user.uid)) : null,
     [firestore, user]
   );
   const { data: videos, isLoading: videosLoading } = useCollection<Video>(videosQuery);
@@ -60,7 +60,7 @@ export default function ProfilePage() {
   // Query for all categories of the user
   const categoriesQuery = useMemoFirebase(
     () =>
-      user ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null,
+      (user && firestore) ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null,
     [firestore, user]
   );
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
@@ -68,7 +68,7 @@ export default function ProfilePage() {
   // Query for all favorite videos of the user
   const favoriteVideosQuery = useMemoFirebase(
     () =>
-      user
+      (user && firestore)
         ? query(
             collectionGroup(firestore, 'videos'),
             where('userId', '==', user.uid),
@@ -222,3 +222,5 @@ export default function ProfilePage() {
     </>
   );
 }
+
+    

@@ -49,7 +49,7 @@ export function VideoCard({ video, isSelectionMode = false, isSelected = false, 
   const { toast } = useToast();
 
   const categoryDocRef = useMemoFirebase(() => 
-    user && video.categoryId ? doc(firestore, 'users', user.uid, 'categories', video.categoryId) : null,
+    (user && firestore && video.categoryId) ? doc(firestore, 'users', user.uid, 'categories', video.categoryId) : null,
     [user, firestore, video.categoryId]
   );
   const { data: category } = useDoc<Category>(categoryDocRef);
@@ -186,3 +186,5 @@ export function VideoCard({ video, isSelectionMode = false, isSelected = false, 
       </Card>
   );
 }
+
+    

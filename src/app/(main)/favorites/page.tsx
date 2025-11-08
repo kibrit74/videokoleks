@@ -12,7 +12,7 @@ export default function FavoritesPage() {
   const firestore = useFirestore();
 
   const favoritesQuery = useMemoFirebase(() =>
-    user
+    (user && firestore)
       ? query(
           collectionGroup(firestore, 'videos'),
           where('userId', '==', user.uid),
@@ -59,3 +59,5 @@ export default function FavoritesPage() {
     </div>
   );
 }
+
+    

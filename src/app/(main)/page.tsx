@@ -64,13 +64,13 @@ export default function HomePage() {
 
   // Fetch categories for the current user using a collection group query
   const categoriesQuery = useMemoFirebase(() =>
-    user ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null
+    (user && firestore) ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null
   , [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
   // Use a collection group query to fetch videos for the user across all subcollections
   const videosQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return query(
       collectionGroup(firestore, 'videos'),
       where('userId', '==', user.uid),
@@ -384,3 +384,5 @@ export default function HomePage() {
     </>
   );
 }
+
+    

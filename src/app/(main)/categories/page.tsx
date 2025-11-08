@@ -17,7 +17,7 @@ export default function CategoriesPage() {
   const firestore = useFirestore();
 
   const categoriesQuery = useMemoFirebase(() => 
-    user ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null
+    (user && firestore) ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null
   , [firestore, user]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
@@ -111,3 +111,5 @@ export default function CategoriesPage() {
     </div>
   );
 }
+
+    
