@@ -21,7 +21,6 @@
       "description": "Represents a video saved by the user.",
       "properties": {
         "id": { "type": "string", "description": "Unique identifier for the video." },
-        "userId": { "type": "string", "description": "The ID of the user who owns this video." },
         "platform": { "type": "string", "description": "The platform the video is from (e.g., Instagram, YouTube, TikTok)." },
         "originalUrl": { "type": "string", "description": "URL of the video.", "format": "uri" },
         "title": { "type": "string", "description": "Title of the video." },
@@ -33,7 +32,7 @@
         "dateAdded": { "type": "string", "description": "Date and time the video was saved.", "format": "date-time" },
         "isFavorite": { "type": "boolean", "description": "Indicates whether the video is marked as a favorite." }
       },
-      "required": ["id", "userId", "platform", "originalUrl", "title", "thumbnailUrl", "duration", "categoryId", "dateAdded", "isFavorite"]
+      "required": ["id", "platform", "originalUrl", "title", "thumbnailUrl", "duration", "categoryId", "dateAdded", "isFavorite"]
     },
     "Category": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -42,12 +41,11 @@
       "description": "Represents a category for organizing videos.",
       "properties": {
         "id": { "type": "string", "description": "Unique identifier for the category." },
-        "userId": { "type": "string", "description": "The ID of the user who owns this category." },
         "name": { "type": "string", "description": "Name of the category." },
         "emoji": { "type": "string", "description": "Emoji associated with the category." },
         "color": { "type": "string", "description": "Color associated with the category (e.g., hex code)." }
       },
-      "required": ["id", "userId", "name", "emoji", "color"]
+      "required": ["id", "name", "emoji", "color"]
     }
   },
   "auth": {

@@ -35,7 +35,7 @@ const platformColors: Record<Platform, string> = {
 };
 
 interface VideoCardProps {
-  video: Video;
+  video: Video & {id: string};
   isSelectionMode?: boolean;
   isSelected?: boolean;
   onVideoSelect?: () => void;
@@ -49,7 +49,7 @@ export function VideoCard({ video, isSelectionMode = false, isSelected = false, 
   const { toast } = useToast();
 
   const categoryDocRef = useMemoFirebase(() => 
-    (user?.uid && firestore && video.categoryId) ? doc(firestore, 'categories', video.categoryId) : null,
+    (user?.uid && firestore && video.categoryId) ? doc(firestore, 'users', user.uid, 'categories', video.categoryId) : null,
     [user?.uid, firestore, video.categoryId]
   );
   const { data: category } = useDoc<Category>(categoryDocRef);

@@ -5,7 +5,6 @@ export interface Category {
   name: string;
   emoji: string;
   color: string;
-  userId: string; // Essential for security rules
 }
 
 export interface Video {
@@ -15,10 +14,9 @@ export interface Video {
   imageHint: string;
   platform: Platform;
   duration: string;
-  categoryId: string; // Correctly referencing by ID
+  categoryId: string; 
   notes?: string;
   isFavorite: boolean;
   dateAdded: any; // Firestore Timestamp
   originalUrl: string;
-  userId: string; // Essential for security rules
 }

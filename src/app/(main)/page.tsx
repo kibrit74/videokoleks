@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, orderBy, writeBatch, doc } from 'firebase/firestore';
 
 import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
@@ -64,16 +64,15 @@ export default function HomePage() {
 
   // Fetch categories for the current user
   const categoriesQuery = useMemoFirebase(() =>
-    (user?.uid && firestore) ? query(collection(firestore, 'categories'), where('userId', '==', user.uid)) : null
+    (user?.uid && firestore) ? collection(firestore, 'users', user.uid, 'categories') : null
   , [firestore, user?.uid]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
-  // Use a collection group query to fetch videos for the user across all subcollections
+  // Fetch videos for the user
   const videosQuery = useMemoFirebase(() => {
     if (!user?.uid || !firestore) return null;
     return query(
-      collection(firestore, 'videos'),
-      where('userId', '==', user.uid),
+      collection(firestore, 'users', user.uid, 'videos'),
       orderBy('dateAdded', 'desc')
     );
   }, [firestore, user?.uid]);
@@ -119,7 +118,7 @@ export default function HomePage() {
     try {
       const batch = writeBatch(firestore);
       selectedVideos.forEach(videoId => {
-        const videoRef = doc(firestore, 'videos', videoId);
+        const videoRef = doc(firestore, 'users', user.uid, 'videos', videoId);
         batch.delete(videoRef);
       });
       await batch.commit();
@@ -136,7 +135,7 @@ export default function HomePage() {
      try {
       const batch = writeBatch(firestore);
       selectedVideos.forEach(videoId => {
-        const videoRef = doc(firestore, 'videos', videoId);
+        const videoRef = doc(firestore, 'users', user.uid, 'videos', videoId);
         batch.update(videoRef, { categoryId: newCategoryId });
       });
       await batch.commit();
@@ -153,7 +152,7 @@ export default function HomePage() {
     try {
       const batch = writeBatch(firestore);
       selectedVideos.forEach(videoId => {
-        const videoRef = doc(firestore, 'videos', videoId);
+        const videoRef = doc(firestore, 'users', user.uid, 'videos', videoId);
         batch.update(videoRef, { isFavorite: isFavorite });
       });
       await batch.commit();
