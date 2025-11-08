@@ -21,7 +21,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -194,6 +193,49 @@ export default function VideoDetailPage() {
     return 'Az önce';
   }
 
+  const renderVideoPlayer = () => {
+    if (currentVideo.platform === 'facebook') {
+      return <FacebookVideoPlayer videoUrl={currentVideo.originalUrl} />;
+    }
+    
+    if (embedUrl) {
+      return (
+        <iframe
+          key={embedUrl}
+          src={embedUrl}
+          className="w-full h-full border-0 flex-1"
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+          allowFullScreen
+          title={currentVideo.title}
+          scrolling="no"
+        ></iframe>
+      );
+    }
+    
+    return (
+      <div className="flex-1 relative flex items-center justify-center bg-zinc-900">
+        <Image
+          src={currentVideo.thumbnailUrl}
+          alt={currentVideo.title}
+          fill
+          sizes="100vw"
+          priority
+          className="object-contain"
+          data-ai-hint={currentVideo.imageHint}
+        />
+        <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center text-center p-4">
+          <AlertTriangle className="w-10 h-10 text-yellow-400 mb-2"/>
+          <p className="text-white font-semibold">Bu video uygulama içinde oynatılamıyor.</p>
+          <Button asChild size="sm" className="mt-4">
+            <Link href={currentVideo.originalUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="mr-2 h-4 w-4"/> Orijinali Aç
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-2 md:p-4">
       <div className="relative w-full max-w-sm aspect-[9/16] bg-card overflow-hidden rounded-lg shadow-2xl shadow-primary/20 flex flex-col">
@@ -205,38 +247,7 @@ export default function VideoDetailPage() {
             </Button>
         </header>
         
-        {embedUrl ? (
-          <iframe
-            key={embedUrl} // Add key to force re-render on URL change
-            src={embedUrl}
-            className="w-full h-full border-0 flex-1"
-            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-            allowFullScreen
-            title={currentVideo.title}
-            scrolling="no"
-          ></iframe>
-        ) : (
-           <div className="flex-1 relative flex items-center justify-center bg-zinc-900">
-             <Image
-              src={currentVideo.thumbnailUrl}
-              alt={currentVideo.title}
-              fill
-              sizes="100vw"
-              priority
-              className="object-contain"
-              data-ai-hint={currentVideo.imageHint}
-            />
-             <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center text-center p-4">
-                <AlertTriangle className="w-10 h-10 text-yellow-400 mb-2"/>
-                <p className="text-white font-semibold">Bu video uygulama içinde oynatılamıyor.</p>
-                <Button asChild size="sm" className="mt-4">
-                    <Link href={currentVideo.originalUrl} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="mr-2 h-4 w-4"/> Orijinali Aç
-                    </Link>
-                </Button>
-             </div>
-           </div>
-        )}
+        {renderVideoPlayer()}
         
         <div className="p-4 bg-card text-card-foreground shrink-0">
             <h1 className="text-lg font-bold font-headline line-clamp-2">{currentVideo.title}</h1>
