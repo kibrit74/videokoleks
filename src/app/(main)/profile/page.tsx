@@ -28,7 +28,7 @@ import {
   useMemoFirebase,
   useUser
 } from '@/firebase';
-import { collectionGroup, query, where } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { Video, Category } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -52,7 +52,7 @@ export default function ProfilePage() {
   
   // Query for all videos of the user
   const videosQuery = useMemoFirebase(
-    () => (user?.uid && firestore) ? query(collectionGroup(firestore, 'videos'), where('userId', '==', user.uid)) : null,
+    () => (user?.uid && firestore) ? query(collection(firestore, 'videos'), where('userId', '==', user.uid)) : null,
     [firestore, user?.uid]
   );
   const { data: videos, isLoading: videosLoading } = useCollection<Video>(videosQuery);
@@ -60,7 +60,7 @@ export default function ProfilePage() {
   // Query for all categories of the user
   const categoriesQuery = useMemoFirebase(
     () =>
-      (user?.uid && firestore) ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null,
+      (user?.uid && firestore) ? query(collection(firestore, 'categories'), where('userId', '==', user.uid)) : null,
     [firestore, user?.uid]
   );
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
@@ -70,7 +70,7 @@ export default function ProfilePage() {
     () =>
       (user?.uid && firestore)
         ? query(
-            collectionGroup(firestore, 'videos'),
+            collection(firestore, 'videos'),
             where('userId', '==', user.uid),
             where('isFavorite', '==', true)
           )

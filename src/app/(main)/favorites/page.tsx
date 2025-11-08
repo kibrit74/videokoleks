@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, collectionGroup } from 'firebase/firestore';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 import { VideoCard } from '@/components/video-card';
 import { Star } from 'lucide-react';
 import type { Video } from '@/lib/types';
@@ -14,7 +14,7 @@ export default function FavoritesPage() {
   const favoritesQuery = useMemoFirebase(() =>
     (user?.uid && firestore)
       ? query(
-          collectionGroup(firestore, 'videos'),
+          collection(firestore, 'videos'),
           where('userId', '==', user.uid),
           where('isFavorite', '==', true),
           orderBy('dateAdded', 'desc')

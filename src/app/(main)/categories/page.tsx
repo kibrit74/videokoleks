@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
+import { collection, query, where, getDocs, Query } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlusCircle, MoreVertical, Loader2 } from 'lucide-react';
@@ -17,7 +17,7 @@ export default function CategoriesPage() {
   const firestore = useFirestore();
 
   const categoriesQuery = useMemoFirebase(() => 
-    (user?.uid && firestore) ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null
+    (user?.uid && firestore) ? query(collection(firestore, 'categories'), where('userId', '==', user.uid)) : null
   , [firestore, user?.uid]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
@@ -25,32 +25,46 @@ export default function CategoriesPage() {
   const [countsLoading, setCountsLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || !categories || !firestore) return;
+    if (!user?.uid || !categories || !firestore) return;
     
-    let isFetching = false;
+    let isFetching = true;
 
     const fetchCounts = async () => {
-        if(isFetching) return;
-        isFetching = true;
+        if(!isFetching) return;
         setCountsLoading(true);
         const counts: Record<string, number> = {};
         
-        await Promise.all(categories.map(async (cat) => {
-             const videosInCatQuery = query(
-                collectionGroup(firestore, 'videos'),
-                where('userId', '==', user.uid),
-                where('categoryId', '==', cat.id)
-            );
-            const snapshot = await getDocs(videosInCatQuery);
-            counts[cat.id] = snapshot.size;
-        }));
-        setVideoCounts(counts);
-        setCountsLoading(false);
-        isFetching = false;
+        // We can't query for each category individually as it's inefficient.
+        // We will fetch all videos for the user once and count them client-side.
+        const allVideosQuery = query(collection(firestore, 'videos'), where('userId', '==', user.uid));
+        
+        try {
+            const videoSnapshot = await getDocs(allVideosQuery);
+            const videos = videoSnapshot.docs.map(doc => doc.data());
+
+            // Initialize all category counts to 0
+            categories.forEach(cat => {
+                counts[cat.id] = 0;
+            });
+            
+            // Tally counts from the fetched videos
+            videos.forEach(video => {
+                if (video.categoryId && counts.hasOwnProperty(video.categoryId)) {
+                    counts[video.categoryId]++;
+                }
+            });
+
+            setVideoCounts(counts);
+        } catch (error) {
+            console.error("Error fetching video counts:", error);
+        } finally {
+            setCountsLoading(false);
+            isFetching = false;
+        }
     }
 
     fetchCounts();
-  }, [categories, user, firestore]);
+  }, [categories, user?.uid, firestore]);
 
   const isLoading = categoriesLoading;
 

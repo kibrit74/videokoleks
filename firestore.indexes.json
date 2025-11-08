@@ -3,7 +3,7 @@
   "indexes": [
     {
       "collectionGroup": "videos",
-      "queryScope": "COLLECTION_GROUP",
+      "queryScope": "COLLECTION",
       "fields": [
         {
           "fieldPath": "userId",
@@ -17,7 +17,7 @@
     },
     {
       "collectionGroup": "videos",
-      "queryScope": "COLLECTION_GROUP",
+      "queryScope": "COLLECTION",
       "fields": [
         {
           "fieldPath": "userId",

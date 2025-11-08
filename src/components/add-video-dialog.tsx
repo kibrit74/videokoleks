@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, serverTimestamp, addDoc, query, where, collectionGroup, setDoc, doc } from 'firebase/firestore';
+import { collection, serverTimestamp, addDoc, query, where, setDoc, doc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { getVideoMetadata } from '@/app/actions';
@@ -50,7 +50,7 @@ export function AddVideoDialog({
   const [notes, setNotes] = useState('');
 
   const categoriesQuery = useMemoFirebase(() =>
-    (user?.uid && firestore) ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null
+    (user?.uid && firestore) ? query(collection(firestore, 'categories'), where('userId', '==', user.uid)) : null
   , [firestore, user?.uid]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
@@ -136,10 +136,7 @@ export function AddVideoDialog({
     setIsSaving(true);
     const platform = getPlatformFromUrl(videoUrl);
     
-    // We must create a reference to a subcollection of a user, not a root collection
-    const videosCollectionRef = collection(firestore, 'users', user.uid, 'videos');
-
-    // The ID is generated client-side to be included in the document data
+    const videosCollectionRef = collection(firestore, 'videos');
     const newVideoRef = doc(videosCollectionRef);
 
     const videoData: Video = {
@@ -158,7 +155,6 @@ export function AddVideoDialog({
     };
 
     try {
-        // Use setDoc with the client-generated ref
         await setDoc(newVideoRef, videoData);
         
         toast({

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, collectionGroup, query, where, orderBy, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, writeBatch, doc } from 'firebase/firestore';
 
 import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
@@ -62,9 +62,9 @@ export default function HomePage() {
   const [selectedVideos, setSelectedVideos] = useState<Set<string>>(new Set());
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  // Fetch categories for the current user using a collection group query
+  // Fetch categories for the current user
   const categoriesQuery = useMemoFirebase(() =>
-    (user?.uid && firestore) ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null
+    (user?.uid && firestore) ? query(collection(firestore, 'categories'), where('userId', '==', user.uid)) : null
   , [firestore, user?.uid]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
@@ -72,7 +72,7 @@ export default function HomePage() {
   const videosQuery = useMemoFirebase(() => {
     if (!user?.uid || !firestore) return null;
     return query(
-      collectionGroup(firestore, 'videos'),
+      collection(firestore, 'videos'),
       where('userId', '==', user.uid),
       orderBy('dateAdded', 'desc')
     );
@@ -84,18 +84,12 @@ export default function HomePage() {
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
     
-    let initialFilter = videos;
-
-    // Apply filtering
-    let searchFiltered = initialFilter.filter(video => {
+    return videos.filter(video => {
       const matchesCategory = selectedCategoryId ? video.categoryId === selectedCategoryId : true;
       const matchesPlatform = selectedPlatform ? video.platform === selectedPlatform : true;
       const matchesSearch = searchTerm ? video.title.toLowerCase().includes(searchTerm.toLowerCase()) : true;
       return matchesCategory && matchesPlatform && matchesSearch;
     });
-
-    // We are no longer using limit() in the query, so we apply it here.
-    return searchFiltered.slice(0, 10);
 
   }, [videos, selectedCategoryId, selectedPlatform, searchTerm]);
   
@@ -125,7 +119,7 @@ export default function HomePage() {
     try {
       const batch = writeBatch(firestore);
       selectedVideos.forEach(videoId => {
-        const videoRef = doc(firestore, 'users', user.uid, 'videos', videoId);
+        const videoRef = doc(firestore, 'videos', videoId);
         batch.delete(videoRef);
       });
       await batch.commit();
@@ -142,7 +136,7 @@ export default function HomePage() {
      try {
       const batch = writeBatch(firestore);
       selectedVideos.forEach(videoId => {
-        const videoRef = doc(firestore, 'users', user.uid, 'videos', videoId);
+        const videoRef = doc(firestore, 'videos', videoId);
         batch.update(videoRef, { categoryId: newCategoryId });
       });
       await batch.commit();
@@ -159,7 +153,7 @@ export default function HomePage() {
     try {
       const batch = writeBatch(firestore);
       selectedVideos.forEach(videoId => {
-        const videoRef = doc(firestore, 'users', user.uid, 'videos', videoId);
+        const videoRef = doc(firestore, 'videos', videoId);
         batch.update(videoRef, { isFavorite: isFavorite });
       });
       await batch.commit();
