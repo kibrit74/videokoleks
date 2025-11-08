@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, getDocs, Query } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlusCircle, MoreVertical, Loader2 } from 'lucide-react';
@@ -34,8 +34,7 @@ export default function CategoriesPage() {
         setCountsLoading(true);
         const counts: Record<string, number> = {};
         
-        // We can't query for each category individually as it's inefficient.
-        // We will fetch all videos for the user once and count them client-side.
+        // This query now correctly filters by userId, making it compliant with security rules.
         const allVideosQuery = query(collection(firestore, 'videos'), where('userId', '==', user.uid));
         
         try {
@@ -58,12 +57,17 @@ export default function CategoriesPage() {
         } catch (error) {
             console.error("Error fetching video counts:", error);
         } finally {
-            setCountsLoading(false);
-            isFetching = false;
+            if(isFetching) {
+              setCountsLoading(false);
+            }
         }
     }
 
     fetchCounts();
+
+    return () => {
+        isFetching = false;
+    }
   }, [categories, user?.uid, firestore]);
 
   const isLoading = categoriesLoading;
