@@ -56,30 +56,34 @@ export function VideoCard({ video, isSelectionMode = false, isSelected = false, 
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Correctly construct the share URL for the specific video
     const shareUrl = `${window.location.origin}/videos/${video.id}`;
-    
+    const shareData = {
+      title: video.title,
+      text: `Şu videoya göz at: ${video.title}`,
+      url: shareUrl,
+    };
+  
     try {
-      // Use Web Share API if available
       if (navigator.share) {
-        await navigator.share({
-          title: video.title,
-          text: `Şu videoya göz at: ${video.title}`,
-          url: shareUrl,
-        });
+        await navigator.share(shareData);
       } else {
-        // Fallback to clipboard if Web Share API is not supported
-        await navigator.clipboard.writeText(shareUrl);
-        toast({ title: "Paylaşım menüsü desteklenmiyor. Link panoya kopyalandı!" });
+        throw new Error('Web Share API not supported');
       }
     } catch (error: any) {
-        // Handle cases where sharing or copying fails
-        console.error('Share/Copy failed:', error);
+        if (error.name === 'AbortError') {
+            return;
+        }
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({ title: "Paylaşım linki panoya kopyalandı!" });
+      } catch (copyError) {
+        console.error('Share and copy failed:', error, copyError);
         toast({ 
-            variant: 'destructive', 
-            title: "Paylaşılamadı", 
-            description: "Link paylaşılamadı veya panoya kopyalanamadı." 
+          variant: 'destructive', 
+          title: "Paylaşılamadı", 
+          description: "Link paylaşılamadı veya panoya kopyalanamadı." 
         });
+      }
     }
   };
 

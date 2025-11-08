@@ -157,28 +157,37 @@ export default function VideoDetailPage() {
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
+    const shareData = {
+        title: currentVideo.title,
+        text: `Şu videoya göz at: ${currentVideo.title}`,
+        url: shareUrl,
+    };
+
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: currentVideo.title,
-          text: `Şu videoya göz at: ${currentVideo.title}`,
-          url: shareUrl,
-        });
-      } else {
-        throw new Error('Web Share API not supported');
-      }
+        if (navigator.share) {
+            await navigator.share(shareData);
+        } else {
+            // Fallback for browsers that don't support navigator.share
+            throw new Error('Web Share API not supported');
+        }
     } catch (error: any) {
-      if (error.name === 'NotAllowedError' || error.message.includes('Web Share API not supported') || error.message.includes('Permission denied')) {
+        // This block will be entered if navigator.share is not supported,
+        // or if the user cancels the share dialog (AbortError).
+        if (error.name === 'AbortError') {
+             // User cancelled the share action, do nothing.
+             return;
+        }
         try {
             await navigator.clipboard.writeText(shareUrl);
-            toast({ title: "Paylaşım menüsü desteklenmiyor. Link panoya kopyalandı!" });
-        } catch (err) {
-            toast({ variant: 'destructive', title: "Paylaşılamadı", description: "Link paylaşılamadı veya panoya kopyalanamadı." });
+            toast({ title: "Paylaşım linki panoya kopyalandı!" });
+        } catch (copyError) {
+            console.error('Share and copy failed:', error, copyError);
+            toast({ 
+                variant: 'destructive', 
+                title: "Paylaşılamadı", 
+                description: "Link paylaşılamadı veya panoya kopyalanamadı." 
+            });
         }
-      } else {
-         console.error('Share failed:', error);
-         toast({ variant: 'destructive', title: "Paylaşılamadı", description: "Beklenmedik bir hata oluştu." });
-      }
     }
   };
 
