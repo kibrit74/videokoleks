@@ -1,1 +1,18 @@
-{}
+{
+  "indexes": [
+    {
+      "collectionGroup": "videos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "isFavorite",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dateAdded",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ]
+}
