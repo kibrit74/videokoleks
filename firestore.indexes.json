@@ -42,20 +42,6 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "isFavorite",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "videos",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
           "fieldPath": "categoryId",
           "order": "ASCENDING"
         }
