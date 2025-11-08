@@ -50,7 +50,7 @@ export default function ProfilePage() {
     }
   }, [isUserLoading, user, router]);
   
-  // Query for all videos of the user
+  // Query for all videos of the user, with the required userId filter.
   const videosQuery = useMemoFirebase(
     () => (user?.uid && firestore) ? query(collection(firestore, 'videos'), where('userId', '==', user.uid)) : null,
     [firestore, user?.uid]
