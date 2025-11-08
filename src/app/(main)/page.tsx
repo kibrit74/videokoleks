@@ -130,7 +130,8 @@ export default function HomePage() {
       });
       await batch.commit();
       toast({ title: `${selectedVideos.size} video silindi.` });
-      toggleSelectionMode();
+      setSelectedVideos(new Set());
+      setIsSelectionMode(false);
     } catch (error) {
       console.error("Bulk delete error:", error);
       toast({ variant: "destructive", title: "Hata", description: "Videolar silinirken bir sorun oluştu." });
@@ -147,8 +148,9 @@ export default function HomePage() {
       });
       await batch.commit();
       toast({ title: `${selectedVideos.size} video yeni kategoriye taşındı.` });
-      toggleSelectionMode();
-    } catch (error) {
+      setSelectedVideos(new Set());
+      setIsSelectionMode(false);
+    } catch (error)      {
       console.error("Bulk move error:", error);
       toast({ variant: "destructive", title: "Hata", description: "Videolar taşınırken bir sorun oluştu." });
     }
@@ -164,7 +166,8 @@ export default function HomePage() {
       });
       await batch.commit();
       toast({ title: `${selectedVideos.size} video favori durumu güncellendi.` });
-      toggleSelectionMode();
+      setSelectedVideos(new Set());
+      setIsSelectionMode(false);
     } catch (error) {
       console.error("Bulk favorite error:", error);
       toast({ variant: "destructive", title: "Hata", description: "Favori durumu güncellenirken bir sorun oluştu." });
