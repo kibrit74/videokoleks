@@ -73,9 +73,9 @@ export default function CategoriesPage() {
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
-      <header className="mb-8 flex justify-between items-center">
-        <h1 className="text-4xl font-bold font-headline">Kategorilerim</h1>
-        <Button onClick={() => setNewCategoryOpen(true)} disabled={!user}>
+      <header className="mb-6">
+        <h1 className="text-4xl font-bold font-headline mb-4">Kategorilerim</h1>
+        <Button onClick={() => setNewCategoryOpen(true)} disabled={!user} className="w-full">
           <PlusCircle className="mr-2 h-4 w-4" /> Yeni Kategori
         </Button>
       </header>
