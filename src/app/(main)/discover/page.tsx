@@ -18,9 +18,11 @@ export default function DiscoverPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
+    const query = searchQuery.trim();
+    if (!query) return;
 
-    const googleQuery = `${searchQuery} ${SOCIAL_MEDIA_SITES.join(' OR ')}`;
+    // Correctly construct the query to search the term within each site
+    const googleQuery = SOCIAL_MEDIA_SITES.map(site => `"${query}" ${site}`).join(' OR ');
     const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(googleQuery)}`;
     
     window.open(searchUrl, '_blank', 'noopener,noreferrer');
