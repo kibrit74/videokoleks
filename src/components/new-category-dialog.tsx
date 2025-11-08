@@ -13,12 +13,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useUser, useFirestore } from '@/firebase';
+import { collection, doc, setDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import type { Category } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 interface NewCategoryDialogProps {
   isOpen: boolean;
@@ -56,28 +59,45 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
 
     setIsLoading(true);
 
-    const categoryData: Omit<Category, 'id'> = {
+    const categoriesCollectionRef = collection(firestore, 'users', user.uid, 'categories');
+    const newCategoryRef = doc(categoriesCollectionRef);
+
+    const categoryData: Category = {
+        id: newCategoryRef.id,
         userId: user.uid,
         name: name.trim(),
         emoji: selectedEmoji,
         color: selectedColor
     };
     
-    const categoriesCollection = collection(firestore, 'users', user.uid, 'categories');
+    try {
+        await setDoc(newCategoryRef, categoryData);
+        toast({
+            title: 'Kategori Oluşturuldu! 🎉',
+            description: 'Yeni kategoriniz başarıyla eklendi.',
+        });
+        
+        onOpenChange(false);
+        // Reset form
+        setName('');
+        setSelectedEmoji(emojis[0]);
+        setSelectedColor(colors[0]);
 
-    addDocumentNonBlocking(categoriesCollection, categoryData);
-
-    toast({
-        title: 'Kategori Oluşturuldu! 🎉',
-        description: 'Yeni kategoriniz başarıyla eklendi.',
-    });
-    
-    setIsLoading(false);
-    onOpenChange(false);
-    // Reset form
-    setName('');
-    setSelectedEmoji(emojis[0]);
-    setSelectedColor(colors[0]);
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: newCategoryRef.path,
+            operation: 'create',
+            requestResourceData: categoryData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({
+            variant: "destructive",
+            title: "Oluşturulamadı",
+            description: "Kategori oluşturulurken bir hata oluştu. Lütfen izinlerinizi kontrol edin."
+        });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   return (

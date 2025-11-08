@@ -135,8 +135,15 @@ export function AddVideoDialog({
 
     setIsSaving(true);
     const platform = getPlatformFromUrl(videoUrl);
+    
+    // We must create a reference to a subcollection of a user, not a root collection
+    const videosCollectionRef = collection(firestore, 'users', user.uid, 'videos');
 
-    const videoData: Omit<Video, 'id'> = {
+    // The ID is generated client-side to be included in the document data
+    const newVideoRef = doc(videosCollectionRef);
+
+    const videoData: Video = {
+        id: newVideoRef.id,
         userId: user.uid,
         title: videoDetails.title,
         thumbnailUrl: videoDetails.thumbnailUrl || `https://picsum.photos/seed/${new Date().getTime()}/480/854`,
@@ -151,8 +158,8 @@ export function AddVideoDialog({
     };
 
     try {
-        const videosCollection = collection(firestore, 'users', user.uid, 'videos');
-        await addDoc(videosCollection, videoData);
+        // Use setDoc with the client-generated ref
+        await setDoc(newVideoRef, videoData);
         
         toast({
           title: 'Video Kaydedildi! ✨',
@@ -162,7 +169,7 @@ export function AddVideoDialog({
         onOpenChange(false);
     } catch(serverError: any) {
          const permissionError = new FirestorePermissionError({
-            path: `users/${user.uid}/videos`,
+            path: newVideoRef.path,
             operation: 'create',
             requestResourceData: videoData,
         });
