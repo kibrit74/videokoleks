@@ -14,7 +14,8 @@ export default function FavoritesPage() {
   const favoritesQuery = useMemoFirebase(() =>
     (user?.uid && firestore)
       ? query(
-          collection(firestore, 'users', user.uid, 'videos'),
+          collection(firestore, 'videos'),
+          where('userId', '==', user.uid),
           where('isFavorite', '==', true),
           orderBy('dateAdded', 'desc')
         )

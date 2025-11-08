@@ -71,7 +71,7 @@ export default function HomePage() {
 
   // Fetch categories for the current user
   const categoriesQuery = useMemoFirebase(() =>
-    (user?.uid && firestore) ? query(collection(firestore, 'users', user.uid, 'categories')) : null
+    (user?.uid && firestore) ? query(collection(firestore, 'categories'), where('userId', '==', user.uid)) : null
   , [firestore, user?.uid]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
@@ -79,7 +79,8 @@ export default function HomePage() {
   const videosQuery = useMemoFirebase(() => {
     if (!user?.uid || !firestore) return null;
     return query(
-      collection(firestore, 'users', user.uid, 'videos'),
+      collection(firestore, 'videos'),
+      where('userId', '==', user.uid),
       orderBy('dateAdded', 'desc')
     );
   }, [firestore, user?.uid]);
@@ -125,7 +126,7 @@ export default function HomePage() {
     try {
       const batch = writeBatch(firestore);
       selectedVideos.forEach(videoId => {
-        const videoRef = doc(firestore, 'users', user.uid, 'videos', videoId);
+        const videoRef = doc(firestore, 'videos', videoId);
         batch.delete(videoRef);
       });
       await batch.commit();
@@ -142,7 +143,7 @@ export default function HomePage() {
      try {
       const batch = writeBatch(firestore);
       selectedVideos.forEach(videoId => {
-        const videoRef = doc(firestore, 'users', user.uid, 'videos', videoId);
+        const videoRef = doc(firestore, 'videos', videoId);
         batch.update(videoRef, { categoryId: newCategoryId });
       });
       await batch.commit();
@@ -159,7 +160,7 @@ export default function HomePage() {
     try {
       const batch = writeBatch(firestore);
       selectedVideos.forEach(videoId => {
-        const videoRef = doc(firestore, 'users', user.uid, 'videos', videoId);
+        const videoRef = doc(firestore, 'videos', videoId);
         batch.update(videoRef, { isFavorite: isFavorite });
       });
       await batch.commit();

@@ -59,10 +59,11 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
 
     setIsLoading(true);
 
-    const newCategoryRef = doc(collection(firestore, 'users', user.uid, 'categories'));
+    const newCategoryRef = doc(collection(firestore, 'categories'));
 
     const categoryData: Category = {
         id: newCategoryRef.id,
+        userId: user.uid,
         name: name.trim(),
         emoji: selectedEmoji,
         color: selectedColor

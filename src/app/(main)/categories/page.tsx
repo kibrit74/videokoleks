@@ -20,7 +20,7 @@ export default function CategoriesPage() {
   const router = useRouter();
 
   const categoriesQuery = useMemoFirebase(() => 
-    (user?.uid && firestore) ? query(collection(firestore, 'users', user.uid, 'categories')) : null
+    (user?.uid && firestore) ? query(collection(firestore, 'categories'), where('userId', '==', user.uid)) : null
   , [firestore, user?.uid]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
@@ -38,7 +38,7 @@ export default function CategoriesPage() {
         const counts: Record<string, number> = {};
         
         // This query now correctly filters by userId, which is required by security rules
-        const allVideosQuery = query(collection(firestore, 'users', user.uid, 'videos'));
+        const allVideosQuery = query(collection(firestore, 'videos'), where('userId', '==', user.uid));
         
         try {
             const videoSnapshot = await getDocs(allVideosQuery);

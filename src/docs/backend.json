@@ -54,5 +54,33 @@
     "providers": [
       "password"
     ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": { "$ref": "#/backend/entities/User" },
+          "description": "Stores public profile information for each user."
+        }
+      },
+      {
+        "path": "/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": { "$ref": "#/backend/entities/Category" },
+          "description": "Stores all categories for all users. Access is controlled by security rules based on the 'userId' field within each document."
+        }
+      },
+      {
+        "path": "/videos/{videoId}",
+        "definition": {
+          "entityName": "Video",
+          "schema": { "$ref": "#/backend/entities/Video" },
+          "description": "Stores all videos for all users. Access is controlled by security rules based on the 'userId' field within each document."
+        }
+      }
+    ]
   }
 }
