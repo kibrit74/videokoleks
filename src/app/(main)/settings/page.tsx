@@ -22,13 +22,13 @@ import {
   Paintbrush,
   Sun,
   Cloud,
+  AppWindow,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BackupRestoreDialog } from '@/components/backup-restore-dialog';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -37,10 +37,36 @@ export default function SettingsPage() {
   const [notificationsEnabled, setNotificationsEnabled] = useLocalStorage('notificationsEnabled', true);
   const [autoSaveEnabled, setAutoSaveEnabled] = useLocalStorage('autoSaveEnabled', false);
   const [isBackupRestoreOpen, setBackupRestoreOpen] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
 
   useEffect(() => {
     setIsClient(true);
+    
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
+  
+  const handleInstallClick = () => {
+    if (!installPrompt) {
+        toast({ title: 'Uygulama zaten yüklü veya tarayıcınız desteklemiyor.' });
+        return;
+    };
+    installPrompt.prompt();
+    installPrompt.userChoice.then((choiceResult: { outcome: string }) => {
+      if (choiceResult.outcome === 'accepted') {
+        toast({ title: 'Uygulama başarıyla yüklendi!' });
+      }
+      setInstallPrompt(null);
+    });
+  };
 
   const settingsItems = [
     {
@@ -101,18 +127,25 @@ export default function SettingsPage() {
           )
         },
         {
+          id: 'backup',
+          icon: Cloud,
+          label: 'Yedekleme & Geri Yükleme',
+          content: 'Verilerinizi yedekleyin ve geri yükleyin.',
+          action: () => setBackupRestoreOpen(true),
+        },
+        ...(installPrompt ? [{
+          id: 'install',
+          icon: AppWindow,
+          label: 'Uygulamayı Yükle',
+          content: 'Uygulamayı ana ekranınıza ekleyin.',
+          action: handleInstallClick,
+        }] : []),
+        {
           id: 'privacy',
           icon: Lock,
           label: 'Gizlilik',
           content: 'Hesap ve veri gizliliği ayarları.',
           action: () => toast({ title: 'Çok yakında!' }),
-        },
-        {
-          id: 'backup',
-          icon: Cloud,
-          label: 'Yedekleme & Senkronizasyon',
-          content: 'Verilerinizi yedekleyin ve geri yükleyin.',
-          action: () => setBackupRestoreOpen(true),
         },
       ],
     },
