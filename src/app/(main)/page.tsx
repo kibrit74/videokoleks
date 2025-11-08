@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, orderBy, where, writeBatch, doc } from 'firebase/firestore';
+import { useSearchParams } from 'next/navigation';
 
 import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
@@ -51,11 +52,17 @@ export default function HomePage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
 
   const [isAddVideoOpen, setAddVideoOpen] = useState(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(searchParams.get('categoryId'));
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Sync state with URL params
+  useEffect(() => {
+    setSelectedCategoryId(searchParams.get('categoryId'));
+  }, [searchParams]);
 
   // --- Bulk Actions State ---
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -64,7 +71,7 @@ export default function HomePage() {
 
   // Fetch categories for the current user
   const categoriesQuery = useMemoFirebase(() =>
-    (user?.uid && firestore) ? collection(firestore, 'users', user.uid, 'categories') : null
+    (user?.uid && firestore) ? query(collection(firestore, 'users', user.uid, 'categories')) : null
   , [firestore, user?.uid]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 

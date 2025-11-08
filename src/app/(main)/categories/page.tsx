@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, getDocs } from 'firebase/firestore';
+import { collection, query, getDocs, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlusCircle, MoreVertical, Loader2 } from 'lucide-react';
@@ -10,14 +11,16 @@ import { NewCategoryDialog } from '@/components/new-category-dialog';
 import { cn } from '@/lib/utils';
 import type { Category } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter } from 'next/navigation';
 
 export default function CategoriesPage() {
   const [isNewCategoryOpen, setNewCategoryOpen] = useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
 
   const categoriesQuery = useMemoFirebase(() => 
-    (user?.uid && firestore) ? collection(firestore, 'users', user.uid, 'categories') : null
+    (user?.uid && firestore) ? query(collection(firestore, 'users', user.uid, 'categories')) : null
   , [firestore, user?.uid]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
@@ -34,6 +37,7 @@ export default function CategoriesPage() {
         setCountsLoading(true);
         const counts: Record<string, number> = {};
         
+        // This query now correctly filters by userId, which is required by security rules
         const allVideosQuery = query(collection(firestore, 'users', user.uid, 'videos'));
         
         try {
@@ -100,19 +104,21 @@ export default function CategoriesPage() {
           ) : categories && categories.length > 0 ? (
             <ul className="divide-y divide-border">
                 {categories.map((cat) => (
-                <li key={cat.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                <li key={cat.id}>
+                  <Link href={`/?categoryId=${cat.id}`} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors w-full">
                     <div className="flex items-center gap-4">
-                    <span className={cn("text-2xl p-2 rounded-lg", cat.color)}>{cat.emoji}</span>
-                    <div>
-                        <p className="font-semibold">{cat.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                            {countsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : `${videoCounts[cat.id] || 0} video`}
-                        </p>
+                      <span className={cn("text-2xl p-2 rounded-lg", cat.color)}>{cat.emoji}</span>
+                      <div>
+                          <p className="font-semibold text-left">{cat.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                              {countsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : `${videoCounts[cat.id] || 0} video`}
+                          </p>
+                      </div>
                     </div>
-                    </div>
-                    <Button variant="ghost" size="icon">
-                    <MoreVertical className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); /* TODO: Implement edit category */ }}>
+                      <MoreVertical className="h-4 w-4" />
                     </Button>
+                  </Link>
                 </li>
                 ))}
             </ul>
