@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { collection, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, doc, query, where } from 'firebase/firestore';
 import { Loader2, Download, Upload, AlertTriangle } from 'lucide-react';
 import type { Category, Video } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
@@ -56,12 +56,12 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
     setIsLoading(true);
     setError(null);
     try {
-      const categoriesRef = collection(firestore, 'users', user.uid, 'categories');
-      const videosRef = collection(firestore, 'users', user.uid, 'videos');
+      const categoriesQuery = query(collection(firestore, 'categories'), where('userId', '==', user.uid));
+      const videosQuery = query(collection(firestore, 'videos'), where('userId', '==', user.uid));
 
       const [categoriesSnapshot, videosSnapshot] = await Promise.all([
-        getDocs(categoriesRef),
-        getDocs(videosRef),
+        getDocs(categoriesQuery),
+        getDocs(videosQuery),
       ]);
 
       const categoriesData = categoriesSnapshot.docs.map(doc => doc.data() as Category);
@@ -142,12 +142,14 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
 
         // 1. Delete all existing data
         const deleteBatch = writeBatch(firestore);
-        const existingCategoriesRef = collection(firestore, 'users', user.uid, 'categories');
-        const existingVideosRef = collection(firestore, 'users', user.uid, 'videos');
+        const existingCategoriesQuery = query(collection(firestore, 'categories'), where('userId', '==', user.uid));
+        const existingVideosQuery = query(collection(firestore, 'videos'), where('userId', '==', user.uid));
+        
         const [existingCategoriesSnap, existingVideosSnap] = await Promise.all([
-            getDocs(existingCategoriesRef),
-            getDocs(existingVideosRef)
+            getDocs(existingCategoriesQuery),
+            getDocs(existingVideosQuery)
         ]);
+
         existingCategoriesSnap.forEach(doc => deleteBatch.delete(doc.ref));
         existingVideosSnap.forEach(doc => deleteBatch.delete(doc.ref));
         await deleteBatch.commit();
@@ -158,7 +160,7 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
         const categoryBatch = writeBatch(firestore);
         
         data.categories.forEach(category => {
-            const newDocRef = doc(collection(firestore, 'users', user.uid, 'categories'));
+            const newDocRef = doc(collection(firestore, 'categories'));
             categoryBatch.set(newDocRef, { ...category, userId: user.uid, id: newDocRef.id });
             newCategoryNameToIdMap.set(category.name, newDocRef.id);
         });
@@ -169,7 +171,7 @@ export function BackupRestoreDialog({ isOpen, onOpenChange }: BackupRestoreDialo
         const videoBatch = writeBatch(firestore);
         const totalVideos = data.videos.length;
         data.videos.forEach((video, index) => {
-            const newDocRef = doc(collection(firestore, 'users', user.uid, 'videos'));
+            const newDocRef = doc(collection(firestore, 'videos'));
             const newCategoryId = newCategoryNameToIdMap.get(video.categoryName) || '';
             const videoData = { 
                 ...video, 
