@@ -26,13 +26,14 @@ import {
 import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import type { Platform, Video, Category } from '@/lib/types';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState, useRef } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { firebaseConfig } from '@/firebase/config';
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -93,7 +94,7 @@ export default function VideoDetailPage() {
   if (videoLoading) {
     return (
         <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white">
-             <div className="relative w-full max-w-xl aspect-[9/16] bg-card overflow-hidden rounded-lg">
+             <div className="relative w-full aspect-[9/16] bg-card overflow-hidden rounded-lg">
                 <Skeleton className="w-full h-full" />
              </div>
         </div>
@@ -229,7 +230,7 @@ export default function VideoDetailPage() {
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-2 md:p-4">
-      <div className="relative w-full max-w-xl aspect-[9/16] bg-card overflow-hidden rounded-lg shadow-2xl shadow-primary/20 flex flex-col">
+      <div className="relative w-full aspect-[9/16] bg-card overflow-hidden rounded-lg shadow-2xl shadow-primary/20 flex flex-col">
         <header className="absolute top-0 left-0 right-0 z-20 p-2 flex justify-between items-center bg-gradient-to-b from-black/50 to-transparent">
             <Button asChild variant="ghost" size="icon" className="bg-black/30 hover:bg-black/50 text-white rounded-full">
               <Link href="/">
