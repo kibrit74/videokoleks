@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlusCircle, MoreVertical, Loader2 } from 'lucide-react';
@@ -25,10 +25,8 @@ export default function CategoriesPage() {
   const [countsLoading, setCountsLoading] = useState(true);
 
   useEffect(() => {
-    // Only run if we have the user, categories, and firestore instance
     if (!user || !categories || !firestore) return;
     
-    // This flag prevents fetching if a fetch is already in progress
     let isFetching = false;
 
     const fetchCounts = async () => {
@@ -36,10 +34,11 @@ export default function CategoriesPage() {
         isFetching = true;
         setCountsLoading(true);
         const counts: Record<string, number> = {};
-        // Use Promise.all to fetch counts in parallel for better performance
+        
         await Promise.all(categories.map(async (cat) => {
              const videosInCatQuery = query(
-                collection(firestore, 'users', user.uid, 'videos'),
+                collectionGroup(firestore, 'videos'),
+                where('userId', '==', user.uid),
                 where('categoryId', '==', cat.id)
             );
             const snapshot = await getDocs(videosInCatQuery);
@@ -51,7 +50,6 @@ export default function CategoriesPage() {
     }
 
     fetchCounts();
-    // This effect should only re-run if the user, categories array, or firestore instance changes.
   }, [categories, user, firestore]);
 
   const isLoading = categoriesLoading;
