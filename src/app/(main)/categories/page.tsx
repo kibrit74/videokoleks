@@ -17,8 +17,8 @@ export default function CategoriesPage() {
   const firestore = useFirestore();
 
   const categoriesQuery = useMemoFirebase(() => 
-    (user && firestore) ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null
-  , [firestore, user]);
+    (user?.uid && firestore) ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null
+  , [firestore, user?.uid]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
   const [videoCounts, setVideoCounts] = useState<Record<string, number>>({});
@@ -111,5 +111,3 @@ export default function CategoriesPage() {
     </div>
   );
 }
-
-    

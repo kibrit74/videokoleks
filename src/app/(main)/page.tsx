@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, collectionGroup, query, where, orderBy, writeBatch, doc, limit } from 'firebase/firestore';
+import { collection, collectionGroup, query, where, orderBy, writeBatch, doc } from 'firebase/firestore';
 
 import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
@@ -64,20 +64,19 @@ export default function HomePage() {
 
   // Fetch categories for the current user using a collection group query
   const categoriesQuery = useMemoFirebase(() =>
-    (user && firestore) ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null
-  , [firestore, user]);
+    (user?.uid && firestore) ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null
+  , [firestore, user?.uid]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
   // Use a collection group query to fetch videos for the user across all subcollections
   const videosQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
+    if (!user?.uid || !firestore) return null;
     return query(
       collectionGroup(firestore, 'videos'),
       where('userId', '==', user.uid),
-      orderBy('dateAdded', 'desc'),
-      limit(10)
+      orderBy('dateAdded', 'desc')
     );
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
 
   const { data: videos, isLoading: videosLoading, error: videosError } = useCollection<Video>(videosQuery);
 
@@ -85,12 +84,18 @@ export default function HomePage() {
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
     
-    return videos.filter(video => {
+    let initialFilter = videos;
+
+    // Apply filtering
+    let searchFiltered = initialFilter.filter(video => {
       const matchesCategory = selectedCategoryId ? video.categoryId === selectedCategoryId : true;
       const matchesPlatform = selectedPlatform ? video.platform === selectedPlatform : true;
       const matchesSearch = searchTerm ? video.title.toLowerCase().includes(searchTerm.toLowerCase()) : true;
       return matchesCategory && matchesPlatform && matchesSearch;
     });
+
+    // We are no longer using limit() in the query, so we apply it here.
+    return searchFiltered.slice(0, 10);
 
   }, [videos, selectedCategoryId, selectedPlatform, searchTerm]);
   
@@ -384,5 +389,3 @@ export default function HomePage() {
     </>
   );
 }
-
-    

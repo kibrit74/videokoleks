@@ -50,8 +50,8 @@ export function AddVideoDialog({
   const [notes, setNotes] = useState('');
 
   const categoriesQuery = useMemoFirebase(() =>
-    (user && firestore) ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null
-  , [firestore, user]);
+    (user?.uid && firestore) ? query(collectionGroup(firestore, 'categories'), where('userId', '==', user.uid)) : null
+  , [firestore, user?.uid]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
   useEffect(() => {
@@ -287,5 +287,3 @@ export function AddVideoDialog({
     </>
   );
 }
-
-    

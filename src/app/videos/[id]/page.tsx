@@ -81,14 +81,14 @@ export default function VideoDetailPage() {
   const { toast } = useToast();
   
   const videoDocRef = useMemoFirebase(() => 
-    (user && firestore && videoId) ? doc(firestore, 'users', user.uid, 'videos', videoId) : null
-  , [firestore, user, videoId]);
+    (user?.uid && firestore && videoId) ? doc(firestore, 'users', user.uid, 'videos', videoId) : null
+  , [firestore, user?.uid, videoId]);
 
   const { data: currentVideo, isLoading: videoLoading } = useDoc<Video>(videoDocRef);
   
   const categoryDocRef = useMemoFirebase(() => 
-    (user && firestore && currentVideo?.categoryId) ? doc(firestore, 'users', user.uid, 'categories', currentVideo.categoryId) : null,
-    [user, firestore, currentVideo?.categoryId]
+    (user?.uid && firestore && currentVideo?.categoryId) ? doc(firestore, 'users', user.uid, 'categories', currentVideo.categoryId) : null,
+    [user?.uid, firestore, currentVideo?.categoryId]
   );
   const { data: category } = useDoc<Category>(categoryDocRef);
 
@@ -298,5 +298,3 @@ export default function VideoDetailPage() {
     </div>
   );
 }
-
-    
