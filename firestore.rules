@@ -12,15 +12,17 @@ service cloud.firestore {
     }
     
     match /categories/{categoryId} {
-      allow read, list: if request.auth.uid == resource.data.userId;
-      allow create: if request.auth.uid == request.resource.data.userId;
-      allow update, delete: if request.auth.uid == resource.data.userId;
+      // Allow listing only if the query is filtered by the user's ID.
+      allow list: if request.auth != null && request.query.where.get("userId", "") == request.auth.uid;
+      // Allow read/write operations on individual documents if the user is the owner.
+      allow read, create, update, delete: if request.auth != null && isOwner(request.resource.data.userId);
     }
     
     match /videos/{videoId} {
-      allow read, list: if request.auth.uid == resource.data.userId;
-      allow create: if request.auth.uid == request.resource.data.userId;
-      allow update, delete: if request.auth.uid == resource.data.userId;
+      // Allow listing only if the query is filtered by the user's ID.
+      allow list: if request.auth != null && request.query.where.get("userId", "") == request.auth.uid;
+       // Allow read/write operations on individual documents if the user is the owner.
+      allow read, create, update, delete: if request.auth != null && isOwner(request.resource.data.userId);
     }
   }
 }
