@@ -1,65 +1,110 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 
 interface FacebookVideoPlayerProps {
   videoUrl: string;
 }
 
-// Helper function to initialize the Facebook SDK
-const initializeFacebookSDK = () => {
-  if (document.getElementById('facebook-jssdk')) return;
+// Global script yükleme durumunu yönetmek için bir Promise
+let sdkLoadingPromise: Promise<void> | null = null;
 
-  const script = document.createElement('script');
-  script.id = 'facebook-jssdk';
-  script.src = "https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v19.0";
-  script.async = true;
-  script.defer = true;
-  script.crossOrigin = 'anonymous';
-  document.body.appendChild(script);
+const loadFacebookSDK = (): Promise<void> => {
+    if (sdkLoadingPromise) {
+        return sdkLoadingPromise;
+    }
+
+    sdkLoadingPromise = new Promise((resolve, reject) => {
+        if (document.getElementById('facebook-jssdk')) {
+            resolve();
+            return;
+        }
+
+        window.fbAsyncInit = function () {
+            window.FB.init({
+                xfbml: true,
+                version: 'v19.0'
+            });
+            resolve();
+        };
+
+        const script = document.createElement('script');
+        script.id = 'facebook-jssdk';
+        script.src = "https://connect.facebook.net/en_US/sdk.js";
+        script.async = true;
+        script.defer = true;
+        script.crossOrigin = 'anonymous';
+        script.onload = () => {
+            // fbAsyncInit'in çağrıldığından emin olmak için küçük bir gecikme
+            // Bazen onload, fbAsyncInit'den önce tetiklenebilir.
+            setTimeout(() => {
+                if (window.FB) {
+                    resolve();
+                }
+            }, 100);
+        };
+        script.onerror = () => {
+            reject(new Error('Facebook SDK could not be loaded.'));
+            sdkLoadingPromise = null; // Hata durumunda yeniden denemeye izin ver
+        };
+        document.body.appendChild(script);
+    });
+
+    return sdkLoadingPromise;
 };
 
+
 export function FacebookVideoPlayer({ videoUrl }: FacebookVideoPlayerProps) {
-  const videoRef = useRef<HTMLDivElement>(null);
-  
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [loadingState, setLoadingState] = useState<'loading' | 'loaded' | 'error'>('loading');
+
   useEffect(() => {
-    initializeFacebookSDK();
+    let isMounted = true;
+    setLoadingState('loading');
 
-    const checkSdkAndRender = () => {
-      if (window.FB) {
-        // The SDK is loaded, re-parse the container to render the video
-        if (videoRef.current) {
-          window.FB.XFBML.parse(videoRef.current.parentElement);
+    loadFacebookSDK()
+      .then(() => {
+        if (isMounted && window.FB) {
+          // SDK yüklendi, XFBML'yi ayrıştırma zamanı
+          if (containerRef.current) {
+            window.FB.XFBML.parse(containerRef.current, () => {
+                // Ayrıştırma tamamlandığında yükleyiciyi gizle
+                setLoadingState('loaded');
+            });
+          }
         }
-      } else {
-        // If SDK is not ready, check again shortly
-        setTimeout(checkSdkAndRender, 100);
-      }
-    };
-    
-    // Listen for the SDK to load
-    window.fbAsyncInit = function () {
-        window.FB.init({
-            xfbml: true,
-            version: 'v19.0'
-        });
-        // The SDK is ready, parse the XFBML tags
-        if (videoRef.current) {
-           window.FB.XFBML.parse(videoRef.current.parentElement);
+      })
+      .catch(error => {
+        console.error(error);
+        if (isMounted) {
+          setLoadingState('error');
         }
+      });
+
+    return () => {
+      isMounted = false;
     };
-
-    // Fallback in case fbAsyncInit has already fired
-    checkSdkAndRender();
-
-  }, [videoUrl]); // Re-run effect if the videoUrl changes
+  }, [videoUrl]); // videoUrl değiştiğinde efekti yeniden çalıştır
 
   return (
-    <div ref={videoRef} className="w-full h-full flex items-center justify-center bg-black">
-       <div 
+    <div ref={containerRef} className="w-full h-full flex items-center justify-center bg-black relative">
+       {loadingState === 'loading' && (
+         <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground z-10">
+            <Loader2 className="h-8 w-8 animate-spin mb-2" />
+            <span>Facebook oynatıcı yükleniyor...</span>
+        </div>
+       )}
+       {loadingState === 'error' && (
+         <div className="absolute inset-0 flex flex-col items-center justify-center text-destructive-foreground p-4 bg-destructive z-10">
+            <AlertTriangle className="h-8 w-8 mb-2" />
+            <span>Video oynatıcı yüklenemedi.</span>
+        </div>
+       )}
+       {/* data-href değiştiğinde FB.XFBML.parse'ın yeniden çalışması gerekir, useEffect bunu yönetir */}
+      <div 
         className="fb-video" 
-        data-href={videoUrl} 
+        data-href={videoUrl}
         data-width="auto"
         data-height="auto"
         data-allowfullscreen="true"
@@ -69,10 +114,6 @@ export function FacebookVideoPlayer({ videoUrl }: FacebookVideoPlayerProps) {
         <blockquote cite={videoUrl} className="fb-xfbml-parse-ignore">
           <a href={videoUrl}>Facebook Video</a>
         </blockquote>
-      </div>
-      {/* Fallback loader */}
-      <div className="absolute inset-0 flex items-center justify-center -z-10">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     </div>
   );
