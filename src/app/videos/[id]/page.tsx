@@ -34,7 +34,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { FacebookVideoPlayer } from '@/components/facebook-video-player';
+import { firebaseConfig } from '@/firebase/config';
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -45,7 +45,6 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
 
 function getEmbedUrl(url: string, platform: Platform): string | null {
     try {
-        // Only allow embedding for YouTube, as it is the most reliable.
         if (platform !== 'youtube') {
             return null;
         }
@@ -58,7 +57,6 @@ function getEmbedUrl(url: string, platform: Platform): string | null {
             if (!videoId && urlObject.hostname === 'youtu.be') {
                 videoId = urlObject.pathname.slice(1);
             } else if (!videoId) {
-                // Catches URLs like /v/VIDEO_ID, /embed/VIDEO_ID etc.
                 const pathParts = urlObject.pathname.split('/');
                 videoId = pathParts[pathParts.length - 1];
             }
@@ -96,56 +94,53 @@ export default function VideoDetailPage() {
   const [fbPlayerLoading, setFbPlayerLoading] = useState(true);
   const videoPlayerRef = useRef<HTMLDivElement>(null);
 
-
   useEffect(() => {
     let isMounted = true;
     if (!currentVideo || currentVideo.platform !== 'facebook') return;
-
-    const loadAndInitFbSdk = () => {
-      setFbPlayerLoading(true);
-      if (document.getElementById('facebook-jssdk') && window.FB) {
+  
+    const initFacebookSdk = () => {
+      if (!isMounted) return;
+  
+      if (window.FB) {
+        // If SDK is already there, just parse
         window.FB.XFBML.parse(videoPlayerRef.current, () => {
-          if (isMounted) setFbPlayerLoading(false);
+            if (isMounted) setFbPlayerLoading(false);
         });
-        return;
-      }
-
-      window.fbAsyncInit = function() {
-        window.FB.init({
-          xfbml: true,
-          version: 'v19.0'
-        });
-        if(videoPlayerRef.current) {
-            window.FB.XFBML.parse(videoPlayerRef.current, () => {
-                 if (isMounted) setFbPlayerLoading(false);
-            });
+      } else {
+        // Define fbAsyncInit if it's not already defined
+        window.fbAsyncInit = function() {
+          if (!isMounted || !window.FB) return;
+          window.FB.init({
+            appId: firebaseConfig.facebookAppId,
+            xfbml: true,
+            version: 'v20.0'
+          });
+          window.FB.XFBML.parse(videoPlayerRef.current, () => {
+            if (isMounted) setFbPlayerLoading(false);
+          });
+        };
+  
+        // Load the SDK script
+        if (!document.getElementById('facebook-jssdk')) {
+          const script = document.createElement('script');
+          script.id = 'facebook-jssdk';
+          script.src = "https://connect.facebook.net/en_US/sdk.js";
+          script.async = true;
+          script.defer = true;
+          script.crossOrigin = 'anonymous';
+          script.onerror = () => {
+            if (isMounted) setFbPlayerLoading(false); // Stop loading on error
+          };
+          document.body.appendChild(script);
         }
-      };
-
-      const script = document.createElement('script');
-      script.id = 'facebook-jssdk';
-      script.src = "https://connect.facebook.net/en_US/sdk.js";
-      script.async = true;
-      script.defer = true;
-      script.crossOrigin = 'anonymous';
-      script.onload = () => {
-        // SDK is loaded, fbAsyncInit will be called by it.
-      };
-      script.onerror = () => {
-        if(isMounted) setFbPlayerLoading(false); // Stop loading on error
-      };
-      document.body.appendChild(script);
+      }
     };
-
-    loadAndInitFbSdk();
-
+  
+    setFbPlayerLoading(true);
+    initFacebookSdk();
+  
     return () => {
       isMounted = false;
-      const script = document.getElementById('facebook-jssdk');
-      if (script && script.parentElement) {
-       // Optional: you might want to remove the script on unmount
-       // script.parentElement.removeChild(script);
-      }
     };
   }, [currentVideo]);
 
@@ -224,13 +219,10 @@ export default function VideoDetailPage() {
           url: shareUrl,
         });
       } else {
-        // Fallback for browsers that do not support navigator.share
         throw new Error('Web Share API not supported');
       }
     } catch (error: any) {
-      // Check if the error is a permission error or if the API is not supported
       if (error.name === 'NotAllowedError' || error.message.includes('Web Share API not supported') || error.message.includes('Permission denied')) {
-        // Fallback to clipboard
         try {
             await navigator.clipboard.writeText(shareUrl);
             toast({ title: "Paylaşım menüsü desteklenmiyor. Link panoya kopyalandı!" });
