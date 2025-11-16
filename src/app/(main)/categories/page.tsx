@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, getDocs, writeBatch, doc, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlusCircle, MoreVertical, Loader2, Lock, Edit, Trash2, KeyRound } from 'lucide-react';
@@ -207,11 +207,11 @@ export default function CategoriesPage() {
                     
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" onClick={(e) => {e.preventDefault(); e.stopPropagation();}}>
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuContent onClick={(e) => {e.preventDefault(); e.stopPropagation();}}>
                         <DropdownMenuItem onClick={(e) => handleEditRequest(e, cat)}>
                           <Edit className="mr-2 h-4 w-4" />
                           Düzenle
