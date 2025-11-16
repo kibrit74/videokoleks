@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon } from '@/components/icons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from '@/hooks/use-toast';
+import { Logo } from '@/components/logo';
 
 import {
   DropdownMenu,
@@ -205,7 +206,9 @@ export default function HomePage() {
     <>
       <div className="container mx-auto max-w-5xl px-4 py-8">
         <header className="mb-8">
-          <h1 className="text-4xl font-bold font-headline text-center md:text-left mb-4">📦 VideoKoleks</h1>
+          <div className='flex items-center justify-center md:justify-start mb-4'>
+             <Logo className="h-10" />
+          </div>
           <div className="flex flex-col md:flex-row gap-4 items-center">
             <div className="relative flex-grow w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
