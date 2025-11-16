@@ -77,8 +77,8 @@ export function Logo({ className }: { className?: string }) {
       <text x="135" y="70" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="white" textAnchor="middle">6</text>
       
       {/* Logo metni */}
-      <text x="100" y="155" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fill="hsl(var(--foreground))" textAnchor="middle">VIDEO</text>
-      <text x="100" y="173" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fill="hsl(var(--foreground))" textAnchor="middle">KOLEKS</text>
+      <text x="100" y="155" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fill="url(#videoGrad)" textAnchor="middle">VIDEO</text>
+      <text x="100" y="173" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fill="url(#videoGrad)" textAnchor="middle">KOLEKS</text>
     </svg>
   );
 }
