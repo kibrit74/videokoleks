@@ -10,8 +10,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Package, Link as LinkIcon, List, Star, Mail, Lock, Layers, Smartphone } from 'lucide-react';
+import { Link as LinkIcon, List, Mail, Lock, Layers, Smartphone } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
+import { Logo } from './logo';
 
 interface AboutDialogProps {
   isOpen: boolean;
@@ -42,7 +43,7 @@ const features = [
     {
         icon: Smartphone,
         title: "Her Cihazdan Erişim",
-        description: "Uygulamayı telefonunuzun ana ekranına ekleyerek anında erişim sağlayın."
+        description: "Uygulamamızı telefonunuzun ana ekranına ekleyerek anında erişim sağlayın."
     }
 ]
 
@@ -56,9 +57,7 @@ export function AboutDialog({ isOpen, onOpenChange }: AboutDialogProps) {
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md grid-rows-[auto,1fr,auto] max-h-[90vh]">
         <DialogHeader className="items-center text-center space-y-4">
-          <div className="rounded-full bg-primary/10 p-4 inline-block">
-            <Package className="h-10 w-10 text-primary" />
-          </div>
+           <Logo className="h-24 w-24" />
           <div>
             <DialogTitle className="text-2xl font-headline">VideoKoleks</DialogTitle>
             <DialogDescription className="text-center mt-1">
