@@ -8,7 +8,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, AlertTriangle, X, Trash2, FolderSymlink, Star } from 'lucide-react';
+import { Search, Plus, AlertTriangle, X, Trash2, FolderSymlink } from 'lucide-react';
 import { AddVideoDialog } from '@/components/add-video-dialog';
 import type { Video, Category, Platform } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,7 +23,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent
@@ -186,24 +185,6 @@ export default function HomePage() {
     }
   }
 
-  const handleBulkFavorite = async (isFavorite: boolean) => {
-    if (!user || !firestore || selectedVideos.size === 0) return;
-    try {
-      const batch = writeBatch(firestore);
-      selectedVideos.forEach(videoId => {
-        const videoRef = doc(firestore, 'users', user.uid, 'videos', videoId);
-        batch.update(videoRef, { isFavorite: isFavorite });
-      });
-      await batch.commit();
-      toast({ title: `${selectedVideos.size} video favori durumu güncellendi.` });
-      setSelectedVideos(new Set());
-      setIsSelectionMode(false);
-    } catch (error) {
-      console.error("Bulk favorite error:", error);
-      toast({ variant: "destructive", title: "Hata", description: "Favori durumu güncellenirken bir sorun oluştu." });
-    }
-  };
-
   const handleCategorySelect = (categoryId: string | null) => {
     setSelectedCategoryId(categoryId);
     const category = categories?.find(c => c.id === categoryId);
@@ -365,22 +346,11 @@ export default function HomePage() {
                 <div className="flex items-center gap-2">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="icon" aria-label="Seçilenleri taşı veya favorilere ekle">
+                            <Button variant="outline" size="icon" aria-label="Seçilenleri taşı">
                                 <FolderSymlink />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                             <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>
-                                <Star className="mr-2 h-4 w-4" />
-                                <span>Favori Durumu</span>
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent>
-                                    <DropdownMenuItem onClick={() => handleBulkFavorite(true)}>Favorilere Ekle</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleBulkFavorite(false)}>Favorilerden Çıkar</DropdownMenuItem>
-                                </DropdownMenuSubContent>
-                            </DropdownMenuSub>
-                            <DropdownMenuSeparator />
                              <DropdownMenuSub>
                                 <DropdownMenuSubTrigger>
                                     <FolderSymlink className="mr-2 h-4 w-4" />

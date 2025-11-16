@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
-  Heart,
   ExternalLink,
   Trash2,
   AlertTriangle,
@@ -119,23 +118,6 @@ export default function VideoDetailPage() {
   const PlatformIcon = platformIcons[currentVideo.platform];
   const embedUrl = getEmbedUrl(currentVideo.originalUrl, currentVideo.platform);
 
-  const toggleFavorite = () => {
-      if (!videoDocRef || !currentVideo) return;
-      const newFavoriteStatus = !currentVideo.isFavorite;
-      updateDoc(videoDocRef, { isFavorite: newFavoriteStatus })
-        .then(() => {
-            toast({ title: newFavoriteStatus ? 'Favorilere eklendi! ⭐' : 'Favorilerden kaldırıldı.' });
-        })
-        .catch(serverError => {
-            const permissionError = new FirestorePermissionError({
-                path: videoDocRef.path,
-                operation: 'update',
-                requestResourceData: { isFavorite: newFavoriteStatus },
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        });
-  }
-  
   const deleteVideo = () => {
     if (!videoDocRef) {
       toast({ variant: 'destructive', title: 'Hata', description: 'Video referansı bulunamadı.' });
@@ -265,11 +247,6 @@ export default function VideoDetailPage() {
             {currentVideo.notes && <p className="text-sm bg-muted p-2 rounded-md mt-2">📝 Not: "{currentVideo.notes}"</p>}
 
             <div className="flex justify-around items-center pt-3 mt-3 border-t">
-                <Button variant="ghost" className="flex-col h-auto text-muted-foreground gap-1 hover:text-primary" onClick={toggleFavorite}>
-                    <Heart className={cn("w-5 h-5", currentVideo.isFavorite && "fill-red-500 text-red-500")} />
-                    <span className="text-xs">Favori</span>
-                </Button>
-
                 <Button variant="ghost" className="flex-col h-auto text-muted-foreground gap-1 hover:text-primary" onClick={handleShare}>
                     <Share2 className="w-5 h-5"/>
                     <span className="text-xs">Paylaş</span>

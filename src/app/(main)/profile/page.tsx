@@ -4,7 +4,6 @@ import {
   User,
   Package,
   FolderKanban,
-  Star,
   Settings,
   Mail,
   Info,
@@ -28,7 +27,7 @@ import {
   useMemoFirebase,
   useUser
 } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import type { Video, Category } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -65,28 +64,13 @@ export default function ProfilePage() {
   );
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
   
-  // Query for all favorite videos of the user
-  const favoriteVideosQuery = useMemoFirebase(
-    () =>
-      (user?.uid && firestore)
-        ? query(
-            collection(firestore, 'users', user.uid, 'videos'),
-            where('isFavorite', '==', true)
-          )
-        : null,
-    [firestore, user?.uid]
-  );
-  const { data: favoriteVideos, isLoading: favoritesLoading } = useCollection<Video>(favoriteVideosQuery);
-
   const videoCount = videos?.length ?? 0;
   const categoryCount = categories?.length ?? 0;
-  const favoriteCount = favoriteVideos?.length ?? 0;
-  const statsLoading = videosLoading || categoriesLoading || favoritesLoading;
+  const statsLoading = videosLoading || categoriesLoading;
 
   const stats = [
     { icon: Package, label: 'Video', value: videoCount },
     { icon: FolderKanban, label: 'Kategori', value: categoryCount },
-    { icon: Star, label: 'Favori', value: favoriteCount },
   ];
 
   const settingsItems = [
@@ -115,7 +99,7 @@ export default function ProfilePage() {
                 <CardTitle>Koleksiyonumda</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="grid grid-cols-2 gap-4 text-center">
                     {stats.map(stat => (
                     <div key={stat.label}>
                         <stat.icon className="w-8 h-8 mx-auto text-primary mb-2" />
@@ -166,7 +150,7 @@ export default function ProfilePage() {
             <CardTitle>Koleksiyonumda</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-2 gap-4 text-center">
               {stats.map(stat => (
                 <div key={stat.label}>
                   <stat.icon className="w-8 h-8 mx-auto text-primary mb-2" />

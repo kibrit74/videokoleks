@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, FolderKanban, Star, User, Compass } from 'lucide-react';
+import { Home, FolderKanban, User, Compass } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
 
@@ -10,7 +10,6 @@ const navItems = [
   { href: '/', label: 'Ana Sayfa', icon: Home },
   { href: '/discover', label: 'Keşfet', icon: Compass },
   { href: '/categories', label: 'Kategoriler', icon: FolderKanban },
-  { href: '/favorites', label: 'Favoriler', icon: Star },
   { href: '/profile', label: 'Profil', icon: User },
 ];
 

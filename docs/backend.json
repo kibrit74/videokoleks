@@ -29,10 +29,9 @@
         "duration": { "type": "string", "description": "Duration of the video." },
         "categoryId": { "type": "string", "description": "Reference to Category." },
         "notes": { "type": "string", "description": "User's note about the video." },
-        "dateAdded": { "type": "string", "description": "Date and time the video was saved.", "format": "date-time" },
-        "isFavorite": { "type": "boolean", "description": "Indicates whether the video is marked as a favorite." }
+        "dateAdded": { "type": "string", "description": "Date and time the video was saved.", "format": "date-time" }
       },
-      "required": ["id", "platform", "originalUrl", "title", "thumbnailUrl", "duration", "categoryId", "dateAdded", "isFavorite"]
+      "required": ["id", "platform", "originalUrl", "title", "thumbnailUrl", "duration", "categoryId", "dateAdded"]
     },
     "Category": {
       "$schema": "http://json-schema.org/draft-07/schema#",

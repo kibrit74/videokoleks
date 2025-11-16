@@ -18,7 +18,6 @@ export interface Video {
   duration: string;
   categoryId: string; 
   notes?: string;
-  isFavorite: boolean;
   dateAdded: any; // Firestore Timestamp
   originalUrl: string;
 }

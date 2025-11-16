@@ -147,7 +147,6 @@ export function AddVideoDialog({
         categoryId: selectedCategory.id,
         duration: videoDetails.duration || '0:00',
         notes: notes,
-        isFavorite: false,
         dateAdded: serverTimestamp(),
     };
 
