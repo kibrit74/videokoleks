@@ -205,23 +205,21 @@ export default function HomePage() {
   return (
     <>
       <div className="container mx-auto max-w-5xl px-4 py-8">
-        <header className="mb-8">
-          <div className='flex items-center justify-center md:justify-start mb-4'>
-             <Logo className="h-28" />
-          </div>
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="relative flex-grow w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input 
-                placeholder="Koleksiyonunda ara..." 
-                className="pl-10 h-12 text-lg" 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Button size="lg" className="w-full md:w-auto" onClick={() => setAddVideoOpen(true)} disabled={!user}>
-              <Plus className="mr-2 h-5 w-5" /> Video Ekle
+        <header className="mb-8 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <Logo className="h-10" />
+            <Button size="sm" onClick={() => setAddVideoOpen(true)} disabled={!user}>
+              <Plus className="mr-2 h-4 w-4" /> Video Ekle
             </Button>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input 
+              placeholder="Koleksiyonunda ara..." 
+              className="pl-10 h-12 text-base" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </header>
         
@@ -409,7 +407,3 @@ export default function HomePage() {
     </>
   );
 }
-
-    
-
-    
