@@ -84,12 +84,12 @@ export function EditCategoryDialog({ isOpen, onOpenChange, category }: EditCateg
 
     const categoryRef = doc(firestore, 'users', user.uid, 'categories', category.id);
 
-    const categoryUpdateData: Partial<Category> = {
+    const categoryUpdateData = {
         name: name.trim(),
         emoji: selectedEmoji,
         color: selectedColor,
         isLocked,
-        pin: isLocked ? finalPin : undefined,
+        pin: isLocked ? finalPin : null,
     };
     
     try {

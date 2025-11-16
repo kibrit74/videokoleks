@@ -6,7 +6,7 @@ export interface Category {
   emoji: string;
   color: string;
   isLocked?: boolean;
-  pin?: string;
+  pin?: string | null;
 }
 
 export interface Video {
