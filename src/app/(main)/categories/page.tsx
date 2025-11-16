@@ -3,19 +3,42 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, getDocs } from 'firebase/firestore';
+import { collection, query, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { PlusCircle, MoreVertical, Loader2, Lock } from 'lucide-react';
+import { PlusCircle, MoreVertical, Loader2, Lock, Edit, Trash2, KeyRound } from 'lucide-react';
 import { NewCategoryDialog } from '@/components/new-category-dialog';
+import { EditCategoryDialog } from '@/components/edit-category-dialog';
 import { cn } from '@/lib/utils';
-import type { Category } from '@/lib/types';
+import type { Category, Video } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+
 
 export default function CategoriesPage() {
   const [isNewCategoryOpen, setNewCategoryOpen] = useState(false);
+  const [isEditCategoryOpen, setEditCategoryOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [categoryToEdit, setCategoryToEdit] = useState<Category | null>(null);
   const { user } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
@@ -83,6 +106,59 @@ export default function CategoriesPage() {
     }
   };
 
+  const handleDeleteRequest = (e: React.MouseEvent, cat: Category) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setCategoryToDelete(cat);
+  }
+  
+  const handleEditRequest = (e: React.MouseEvent, cat: Category) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setCategoryToEdit(cat);
+    setEditCategoryOpen(true);
+  }
+
+  const handleDeleteCategory = async () => {
+    if (!categoryToDelete || !user || !firestore) return;
+    setIsDeleting(true);
+    try {
+      const batch = writeBatch(firestore);
+
+      // Find all videos in the category
+      const videosQuery = query(
+        collection(firestore, 'users', user.uid, 'videos'),
+        where('categoryId', '==', categoryToDelete.id)
+      );
+      const videosSnapshot = await getDocs(videosQuery);
+      videosSnapshot.forEach(videoDoc => {
+        batch.delete(videoDoc.ref);
+      });
+
+      // Delete the category itself
+      const categoryRef = doc(firestore, 'users', user.uid, 'categories', categoryToDelete.id);
+      batch.delete(categoryRef);
+
+      await batch.commit();
+
+      toast({
+        title: 'Kategori Silindi',
+        description: `"${categoryToDelete.name}" ve içindeki ${videosSnapshot.size} video silindi.`,
+      });
+
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: "Kategori silinirken bir sorun oluştu."
+      });
+    } finally {
+      setIsDeleting(false);
+      setCategoryToDelete(null);
+    }
+  };
+
   const isLoading = categoriesLoading;
 
   return (
@@ -128,9 +204,30 @@ export default function CategoriesPage() {
                           </p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); toast({ title: "Çok yakında!"}); /* TODO: Implement edit category */ }}>
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuItem onClick={(e) => handleEditRequest(e, cat)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Düzenle
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => handleEditRequest(e, cat)}>
+                          <KeyRound className="mr-2 h-4 w-4" />
+                          {cat.isLocked ? 'Kilidi Kaldır' : 'Kilitle'}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => handleDeleteRequest(e, cat)}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Sil
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
                   </Link>
                 </li>
                 ))}
@@ -144,6 +241,38 @@ export default function CategoriesPage() {
       </Card>
       
       <NewCategoryDialog isOpen={isNewCategoryOpen} onOpenChange={setNewCategoryOpen} />
+      
+      {categoryToEdit && (
+        <EditCategoryDialog 
+          key={categoryToEdit.id}
+          isOpen={isEditCategoryOpen} 
+          onOpenChange={setEditCategoryOpen}
+          category={categoryToEdit}
+        />
+      )}
+
+      <AlertDialog open={!!categoryToDelete} onOpenChange={(isOpen) => !isOpen && setCategoryToDelete(null)}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>"{categoryToDelete?.name}" Kategorisini Silmek İstediğinizden Emin misiniz?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      Bu işlem geri alınamaz. Bu kategori ve içindeki tüm videolar kalıcı olarak silinecektir.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeleting}>İptal</AlertDialogCancel>
+                  <AlertDialogAction
+                      className="bg-destructive hover:bg-destructive/90"
+                      onClick={handleDeleteCategory}
+                      disabled={isDeleting}
+                  >
+                      {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Sil
+                  </AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }

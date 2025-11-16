@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, where, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, orderBy, where, writeBatch, doc, getDocs } from 'firebase/firestore';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 import { VideoCard } from '@/components/video-card';
@@ -83,15 +83,11 @@ export default function HomePage() {
   }, [categories, selectedCategoryId]);
 
   useEffect(() => {
-    if (categoriesLoading || !selectedCategory) return;
+    if (categoriesLoading || !selectedCategoryId || !selectedCategory) return;
     if (selectedCategory?.isLocked) {
-      // If we land on a locked category page without being "unlocked", redirect to lock screen
-      const unlockedToken = new URLSearchParams(window.location.search).get('unlockToken');
-      if (sessionStorage.getItem(`unlock_${selectedCategory.id}`) !== unlockedToken) {
-        router.replace(`/locked/${selectedCategory.id}`);
-      }
+        router.replace(`/locked/${selectedCategoryId}`);
     }
-  }, [selectedCategory, categoriesLoading, router]);
+  }, [selectedCategory, selectedCategoryId, categoriesLoading, router]);
 
   // Fetch videos for the user
   const videosQuery = useMemoFirebase(() => {
@@ -112,10 +108,7 @@ export default function HomePage() {
     if (!videos) return [];
     
     if (selectedCategory?.isLocked) {
-      const unlockedToken = new URLSearchParams(window.location.search).get('unlockToken');
-      if (sessionStorage.getItem(`unlock_${selectedCategory.id}`) !== unlockedToken) {
-          return [];
-      }
+      return [];
     }
     
     return videos.filter(video => {

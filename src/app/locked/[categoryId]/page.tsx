@@ -36,21 +36,26 @@ export default function LockedCategoryPage() {
   }, []);
 
   useEffect(() => {
-    if (category && !category.isLocked) {
+    if (!isLoading && category && !category.isLocked) {
       router.replace(`/?categoryId=${categoryId}`);
     }
-  }, [category, categoryId, router]);
+  }, [category, categoryId, router, isLoading]);
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const value = e.target.value;
     if (/^\d*$/.test(value) && value.length <= 1) {
       const newPin = pin.split('');
       newPin[index] = value;
-      setPin(newPin.join(''));
+      const finalPin = newPin.join('');
+      setPin(finalPin);
 
       // Move focus to next input
       if (value && index < 3) {
         inputRefs.current[index + 1]?.focus();
+      }
+      
+      if(finalPin.length === 4) {
+          handleSubmit(finalPin);
       }
     }
   };
@@ -61,9 +66,8 @@ export default function LockedCategoryPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pin.length !== 4) {
+  const handleSubmit = (currentPin: string) => {
+    if (currentPin.length !== 4) {
         toast({ variant: 'destructive', title: 'PIN eksik', description: 'Lütfen 4 haneli PIN kodunu girin.' });
         return;
     }
@@ -71,17 +75,13 @@ export default function LockedCategoryPage() {
     
     setIsVerifying(true);
     setTimeout(() => { // Simulate network delay
-        if (pin === category.pin) {
+        if (currentPin === category.pin) {
             toast({ title: 'Kilit Açıldı!', description: `"${category.name}" kategorisine hoş geldiniz.` });
-            
-            // Create a temporary token for this unlock
-            const unlockToken = Math.random().toString(36).substring(2);
-            sessionStorage.setItem(`unlock_${categoryId}`, unlockToken);
-
-            router.push(`/?categoryId=${categoryId}&unlockToken=${unlockToken}`);
+            router.push(`/?categoryId=${categoryId}`);
         } else {
             toast({ variant: 'destructive', title: 'Yanlış PIN!', description: 'Girdiğiniz PIN kodu hatalı.' });
             setPin('');
+            inputRefs.current.forEach(ref => { if(ref) ref.value = '' });
             inputRefs.current[0]?.focus();
         }
         setIsVerifying(false);
@@ -121,7 +121,7 @@ export default function LockedCategoryPage() {
         <h1 className="text-2xl font-bold font-headline">{category.name}</h1>
         <p className="text-muted-foreground mb-8">Bu kategori kilitli. Lütfen devam etmek için PIN kodunu girin.</p>
         
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(pin); }}>
             <div className="flex justify-center gap-2 md:gap-4 mb-8">
                 {Array.from({ length: 4 }).map((_, index) => (
                     <Input
@@ -129,7 +129,7 @@ export default function LockedCategoryPage() {
                         ref={el => inputRefs.current[index] = el}
                         type="password"
                         inputMode='numeric'
-                        value={pin[index] || ''}
+                        defaultValue={pin[index] || ''}
                         onChange={(e) => handlePinChange(e, index)}
                         onKeyDown={(e) => handleKeyDown(e, index)}
                         maxLength={1}
