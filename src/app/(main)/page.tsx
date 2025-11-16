@@ -62,8 +62,18 @@ export default function HomePage() {
 
   // Sync state with URL params
   useEffect(() => {
-    setSelectedCategoryId(searchParams.get('categoryId'));
-  }, [searchParams]);
+    const categoryIdFromParams = searchParams.get('categoryId');
+    setSelectedCategoryId(categoryIdFromParams);
+
+    // If a category is selected, clear the router query to avoid stale state
+    if (categoryIdFromParams) {
+        const newPath = `/?categoryId=${categoryIdFromParams}`;
+        // router.replace(newPath, undefined, { shallow: true });
+    } else {
+       // router.replace('/', undefined, { shallow: true });
+    }
+
+  }, [searchParams, router]);
 
   // --- Bulk Actions State ---
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -93,10 +103,13 @@ export default function HomePage() {
   // Fetch videos for the user
   const videosQuery = useMemoFirebase(() => {
     if (!user?.uid || !firestore) return null;
-    return query(
+    
+    let q = query(
       collection(firestore, 'users', user.uid, 'videos'),
       orderBy('dateAdded', 'desc')
     );
+
+    return q;
   }, [firestore, user?.uid]);
 
   const { data: videos, isLoading: videosLoading, error: videosError } = useCollection<Video>(videosQuery);
@@ -104,6 +117,8 @@ export default function HomePage() {
   // Client-side filtering logic
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
+    
+    // If the selected category is locked, and we don't have the session key, show nothing.
     if (selectedCategory?.isLocked && !sessionStorage.getItem('unlocked_categories')?.includes(selectedCategory.id)) {
       return [];
     }
@@ -112,10 +127,19 @@ export default function HomePage() {
       const matchesCategory = selectedCategoryId ? video.categoryId === selectedCategoryId : true;
       const matchesPlatform = selectedPlatform ? video.platform === selectedPlatform : true;
       const matchesSearch = searchTerm ? video.title.toLowerCase().includes(searchTerm.toLowerCase()) : true;
+      
+      // Do not show videos from locked categories in the main "all" feed
+      if (!selectedCategoryId) {
+          const videoCategory = categories?.find(c => c.id === video.categoryId);
+          if (videoCategory?.isLocked) {
+              return false;
+          }
+      }
+
       return matchesCategory && matchesPlatform && matchesSearch;
     });
 
-  }, [videos, selectedCategoryId, selectedPlatform, searchTerm, selectedCategory]);
+  }, [videos, selectedCategoryId, selectedPlatform, searchTerm, selectedCategory, categories]);
   
   const isLoading = isUserLoading || categoriesLoading || videosLoading;
 
@@ -191,6 +215,13 @@ export default function HomePage() {
       toast({ variant: "destructive", title: "Hata", description: "Favori durumu güncellenirken bir sorun oluştu." });
     }
   };
+
+  const handleCategorySelect = (categoryId: string | null) => {
+    setSelectedCategoryId(categoryId);
+    const newPath = categoryId ? `/?categoryId=${categoryId}` : '/';
+    router.push(newPath, { scroll: false });
+  }
+
   // --- End Bulk Actions Logic ---
 
 
@@ -231,7 +262,7 @@ export default function HomePage() {
               <div className="flex gap-2 overflow-x-auto py-2 -mx-4 px-4 mt-2">
                   <Button 
                       variant={selectedCategoryId === null ? 'secondary' : 'ghost'}
-                      onClick={() => setSelectedCategoryId(null)}
+                      onClick={() => handleCategorySelect(null)}
                       size="sm"
                       className="shrink-0"
                   >
@@ -243,7 +274,7 @@ export default function HomePage() {
                       <Button
                           key={cat.id} 
                           variant={isSelected ? 'default' : 'ghost'}
-                          onClick={() => setSelectedCategoryId(cat.id)}
+                          onClick={() => handleCategorySelect(cat.id)}
                           size="sm"
                           className={cn(
                           'shrink-0',
