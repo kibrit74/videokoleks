@@ -12,8 +12,8 @@ export function Logo({ className }: { className?: string }) {
     >
       <defs>
         <linearGradient id="mainBg" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{stopColor: 'hsl(var(--primary))', stopOpacity: 1}} />
-          <stop offset="100%" style={{stopColor: 'hsl(var(--secondary))', stopOpacity: 1}} />
+          <stop offset="0%" style={{stopColor: 'hsl(var(--muted))', stopOpacity: 1}} />
+          <stop offset="100%" style={{stopColor: 'hsl(var(--card))', stopOpacity: 1}} />
         </linearGradient>
         
         <linearGradient id="videoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
