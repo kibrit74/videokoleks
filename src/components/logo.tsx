@@ -17,13 +17,13 @@ export function Logo({ className }: { className?: string }) {
         </linearGradient>
         
         <linearGradient id="videoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{stopColor: '#667eea', stopOpacity: 1}} />
-          <stop offset="100%" style={{stopColor: '#764ba2', stopOpacity: 1}} />
+          <stop offset="0%" style={{stopColor: 'hsl(var(--primary))', stopOpacity: 0.8}} />
+          <stop offset="100%" style={{stopColor: 'hsl(var(--accent))', stopOpacity: 1}} />
         </linearGradient>
         
         <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" style={{stopColor: '#f093fb', stopOpacity: 1}} />
-          <stop offset="100%" style={{stopColor: '#f5576c', stopOpacity: 1}} />
+           <stop offset="0%" style={{stopColor: 'hsl(var(--secondary))', stopOpacity: 1}} />
+           <stop offset="100%" style={{stopColor: 'hsl(var(--accent))', stopOpacity: 1}} />
         </linearGradient>
         
         <clipPath id="screenClip">
@@ -46,29 +46,29 @@ export function Logo({ className }: { className?: string }) {
         <rect x="50" y="50" width="100" height="75" rx="5" fill="none" stroke="#fff" strokeWidth="1.5" opacity="0.3"/>
         
         {/* Ekran/pencere içinde video grid */}
-        <rect x="65" y="55" width="70" height="50" rx="3" fill="#1a1a2e"/>
+        <rect x="65" y="55" width="70" height="50" rx="3" fill="hsl(var(--background) / 0.5)"/>
         
         {/* Video thumbnail'leri (3x2 grid) */}
-        <rect x="68" y="58" width="20" height="14" rx="2" fill="#2d3436"/>
+        <rect x="68" y="58" width="20" height="14" rx="2" fill="hsl(var(--muted))"/>
         <circle cx="78" cy="65" r="3" fill="url(#accentGrad)" opacity="0.8"/>
         
-        <rect x="92" y="58" width="20" height="14" rx="2" fill="#2d3436"/>
+        <rect x="92" y="58" width="20" height="14" rx="2" fill="hsl(var(--muted))"/>
         <circle cx="102" cy="65" r="3" fill="url(#accentGrad)" opacity="0.8"/>
         
-        <rect x="116" y="58" width="20" height="14" rx="2" fill="#2d3436"/>
+        <rect x="116" y="58" width="20" height="14" rx="2" fill="hsl(var(--muted))"/>
         <circle cx="126" cy="65" r="3" fill="url(#accentGrad)" opacity="0.8"/>
         
-        <rect x="68" y="76" width="20" height="14" rx="2" fill="#2d3436"/>
+        <rect x="68" y="76" width="20" height="14" rx="2" fill="hsl(var(--muted))"/>
         <circle cx="78" cy="83" r="3" fill="url(#accentGrad)" opacity="0.8"/>
         
-        <rect x="92" y="76" width="20" height="14" rx="2" fill="#2d3436"/>
+        <rect x="92" y="76" width="20" height="14" rx="2" fill="hsl(var(--muted))"/>
         <circle cx="102" cy="83" r="3" fill="url(#accentGrad)" opacity="0.8"/>
         
-        <rect x="116" y="76" width="20" height="14" rx="2" fill="#2d3436"/>
+        <rect x="116" y="76" width="20" height="14" rx="2" fill="hsl(var(--muted))"/>
         <circle cx="126" cy="83" r="3" fill="url(#accentGrad)" opacity="0.8"/>
         
         {/* Klasör altı bilgi çubuğu */}
-        <rect x="60" y="110" width="80" height="8" rx="2" fill="#1a1a2e" opacity="0.5"/>
+        <rect x="60" y="110" width="80" height="8" rx="2" fill="hsl(var(--background) / 0.3)" opacity="0.5"/>
         <rect x="62" y="112" width="35" height="4" rx="1" fill="url(#accentGrad)"/>
       </g>
       
@@ -77,8 +77,8 @@ export function Logo({ className }: { className?: string }) {
       <text x="135" y="70" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="white" textAnchor="middle">6</text>
       
       {/* Logo metni */}
-      <text x="100" y="155" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fill="#667eea" textAnchor="middle">VIDEO</text>
-      <text x="100" y="173" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fill="url(#accentGrad)" textAnchor="middle">KOLEKS</text>
+      <text x="100" y="155" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fill="hsl(var(--primary-foreground))" textAnchor="middle">VIDEO</text>
+      <text x="100" y="173" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fill="hsl(var(--primary-foreground))" textAnchor="middle">KOLEKS</text>
     </svg>
   );
 }
