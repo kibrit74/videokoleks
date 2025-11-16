@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Package, Link as LinkIcon, List, Star, Mail } from 'lucide-react';
+import { Package, Link as LinkIcon, List, Star, Mail, Lock, Layers, Smartphone } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 
 interface AboutDialogProps {
@@ -30,9 +30,19 @@ const features = [
         description: "Videolarınızı özel kategoriler, emojiler ve renklerle düzenleyin."
     },
     {
-        icon: Star,
-        title: "Favorilerinize Hızlı Erişim",
-        description: "En önemli videolarınızı favorilerinize ekleyerek anında bulun."
+        icon: Lock,
+        title: "Güvenli Kategori Kilitleme",
+        description: "Özel kategorilerinizi 4 haneli PIN kodu ile koruma altına alın."
+    },
+    {
+        icon: Layers,
+        title: "Toplu Video Yönetimi",
+        description: "Birden fazla videoyu aynı anda seçerek silin veya başka bir kategoriye taşıyın."
+    },
+    {
+        icon: Smartphone,
+        title: "Her Cihazdan Erişim",
+        description: "Uygulamayı telefonunuzun ana ekranına ekleyerek anında erişim sağlayın."
     }
 ]
 
