@@ -20,8 +20,10 @@ export default function DiscoverPage() {
     const query = searchQuery.trim();
     if (!query) return;
 
-    // Correctly construct the query to search the term within each site
-    const googleQuery = SOCIAL_MEDIA_SITES.map(site => `"${query}" ${site}`).join(' OR ');
+    // Correctly construct the query to search the term within the grouped sites
+    const sitesQuery = SOCIAL_MEDIA_SITES.join(' OR ');
+    const googleQuery = `"${query}" (${sitesQuery})`;
+    
     // Add tbm=vid to switch to the "Videos" tab in Google Search results
     const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(googleQuery)}&tbm=vid`;
     
