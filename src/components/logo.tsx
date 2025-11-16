@@ -17,12 +17,21 @@ export function Logo({ className }: { className?: string }) {
         </linearGradient>
       </defs>
       <g fill="url(#logo-gradient)">
-        {/* Box/Collection part */}
-        <path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,160H40V56H216Z" opacity="0.3"/>
-        <path d="M216,32H40a24,24,0,0,0-24,24V200a24,24,0,0,0,24,24H216a24,24,0,0,0,24-24V56A24,24,0,0,0,216,32ZM40,216a8,8,0,0,1-8-8V56a8,8,0,0,1,8-8H216a8,8,0,0,1,8,8V200a8,8,0,0,1-8,8Z"/>
-
-        {/* Play button part */}
-        <path d="M149.33,124.67l-48,32A8,8,0,0,1,88,148.67V87.33a8,8,0,0,1,13.33-6.66l48,32A8,8,0,0,1,149.33,124.67Z"/>
+        {/* Layer 3 (Back) */}
+        <path
+          d="M208,88v96a16,16,0,0,1-16,16H64a16,16,0,0,1-16-16V88"
+          opacity="0.4"
+        />
+        {/* Layer 2 (Middle) */}
+        <path
+          d="M192,72v96a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V72"
+          opacity="0.7"
+        />
+        {/* Layer 1 (Front with Play button cutout) */}
+        <path
+          d="M176,56V152a16,16,0,0,1-16,16H32a16,16,0,0,1-16-16V56A16,16,0,0,1,32,40H160A16,16,0,0,1,176,56Z M149.33,100.67l-48,32A8,8,0,0,1,88,124.67V63.33a8,8,0,0,1,13.33-6.66l48,32A8,8,0,0,1,149.33,100.67Z"
+          transform="translate(40, 24)"
+        />
       </g>
       <text x="50%" y="90%" dominantBaseline="middle" textAnchor="middle" fontSize="48" fontWeight="bold" fill="hsl(var(--foreground))" className="hidden">
         VideoKoleks
