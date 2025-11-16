@@ -56,7 +56,7 @@ export default function HomePage() {
   const router = useRouter();
 
   const [isAddVideoOpen, setAddVideoOpen] = useState(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(searchParams.get('categoryId'));
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -65,15 +65,7 @@ export default function HomePage() {
     const categoryIdFromParams = searchParams.get('categoryId');
     setSelectedCategoryId(categoryIdFromParams);
 
-    // If a category is selected, clear the router query to avoid stale state
-    if (categoryIdFromParams) {
-        const newPath = `/?categoryId=${categoryIdFromParams}`;
-        // router.replace(newPath, undefined, { shallow: true });
-    } else {
-       // router.replace('/', undefined, { shallow: true });
-    }
-
-  }, [searchParams, router]);
+  }, [searchParams]);
 
   // --- Bulk Actions State ---
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -91,10 +83,11 @@ export default function HomePage() {
   }, [categories, selectedCategoryId]);
 
   useEffect(() => {
-    if (categoriesLoading) return;
+    if (categoriesLoading || !selectedCategory) return;
     if (selectedCategory?.isLocked) {
-      const unlockedCategories = JSON.parse(sessionStorage.getItem('unlocked_categories') || '{}');
-      if (!unlockedCategories[selectedCategory.id]) {
+      // If we land on a locked category page without being "unlocked", redirect to lock screen
+      const unlockedToken = new URLSearchParams(window.location.search).get('unlockToken');
+      if (sessionStorage.getItem(`unlock_${selectedCategory.id}`) !== unlockedToken) {
         router.replace(`/locked/${selectedCategory.id}`);
       }
     }
@@ -118,9 +111,11 @@ export default function HomePage() {
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
     
-    // If the selected category is locked, and we don't have the session key, show nothing.
-    if (selectedCategory?.isLocked && !sessionStorage.getItem('unlocked_categories')?.includes(selectedCategory.id)) {
-      return [];
+    if (selectedCategory?.isLocked) {
+      const unlockedToken = new URLSearchParams(window.location.search).get('unlockToken');
+      if (sessionStorage.getItem(`unlock_${selectedCategory.id}`) !== unlockedToken) {
+          return [];
+      }
     }
     
     return videos.filter(video => {
@@ -218,6 +213,13 @@ export default function HomePage() {
 
   const handleCategorySelect = (categoryId: string | null) => {
     setSelectedCategoryId(categoryId);
+    const category = categories?.find(c => c.id === categoryId);
+    
+    if (category?.isLocked) {
+      router.push(`/locked/${categoryId}`);
+      return;
+    }
+
     const newPath = categoryId ? `/?categoryId=${categoryId}` : '/';
     router.push(newPath, { scroll: false });
   }

@@ -77,12 +77,7 @@ export default function CategoriesPage() {
   const handleCategoryClick = (e: React.MouseEvent, cat: Category) => {
     e.preventDefault();
     if (cat.isLocked) {
-        const unlockedCategories = JSON.parse(sessionStorage.getItem('unlocked_categories') || '{}');
-        if (unlockedCategories[cat.id]) {
-            router.push(`/?categoryId=${cat.id}`);
-        } else {
-            router.push(`/locked/${cat.id}`);
-        }
+      router.push(`/locked/${cat.id}`);
     } else {
       router.push(`/?categoryId=${cat.id}`);
     }

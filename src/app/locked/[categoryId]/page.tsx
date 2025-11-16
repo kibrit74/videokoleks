@@ -74,12 +74,11 @@ export default function LockedCategoryPage() {
         if (pin === category.pin) {
             toast({ title: 'Kilit Açıldı!', description: `"${category.name}" kategorisine hoş geldiniz.` });
             
-            // Store unlock status in session storage
-            const unlocked = JSON.parse(sessionStorage.getItem('unlocked_categories') || '{}');
-            unlocked[categoryId] = true;
-            sessionStorage.setItem('unlocked_categories', JSON.stringify(unlocked));
+            // Create a temporary token for this unlock
+            const unlockToken = Math.random().toString(36).substring(2);
+            sessionStorage.setItem(`unlock_${categoryId}`, unlockToken);
 
-            router.push(`/?categoryId=${categoryId}`);
+            router.push(`/?categoryId=${categoryId}&unlockToken=${unlockToken}`);
         } else {
             toast({ variant: 'destructive', title: 'Yanlış PIN!', description: 'Girdiğiniz PIN kodu hatalı.' });
             setPin('');
