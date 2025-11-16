@@ -33,9 +33,6 @@ export function Logo({ className }: { className?: string }) {
           transform="translate(40, 24)"
         />
       </g>
-      <text x="50%" y="90%" dominantBaseline="middle" textAnchor="middle" fontSize="48" fontWeight="bold" fill="hsl(var(--foreground))" className="hidden">
-        VideoKoleks
-      </text>
     </svg>
   );
 }
