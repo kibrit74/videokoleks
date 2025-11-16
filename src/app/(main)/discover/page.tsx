@@ -23,7 +23,8 @@ export default function DiscoverPage() {
 
     // Correctly construct the query to search the term within each site
     const googleQuery = SOCIAL_MEDIA_SITES.map(site => `"${query}" ${site}`).join(' OR ');
-    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(googleQuery)}`;
+    // Add tbm=vid to switch to the "Videos" tab in Google Search results
+    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(googleQuery)}&tbm=vid`;
     
     window.open(searchUrl, '_blank', 'noopener,noreferrer');
   };
@@ -41,7 +42,7 @@ export default function DiscoverPage() {
       <Card>
         <CardHeader>
             <CardTitle>Sosyal Medyada Video Ara</CardTitle>
-            <CardDescription>Arama sonuçları Google'da yeni bir sekmede açılacaktır.</CardDescription>
+            <CardDescription>Arama sonuçları Google'ın "Videolar" sekmesinde yeni bir sayfada açılacaktır.</CardDescription>
         </CardHeader>
         <CardContent>
             <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-2">
