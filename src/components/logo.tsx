@@ -16,23 +16,15 @@ export function Logo({ className }: { className?: string }) {
           <stop offset="100%" style={{ stopColor: 'hsl(var(--secondary))', stopOpacity: 1 }} />
         </linearGradient>
       </defs>
-      <g fill="url(#logo-gradient)">
-        {/* Layer 3 (Back) */}
-        <path
-          d="M208,88v96a16,16,0,0,1-16,16H64a16,16,0,0,1-16-16V88"
-          opacity="0.4"
-        />
-        {/* Layer 2 (Middle) */}
-        <path
-          d="M192,72v96a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V72"
-          opacity="0.7"
-        />
-        {/* Layer 1 (Front with Play button cutout) */}
-        <path
-          d="M176,56V152a16,16,0,0,1-16,16H32a16,16,0,0,1-16-16V56A16,16,0,0,1,32,40H160A16,16,0,0,1,176,56Z M149.33,100.67l-48,32A8,8,0,0,1,88,124.67V63.33a8,8,0,0,1,13.33-6.66l48,32A8,8,0,0,1,149.33,100.67Z"
-          transform="translate(40, 24)"
-        />
-      </g>
+      <path
+        fill="url(#logo-gradient)"
+        d="M224,48H48A16,16,0,0,0,32,64V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V64A16,16,0,0,0,208,48Zm-8,152a8,8,0,0,1-8,8H56a8,8,0,0,1-8-8V72a8,8,0,0,1,8-8H208a8,8,0,0,1,8,8Z"
+        opacity="0.2"
+      />
+      <path
+        fill="url(#logo-gradient)"
+        d="M208,32H32A16,16,0,0,0,16,48V192a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V48A16,16,0,0,0,192,32ZM152.49,124,96.49,156a8,8,0,0,1-12.49-7V83a8,8,0,0,1,12.49-7l56,32a8,8,0,0,1,0,14Z"
+      />
     </svg>
   );
 }
