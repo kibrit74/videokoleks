@@ -74,11 +74,11 @@ export function Logo({ className }: { className?: string }) {
       
       {/* Koleksiyon sayısı göstergesi */}
       <circle cx="135" cy="65" r="12" fill="url(#accentGrad)"/>
-      <text x="135" y="70" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="white" text-anchor="middle">6</text>
+      <text x="135" y="70" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="white" textAnchor="middle">6</text>
       
       {/* Logo metni */}
-      <text x="100" y="155" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fill="#667eea" text-anchor="middle">VIDEO</text>
-      <text x="100" y="173" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fill="url(#accentGrad)" text-anchor="middle">KOLEKS</text>
+      <text x="100" y="155" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fill="#667eea" textAnchor="middle">VIDEO</text>
+      <text x="100" y="173" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fill="url(#accentGrad)" textAnchor="middle">KOLEKS</text>
     </svg>
   );
 }
