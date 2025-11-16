@@ -7,7 +7,7 @@ export function Logo({ className }: { className?: string }) {
     <svg
       viewBox="0 0 200 200"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn("w-auto", className)}
+      className={cn("w-auto transition-transform duration-300 ease-in-out hover:scale-105", className)}
       aria-label="VideoKoleks Logo"
     >
       <defs>
