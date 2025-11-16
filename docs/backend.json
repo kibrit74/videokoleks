@@ -43,7 +43,9 @@
         "id": { "type": "string", "description": "Unique identifier for the category." },
         "name": { "type": "string", "description": "Name of the category." },
         "emoji": { "type": "string", "description": "Emoji associated with the category." },
-        "color": { "type": "string", "description": "Color associated with the category (e.g., hex code)." }
+        "color": { "type": "string", "description": "Color associated with the category (e.g., hex code)." },
+        "isLocked": { "type": "boolean", "description": "Indicates if the category is PIN-protected." },
+        "pin": { "type": "string", "description": "A 4-digit PIN to unlock the category." }
       },
       "required": ["id", "name", "emoji", "color"]
     }

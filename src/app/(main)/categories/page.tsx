@@ -6,18 +6,20 @@ import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebas
 import { collection, query, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { PlusCircle, MoreVertical, Loader2 } from 'lucide-react';
+import { PlusCircle, MoreVertical, Loader2, Lock } from 'lucide-react';
 import { NewCategoryDialog } from '@/components/new-category-dialog';
 import { cn } from '@/lib/utils';
 import type { Category } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 export default function CategoriesPage() {
   const [isNewCategoryOpen, setNewCategoryOpen] = useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
 
   const categoriesQuery = useMemoFirebase(() => 
     (user?.uid && firestore) ? query(collection(firestore, 'users', user.uid, 'categories')) : null
@@ -72,6 +74,20 @@ export default function CategoriesPage() {
     }
   }, [categories, user?.uid, firestore]);
 
+  const handleCategoryClick = (e: React.MouseEvent, cat: Category) => {
+    e.preventDefault();
+    if (cat.isLocked) {
+        const unlockedCategories = JSON.parse(sessionStorage.getItem('unlocked_categories') || '{}');
+        if (unlockedCategories[cat.id]) {
+            router.push(`/?categoryId=${cat.id}`);
+        } else {
+            router.push(`/locked/${cat.id}`);
+        }
+    } else {
+      router.push(`/?categoryId=${cat.id}`);
+    }
+  };
+
   const isLoading = categoriesLoading;
 
   return (
@@ -104,17 +120,20 @@ export default function CategoriesPage() {
             <ul className="divide-y divide-border">
                 {categories.map((cat) => (
                 <li key={cat.id}>
-                  <Link href={`/?categoryId=${cat.id}`} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors w-full">
+                  <Link href="#" onClick={(e) => handleCategoryClick(e, cat)} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors w-full">
                     <div className="flex items-center gap-4">
                       <span className={cn("text-2xl p-2 rounded-lg", cat.color)}>{cat.emoji}</span>
                       <div>
-                          <p className="font-semibold text-left">{cat.name}</p>
+                          <p className="font-semibold text-left flex items-center gap-2">
+                            {cat.name}
+                            {cat.isLocked && <Lock className="h-4 w-4 text-muted-foreground" />}
+                          </p>
                           <p className="text-sm text-muted-foreground">
                               {countsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : `${videoCounts[cat.id] || 0} video`}
                           </p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); /* TODO: Implement edit category */ }}>
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); toast({ title: "Çok yakında!"}); /* TODO: Implement edit category */ }}>
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </Link>

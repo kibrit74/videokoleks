@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, where, writeBatch, doc } from 'firebase/firestore';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
@@ -53,6 +53,7 @@ export default function HomePage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const [isAddVideoOpen, setAddVideoOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(searchParams.get('categoryId'));
@@ -75,6 +76,20 @@ export default function HomePage() {
   , [firestore, user?.uid]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
+  const selectedCategory = useMemo(() => {
+    return categories?.find(c => c.id === selectedCategoryId);
+  }, [categories, selectedCategoryId]);
+
+  useEffect(() => {
+    if (categoriesLoading) return;
+    if (selectedCategory?.isLocked) {
+      const unlockedCategories = JSON.parse(sessionStorage.getItem('unlocked_categories') || '{}');
+      if (!unlockedCategories[selectedCategory.id]) {
+        router.replace(`/locked/${selectedCategory.id}`);
+      }
+    }
+  }, [selectedCategory, categoriesLoading, router]);
+
   // Fetch videos for the user
   const videosQuery = useMemoFirebase(() => {
     if (!user?.uid || !firestore) return null;
@@ -89,6 +104,9 @@ export default function HomePage() {
   // Client-side filtering logic
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
+    if (selectedCategory?.isLocked && !sessionStorage.getItem('unlocked_categories')?.includes(selectedCategory.id)) {
+      return [];
+    }
     
     return videos.filter(video => {
       const matchesCategory = selectedCategoryId ? video.categoryId === selectedCategoryId : true;
@@ -97,7 +115,7 @@ export default function HomePage() {
       return matchesCategory && matchesPlatform && matchesSearch;
     });
 
-  }, [videos, selectedCategoryId, selectedPlatform, searchTerm]);
+  }, [videos, selectedCategoryId, selectedPlatform, searchTerm, selectedCategory]);
   
   const isLoading = isUserLoading || categoriesLoading || videosLoading;
 
@@ -219,7 +237,7 @@ export default function HomePage() {
                   >
                       Tüm Kategoriler
                   </Button>
-                  {categories && categories.map((cat) => {
+                  {categories && categories.filter(c => !c.isLocked).map((cat) => {
                       const isSelected = selectedCategoryId === cat.id;
                       return (
                       <Button
@@ -343,8 +361,8 @@ export default function HomePage() {
                                     <span>Kategoriye Taşı</span>
                                 </DropdownMenuSubTrigger>
                                 <DropdownMenuSubContent>
-                                {categories && categories.length > 0 ? (
-                                    categories.map(cat => (
+                                {categories && categories.filter(c => !c.isLocked).length > 0 ? (
+                                    categories.filter(c => !c.isLocked).map(cat => (
                                     <DropdownMenuItem key={cat.id} onClick={() => handleBulkMove(cat.id)}>
                                         <span className='mr-2'>{cat.emoji}</span>
                                         {cat.name}

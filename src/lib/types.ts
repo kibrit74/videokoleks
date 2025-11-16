@@ -5,6 +5,8 @@ export interface Category {
   name: string;
   emoji: string;
   color: string;
+  isLocked?: boolean;
+  pin?: string;
 }
 
 export interface Video {

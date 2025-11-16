@@ -15,12 +15,13 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Lock } from 'lucide-react';
 import type { Category } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { Switch } from './ui/switch';
 
 
 interface NewCategoryDialogProps {
@@ -46,6 +47,8 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
   const [selectedEmoji, setSelectedEmoji] = useState(emojis[0]);
   const [selectedColor, setSelectedColor] = useState(colors[0]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [pin, setPin] = useState('');
 
   const handleCreate = async () => {
     if (!user || !firestore) {
@@ -56,6 +59,10 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
         toast({ variant: "destructive", title: "Kategori adı boş olamaz." });
         return;
     }
+    if (isLocked && (pin.length !== 4 || !/^\d{4}$/.test(pin))) {
+        toast({ variant: "destructive", title: "Geçersiz PIN", description: "PIN 4 haneli bir sayı olmalıdır." });
+        return;
+    }
 
     setIsLoading(true);
 
@@ -64,7 +71,9 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
     const categoryData: Omit<Category, 'id'> = {
         name: name.trim(),
         emoji: selectedEmoji,
-        color: selectedColor
+        color: selectedColor,
+        isLocked,
+        pin: isLocked ? pin : undefined,
     };
     
     try {
@@ -79,6 +88,8 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
         setName('');
         setSelectedEmoji(emojis[0]);
         setSelectedColor(colors[0]);
+        setIsLocked(false);
+        setPin('');
 
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({
@@ -151,6 +162,34 @@ export function NewCategoryDialog({ isOpen, onOpenChange }: NewCategoryDialogPro
                 ))}
               </div>
             </div>
+
+            <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                    <Switch id="lock-category" checked={isLocked} onCheckedChange={setIsLocked}/>
+                    <Label htmlFor="lock-category" className='flex items-center'><Lock className='w-4 h-4 mr-2 text-muted-foreground'/> Kategoriyi Kilitle</Label>
+                </div>
+                {isLocked && (
+                    <div className='space-y-2 animate-in fade-in'>
+                        <Label htmlFor='pin-code'>4 Haneli PIN Kodu</Label>
+                        <Input 
+                            id="pin-code"
+                            type="password"
+                            inputMode='numeric'
+                            maxLength={4}
+                            placeholder='****'
+                            value={pin}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                if (/^\d*$/.test(value) && value.length <= 4) {
+                                    setPin(value);
+                                }
+                            }}
+                        />
+                        <p className="text-xs text-muted-foreground">Bu kategoriye erişmek için bu PIN kodunu kullanacaksınız.</p>
+                    </div>
+                )}
+            </div>
+
           </div>
         </ScrollArea>
         <DialogFooter>
