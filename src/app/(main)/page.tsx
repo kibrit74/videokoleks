@@ -223,7 +223,7 @@ export default function HomePage() {
         </header>
         
         <div className="flex justify-end mb-2">
-          <Button variant="ghost" onClick={toggleSelectionMode} disabled={isLoading || !videos || videos.length === 0}>
+          <Button variant={isSelectionMode ? 'destructive' : 'secondary'} size="sm" onClick={toggleSelectionMode} disabled={isLoading || !videos || videos.length === 0}>
             {isSelectionMode ? 'İptal' : 'Seç'}
           </Button>
         </div>
