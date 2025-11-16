@@ -207,7 +207,7 @@ export default function HomePage() {
       <div className="container mx-auto max-w-5xl px-4 py-8">
         <header className="mb-8">
           <div className='flex items-center justify-center md:justify-start mb-4'>
-             <Logo className="h-10" />
+             <Logo className="h-14" />
           </div>
           <div className="flex flex-col md:flex-row gap-4 items-center">
             <div className="relative flex-grow w-full">
