@@ -120,6 +120,7 @@ export function AddVideoDialog({
     if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
     if (url.includes('tiktok.com')) return 'tiktok';
     if (url.includes('facebook.com') || url.includes('fb.watch')) return 'facebook';
+    if (url.includes('twitter.com') || url.includes('x.com')) return 'twitter';
     return 'instagram'; 
   };
 

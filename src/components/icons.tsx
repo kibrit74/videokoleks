@@ -80,3 +80,24 @@ export function FacebookIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function TwitterIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        {...props}
+    >
+        <path d="M22 4s-.7 2.1-2 3.4c1.6 1.4 3.3 4.9 3 7.1 0 .8-.4 1.5-.9 2.2-1.3 1.8-4.2 3.3-7.5 3.6-3.3.3-6.6-1.3-9.5-3.9-2.9-2.6-4.9-6.3-4.5-9.9.4-3.6 2.5-6.6 5.8-8.5 3.3-1.9 7-2.6 10-1.3.8.3 1.5.8 2.1 1.4" />
+        <path d="M22 4c-1.6-1.5-3.7-2.1-5.6-1.4-1.9.7-3.4 2.4-4.1 4.3-1.2 3.3-1.2 6.9 0 10.2 1.2 3.3 4.1 5.9 7.7 6.4" />
+        <path d="M11 11.5c-2.3.8-4.3 2.5-5.6 4.5" />
+    </svg>
+  )
+}

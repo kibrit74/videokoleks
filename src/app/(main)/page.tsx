@@ -14,7 +14,7 @@ import type { Video, Category, Platform } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
-import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon } from '@/components/icons';
+import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon, TwitterIcon } from '@/components/icons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/logo';
@@ -45,6 +45,7 @@ const platformFilters: { platform: Platform; icon: React.ComponentType<{ classNa
     { platform: 'tiktok', icon: TiktokIcon },
     { platform: 'instagram', icon: InstagramIcon },
     { platform: 'facebook', icon: FacebookIcon },
+    { platform: 'twitter', icon: TwitterIcon },
 ];
 
 export default function HomePage() {
@@ -132,8 +133,12 @@ export default function HomePage() {
 
   // --- Bulk Actions Logic ---
   const toggleSelectionMode = () => {
-    setIsSelectionMode(!isSelectionMode);
-    setSelectedVideos(new Set()); // Clear selections on mode change
+    if(isSelectionMode) {
+      setIsSelectionMode(false);
+      setSelectedVideos(new Set()); // Clear selections on exiting mode
+    } else {
+      setIsSelectionMode(true);
+    }
   };
 
   const handleVideoSelect = (videoId: string) => {

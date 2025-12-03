@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { Video, Platform, Category } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon } from '@/components/icons';
+import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon, TwitterIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
@@ -25,6 +25,7 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
   youtube: YoutubeIcon,
   tiktok: TiktokIcon,
   facebook: FacebookIcon,
+  twitter: TwitterIcon,
 };
 
 const platformColors: Record<Platform, string> = {
@@ -32,6 +33,7 @@ const platformColors: Record<Platform, string> = {
   youtube: 'bg-[#FF0000]',
   tiktok: 'bg-[#00F2EA] text-black',
   facebook: 'bg-[#1877F2]',
+  twitter: 'bg-[#1DA1F2]',
 };
 
 interface VideoCardProps {

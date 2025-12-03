@@ -10,6 +10,7 @@ const SOCIAL_MEDIA_SITES = [
   'site:youtube.com',
   'site:instagram.com',
   'site:tiktok.com',
+  'site:twitter.com OR site:x.com',
 ];
 
 export default function DiscoverPage() {

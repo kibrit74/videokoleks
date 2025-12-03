@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon } from '@/components/icons';
+import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon, TwitterIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import type { Platform, Video, Category } from '@/lib/types';
 import { useMemo, useEffect, useState, useRef } from 'react';
@@ -39,6 +39,7 @@ const platformIcons: Record<Platform, React.ComponentType<{ className?: string }
   youtube: YoutubeIcon,
   tiktok: TiktokIcon,
   facebook: FacebookIcon,
+  twitter: TwitterIcon,
 };
 
 function getEmbedUrl(url: string, platform: Platform): string | null {
