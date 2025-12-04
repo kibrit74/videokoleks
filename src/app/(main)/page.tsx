@@ -429,14 +429,14 @@ function HomeContent() {
           <div className="flex flex-col items-center justify-center p-6 space-y-4">
             <div className="bg-white p-4 rounded-xl shadow-sm border">
               <QRCode
-                value="https://studio-1000335014-1d7fa.web.app/app-debug.zip"
+                value="https://storage.googleapis.com/studio-1000335014-1d7fa.appspot.com/app-debug.zip"
                 size={200}
                 style={{ height: "auto", maxWidth: "100%", width: "100%" }}
                 viewBox={`0 0 256 256`}
               />
             </div>
             <p className="text-sm text-muted-foreground text-center">
-              Veya <a href="https://studio-1000335014-1d7fa.web.app/app-debug.zip" className="text-primary hover:underline font-medium">buraya tıklayarak</a> indirebilirsiniz.
+              Veya <a href="https://storage.googleapis.com/studio-1000335014-1d7fa.appspot.com/app-debug.zip" className="text-primary hover:underline font-medium">buraya tıklayarak</a> indirebilirsiniz.
             </p>
           </div>
         </DialogContent>

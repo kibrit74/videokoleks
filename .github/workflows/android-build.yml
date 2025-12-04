@@ -22,15 +22,6 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Next.js App
-        run: npm run build
-
-      - name: Sync Capacitor
-        run: npx cap sync android
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -48,20 +39,16 @@ jobs:
           cd android/app/build/outputs/apk/debug/
           zip app-debug.zip app-debug.apk
 
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
           name: app-debug-zip
           path: android/app/build/outputs/apk/debug/app-debug.zip
 
-      - name: Move APK to Public
-        run: |
-          mkdir -p public
-          cp android/app/build/outputs/apk/debug/app-debug.zip public/app-debug.zip
-
-      - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Upload to Firebase Storage
+        uses: google-github-actions/upload-cloud-storage@v2
         with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          channelId: live
-          projectId: studio-1000335014-1d7fa
-        env:
-          FIREBASE_CLI_EXPERIMENTS: webframeworks
+          path: android/app/build/outputs/apk/debug/app-debug.zip
+          destination: studio-1000335014-1d7fa.appspot.com
+          credentials: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          predefinedAcl: publicRead
