@@ -1,4 +1,4 @@
-'use server';
+
 
 import { unfurl } from 'unfurl.js';
 import type { Oembed } from 'unfurl.js/dist/types';
@@ -10,23 +10,23 @@ function isValidOembed(oembed: Oembed): boolean {
 
 
 async function getYoutubeMetadata(url: string) {
-    try {
-        const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
-        const response = await fetch(oembedUrl);
-        if (!response.ok) {
-            return null;
-        }
-        const data = await response.json();
-        return {
-            title: data.title,
-            thumbnail: data.thumbnail_url,
-            // oEmbed for YouTube doesn't provide duration, so we can't get it this way.
-            duration: undefined, 
-        };
-    } catch (error) {
-        console.error(`Error fetching YouTube oEmbed for ${url}:`, error);
-        return null;
+  try {
+    const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+    const response = await fetch(oembedUrl);
+    if (!response.ok) {
+      return null;
     }
+    const data = await response.json();
+    return {
+      title: data.title,
+      thumbnail: data.thumbnail_url,
+      // oEmbed for YouTube doesn't provide duration, so we can't get it this way.
+      duration: undefined,
+    };
+  } catch (error) {
+    console.error(`Error fetching YouTube oEmbed for ${url}:`, error);
+    return null;
+  }
 }
 
 
@@ -35,12 +35,12 @@ export async function getVideoMetadata(url: string) {
 
     // First, try to get metadata using platform-specific logic if available
     if (url.includes('youtube.com') || url.includes('youtu.be')) {
-        const youtubeData = await getYoutubeMetadata(url);
-        if (youtubeData && youtubeData.title) {
-            return youtubeData;
-        }
+      const youtubeData = await getYoutubeMetadata(url);
+      if (youtubeData && youtubeData.title) {
+        return youtubeData;
+      }
     }
-      
+
     // Fallback to unfurl.js for other platforms or if YouTube oEmbed fails
     const result = await unfurl(url, {
       oembed: true,
@@ -49,7 +49,7 @@ export async function getVideoMetadata(url: string) {
 
     const oembedData = result.oembed;
     const ogp = result.open_graph || {};
-    
+
     if (isValidOembed(oembedData)) {
       return {
         title: oembedData.title,
