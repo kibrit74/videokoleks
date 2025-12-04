@@ -8,7 +8,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { VideoCard } from '@/components/video-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, AlertTriangle, X, Trash2, FolderSymlink } from 'lucide-react';
+import { Search, Plus, AlertTriangle, X, Trash2, FolderSymlink, Smartphone } from 'lucide-react';
 import { AddVideoDialog } from '@/components/add-video-dialog';
 import type { Video, Category, Platform } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,6 +18,7 @@ import { InstagramIcon, YoutubeIcon, TiktokIcon, FacebookIcon, TwitterIcon } fro
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/logo';
+import QRCode from 'react-qr-code';
 
 import {
   DropdownMenu,
@@ -25,7 +26,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSub,
   DropdownMenuSubTrigger,
-  DropdownMenuSubContent
+  DropdownMenuSubContent,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
   AlertDialog,
@@ -38,6 +40,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 
 const platformFilters: { platform: Platform; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -56,6 +59,7 @@ function HomeContent() {
   const router = useRouter();
 
   const [isAddVideoOpen, setAddVideoOpen] = useState(false);
+  const [isMobileAppOpen, setMobileAppOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -212,9 +216,14 @@ function HomeContent() {
         <header className="mb-8 space-y-4">
           <div className="flex items-center justify-between gap-4">
             <Logo className="h-24" />
-            <Button size="sm" onClick={() => setAddVideoOpen(true)} disabled={!user}>
-              <Plus className="mr-2 h-4 w-4" /> Video Ekle
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setMobileAppOpen(true)}>
+                <Smartphone className="mr-2 h-4 w-4" /> Mobil Uygulama
+              </Button>
+              <Button size="sm" onClick={() => setAddVideoOpen(true)} disabled={!user}>
+                <Plus className="mr-2 h-4 w-4" /> Video Ekle
+              </Button>
+            </div>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -408,6 +417,30 @@ function HomeContent() {
         isOpen={isAddVideoOpen}
         onOpenChange={setAddVideoOpen}
       />
+
+      <Dialog open={isMobileAppOpen} onOpenChange={setMobileAppOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Mobil Uygulamayı İndir</DialogTitle>
+            <DialogDescription>
+              Android uygulamasını indirmek için aşağıdaki QR kodu telefonunuzun kamerasıyla okutun.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center p-6 space-y-4">
+            <div className="bg-white p-4 rounded-xl shadow-sm border">
+              <QRCode
+                value="https://studio-1000335014-1d7fa.web.app/app-debug.zip"
+                size={200}
+                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                viewBox={`0 0 256 256`}
+              />
+            </div>
+            <p className="text-sm text-muted-foreground text-center">
+              Veya <a href="https://studio-1000335014-1d7fa.web.app/app-debug.zip" className="text-primary hover:underline font-medium">buraya tıklayarak</a> indirebilirsiniz.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
