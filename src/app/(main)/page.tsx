@@ -423,20 +423,20 @@ function HomeContent() {
           <DialogHeader>
             <DialogTitle>Mobil Uygulamayı İndir</DialogTitle>
             <DialogDescription>
-              Android uygulamasını indirmek için aşağıdaki QR kodu telefonunuzun kamerasıyla okutun.
+              Android uygulamasını indirmek için aşağıdaki QR kodu telefonunuzun kamerasıyla okutun. (Sürüm: v1.0.17)
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center justify-center p-6 space-y-4">
             <div className="bg-white p-4 rounded-xl shadow-sm border">
               <QRCode
-                value="https://github.com/kibrit74/videokoleks/releases/download/v1.0.15/app-debug.apk"
+                value="https://github.com/kibrit74/videokoleks/releases/latest/download/app-debug.apk"
                 size={200}
                 style={{ height: "auto", maxWidth: "100%", width: "100%" }}
                 viewBox={`0 0 256 256`}
               />
             </div>
             <p className="text-sm text-muted-foreground text-center">
-              Veya <a href="https://github.com/kibrit74/videokoleks/releases/download/v1.0.15/app-debug.apk" className="text-primary hover:underline font-medium">buraya tıklayarak</a> indirebilirsiniz.
+              Veya <a href="https://github.com/kibrit74/videokoleks/releases/latest/download/app-debug.apk" className="text-primary hover:underline font-medium">buraya tıklayarak</a> indirebilirsiniz.
             </p>
           </div>
         </DialogContent>
