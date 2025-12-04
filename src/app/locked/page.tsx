@@ -126,7 +126,7 @@ function LockedCategoryContent() {
                         {Array.from({ length: 4 }).map((_, index) => (
                             <Input
                                 key={index}
-                                ref={el => inputRefs.current[index] = el}
+                                ref={(el) => { inputRefs.current[index] = el; }}
                                 type="password"
                                 inputMode='numeric'
                                 defaultValue={pin[index] || ''}
