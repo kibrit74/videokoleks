@@ -54,10 +54,14 @@ jobs:
           name: app-debug-zip
           path: android/app/build/outputs/apk/debug/app-debug.zip
 
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
       - name: Upload to Firebase Storage
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: android/app/build/outputs/apk/debug/app-debug.zip
           destination: studio-1000335014-1d7fa.appspot.com
-          credentials: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           predefinedAcl: publicRead
