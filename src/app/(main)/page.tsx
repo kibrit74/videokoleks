@@ -89,7 +89,7 @@ function HomeContent() {
   useEffect(() => {
     if (categoriesLoading || !selectedCategoryId || !selectedCategory) return;
     if (selectedCategory?.isLocked) {
-      router.replace(`/locked/${selectedCategoryId}`);
+      router.replace(`/locked?categoryId=${selectedCategoryId}`);
     }
   }, [selectedCategory, selectedCategoryId, categoriesLoading, router]);
 
@@ -199,7 +199,7 @@ function HomeContent() {
     const category = categories?.find(c => c.id === categoryId);
 
     if (category?.isLocked) {
-      router.push(`/locked/${categoryId}`);
+      router.push(`/locked?categoryId=${categoryId}`);
       return;
     }
 
