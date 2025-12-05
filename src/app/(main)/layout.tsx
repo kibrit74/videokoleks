@@ -1,3 +1,5 @@
+'use client';
+
 import { BottomNav } from '@/components/bottom-nav';
 import { useSendIntent } from '@/hooks/use-send-intent';
 
