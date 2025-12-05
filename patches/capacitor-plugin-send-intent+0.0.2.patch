@@ -1,0 +1,24 @@
+diff --git a/node_modules/capacitor-plugin-send-intent/android/build.gradle b/node_modules/capacitor-plugin-send-intent/android/build.gradle
+index 35ab45d..cca4f98 100644
+--- a/node_modules/capacitor-plugin-send-intent/android/build.gradle
++++ b/node_modules/capacitor-plugin-send-intent/android/build.gradle
+@@ -17,6 +17,7 @@ buildscript {
+ apply plugin: 'com.android.library'
+ 
+ android {
++    namespace "com.gustavosanjose.capacitorpluginsendintent"
+     compileSdkVersion project.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 29
+     defaultConfig {
+         minSdkVersion project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 21
+diff --git a/node_modules/capacitor-plugin-send-intent/android/src/main/AndroidManifest.xml b/node_modules/capacitor-plugin-send-intent/android/src/main/AndroidManifest.xml
+index ddf1306..e546d9a 100644
+--- a/node_modules/capacitor-plugin-send-intent/android/src/main/AndroidManifest.xml
++++ b/node_modules/capacitor-plugin-send-intent/android/src/main/AndroidManifest.xml
+@@ -1,5 +1,5 @@
+ 
+   <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+-      package="com.gustavosanjose.capacitorpluginsendintent">
++      >
+   </manifest>
+   
+\ No newline at end of file
