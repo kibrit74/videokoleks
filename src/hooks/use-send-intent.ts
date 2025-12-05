@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { SendIntent } from 'capacitor-plugin-send-intent';
 import { Capacitor } from '@capacitor/core';
 
 export function useSendIntent() {
@@ -13,6 +12,9 @@ export function useSendIntent() {
 
         const checkIntent = async () => {
             try {
+                // Dynamically import the plugin to avoid SSR/Build issues
+                const { SendIntent } = await import('capacitor-plugin-send-intent');
+
                 const intent = await (SendIntent as any).checkSendIntentReceived();
                 if (intent && intent.url) {
                     // The plugin returns the shared text in the 'url' field for text/plain intents
@@ -33,13 +35,5 @@ export function useSendIntent() {
         };
 
         checkIntent();
-
-        // Listen for future intents (if app is already running)
-        // Note: The plugin might not support a listener in the standard way, 
-        // but checking on mount covers the "Share -> Open App" flow.
-        // For singleTask mode, the activity is brought to front, which triggers re-mount/re-check 
-        // if the component tree updates or if we listen to app state changes.
-
-        // For now, checking on mount is the primary method.
     }, [router]);
 }
