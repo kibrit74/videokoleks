@@ -19,6 +19,7 @@ import { Button } from './ui/button';
 import { MoreVertical, Share2, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from './ui/checkbox';
+import { Share } from '@capacitor/share';
 
 const platformIcons: Record<Platform, React.ComponentType<{ className?: string }>> = {
   instagram: InstagramIcon,
@@ -56,30 +57,30 @@ export function VideoCard({ video, isSelectionMode = false, isSelected = false, 
   );
   const { data: category } = useDoc<Category>(categoryDocRef);
 
+  // ... (inside component)
+
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const shareUrl = `${window.location.origin}/videos?id=${video.id}`;
-    const shareData = {
-      title: video.title,
-      text: `Şu videoya göz at: ${video.title}`,
-      url: shareUrl,
-    };
 
     try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        throw new Error('Web Share API not supported');
-      }
+      await Share.share({
+        title: video.title,
+        text: `Şu videoya göz at: ${video.title}`,
+        url: shareUrl,
+        dialogTitle: 'Videoyu Paylaş',
+      });
     } catch (error: any) {
-      if (error.name === 'AbortError') {
-        return;
-      }
+      // Ignore user cancellation
+      if (error.message === 'Share canceled') return;
+
+      console.error('Share failed:', error);
+
+      // Fallback to clipboard
       try {
         await navigator.clipboard.writeText(shareUrl);
         toast({ title: "Paylaşım linki panoya kopyalandı!" });
       } catch (copyError) {
-        console.error('Share and copy failed:', error, copyError);
         toast({
           variant: 'destructive',
           title: "Paylaşılamadı",
@@ -107,8 +108,8 @@ export function VideoCard({ video, isSelectionMode = false, isSelected = false, 
   return (
     <Card
       className={cn(
-        "group overflow-hidden transition-all duration-300 ease-in-out cursor-pointer",
-        isSelectionMode ? "hover:shadow-md" : "hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1",
+        "group overflow-hidden transition-all duration-300 ease-in-out cursor-pointer glass-card border-none",
+        isSelectionMode ? "hover:shadow-md" : "hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/20",
         isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
       )}
       onClick={handleCardClick}

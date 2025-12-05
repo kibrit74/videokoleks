@@ -64,12 +64,29 @@ function HomeContent() {
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const [initialVideoUrl, setInitialVideoUrl] = useState<string>('');
+
   // Sync state with URL params
   useEffect(() => {
     const categoryIdFromParams = searchParams.get('categoryId');
     setSelectedCategoryId(categoryIdFromParams);
 
-  }, [searchParams]);
+    // Handle Share Intent (Incoming URL)
+    const shouldAddVideo = searchParams.get('addVideo') === 'true';
+    const sharedUrl = searchParams.get('url');
+
+    if (shouldAddVideo && sharedUrl) {
+      setInitialVideoUrl(sharedUrl);
+      setAddVideoOpen(true);
+
+      // Clean up URL params to prevent reopening on refresh
+      const newParams = new URLSearchParams(searchParams.toString());
+      newParams.delete('addVideo');
+      newParams.delete('url');
+      router.replace(`/?${newParams.toString()}`);
+    }
+
+  }, [searchParams, router]);
 
   // --- Bulk Actions State ---
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -213,34 +230,38 @@ function HomeContent() {
   return (
     <>
       <div className="container mx-auto max-w-5xl px-4 py-8 pt-safe">
-        <header className="mb-8 space-y-4">
+        <header className="mb-4 md:mb-8 space-y-4">
           <div className="flex items-center justify-between gap-4">
-            <Logo className="h-24" />
+            <Logo className="h-12 md:h-24" />
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setMobileAppOpen(true)}>
-                <Smartphone className="mr-2 h-4 w-4" /> Mobil Uygulama
+                <Smartphone className="mr-2 h-4 w-4" /> <span className="hidden md:inline">Mobil Uygulama</span>
               </Button>
               <Button size="sm" onClick={() => setAddVideoOpen(true)} disabled={!user}>
-                <Plus className="mr-2 h-4 w-4" /> Video Ekle
+                <Plus className="mr-2 h-4 w-4" /> <span className="hidden md:inline">Video Ekle</span>
               </Button>
             </div>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="Koleksiyonunda ara..."
-              className="pl-10 h-12 text-base"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder="Koleksiyonunda ara..."
+                className="pl-10 h-12 text-base"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Button
+              variant={isSelectionMode ? 'destructive' : 'secondary'}
+              className="h-12 px-4"
+              onClick={toggleSelectionMode}
+              disabled={isLoading || !videos || videos.length === 0}
+            >
+              {isSelectionMode ? 'İptal' : 'Seç'}
+            </Button>
           </div>
         </header>
-
-        <div className="flex justify-end mb-2">
-          <Button variant={isSelectionMode ? 'destructive' : 'secondary'} size="sm" onClick={toggleSelectionMode} disabled={isLoading || !videos || videos.length === 0}>
-            {isSelectionMode ? 'İptal' : 'Seç'}
-          </Button>
-        </div>
 
         <div className="mb-6">
           <Tabs defaultValue="categories" className="w-full">
@@ -416,6 +437,7 @@ function HomeContent() {
       <AddVideoDialog
         isOpen={isAddVideoOpen}
         onOpenChange={setAddVideoOpen}
+        initialUrl={initialVideoUrl}
       />
 
       <Dialog open={isMobileAppOpen} onOpenChange={setMobileAppOpen}>
@@ -423,20 +445,20 @@ function HomeContent() {
           <DialogHeader>
             <DialogTitle>Mobil Uygulamayı İndir</DialogTitle>
             <DialogDescription>
-              Android uygulamasını indirmek için aşağıdaki QR kodu telefonunuzun kamerasıyla okutun. (Sürüm: v1.0.18)
+              Android uygulamasını indirmek için aşağıdaki QR kodu telefonunuzun kamerasıyla okutun. (Sürüm: v1.0.19)
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center justify-center p-6 space-y-4">
             <div className="bg-white p-4 rounded-xl shadow-sm border">
               <QRCode
-                value="https://github.com/kibrit74/videokoleks/releases/download/v1.0.18/app-debug.apk"
+                value="https://github.com/kibrit74/videokoleks/releases/download/v1.0.19/app-debug.apk"
                 size={200}
                 style={{ height: "auto", maxWidth: "100%", width: "100%" }}
                 viewBox={`0 0 256 256`}
               />
             </div>
             <p className="text-sm text-muted-foreground text-center">
-              Veya <a href="https://github.com/kibrit74/videokoleks/releases/download/v1.0.18/app-debug.apk" className="text-primary hover:underline font-medium">buraya tıklayarak</a> indirebilirsiniz.
+              Veya <a href="https://github.com/kibrit74/videokoleks/releases/download/v1.0.19/app-debug.apk" className="text-primary hover:underline font-medium">buraya tıklayarak</a> indirebilirsiniz.
             </p>
           </div>
         </DialogContent>

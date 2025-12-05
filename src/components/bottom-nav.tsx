@@ -18,7 +18,7 @@ export function BottomNav() {
   const { user } = useUser();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card md:hidden pb-safe">
+    <nav className="fixed bottom-4 left-4 right-4 z-50 rounded-2xl glass-nav md:hidden pb-safe shadow-2xl">
       <div className="mx-auto flex h-16 max-w-md items-center justify-around">
         {navItems.map((item) => {
           const isActive = pathname === item.href;

@@ -28,11 +28,13 @@ import { getVideoMetadata } from '@/app/actions';
 interface AddVideoDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  initialUrl?: string;
 }
 
 export function AddVideoDialog({
   isOpen,
   onOpenChange,
+  initialUrl,
 }: AddVideoDialogProps) {
   const { toast } = useToast();
   const { user } = useUser();
@@ -51,11 +53,15 @@ export function AddVideoDialog({
 
   const categoriesQuery = useMemoFirebase(() =>
     (user?.uid && firestore) ? query(collection(firestore, 'users', user.uid, 'categories')) : null
-  , [firestore, user?.uid]);
+    , [firestore, user?.uid]);
   const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      if (initialUrl) {
+        setVideoUrl(initialUrl);
+      }
+    } else {
       // Reset state when dialog closes
       setVideoUrl('');
       setVideoDetails(null);
@@ -64,7 +70,7 @@ export function AddVideoDialog({
       setIsFetching(false);
       setIsSaving(false);
     }
-  }, [isOpen]);
+  }, [isOpen, initialUrl]);
 
   useEffect(() => {
     if (!videoUrl) {
@@ -75,13 +81,13 @@ export function AddVideoDialog({
     const timer = setTimeout(async () => {
       setIsFetching(true);
       setVideoDetails(null);
-      
+
       try {
         const metadata = await getVideoMetadata(videoUrl);
 
         if (metadata && metadata.title) {
           // Simple duration formatting - unfurl doesn't provide it
-           const formatDuration = (seconds: number | undefined) => {
+          const formatDuration = (seconds: number | undefined) => {
             if (!seconds) return undefined;
             const minutes = Math.floor(seconds / 60);
             const remainingSeconds = Math.floor(seconds % 60);
@@ -94,7 +100,7 @@ export function AddVideoDialog({
             duration: formatDuration(metadata.duration)
           });
         } else {
-           toast({
+          toast({
             variant: 'destructive',
             title: 'Detaylar Alınamadı',
             description: 'Bu video için başlık bulunamadı. Lütfen URL’yi kontrol edin.',
@@ -121,7 +127,7 @@ export function AddVideoDialog({
     if (url.includes('tiktok.com')) return 'tiktok';
     if (url.includes('facebook.com') || url.includes('fb.watch')) return 'facebook';
     if (url.includes('twitter.com') || url.includes('x.com')) return 'twitter';
-    return 'instagram'; 
+    return 'instagram';
   };
 
   const handleSave = async () => {
@@ -136,48 +142,48 @@ export function AddVideoDialog({
 
     setIsSaving(true);
     const platform = getPlatformFromUrl(videoUrl);
-    
+
     const newVideoRef = doc(collection(firestore, 'users', user.uid, 'videos'));
 
     const videoData: Omit<Video, 'id'> = {
-        title: videoDetails.title,
-        thumbnailUrl: videoDetails.thumbnailUrl || `https://picsum.photos/seed/${new Date().getTime()}/480/854`,
-        imageHint: "video thumbnail",
-        originalUrl: videoUrl,
-        platform,
-        categoryId: selectedCategory.id,
-        duration: videoDetails.duration || '0:00',
-        notes: notes,
-        dateAdded: serverTimestamp(),
+      title: videoDetails.title,
+      thumbnailUrl: videoDetails.thumbnailUrl || `https://picsum.photos/seed/${new Date().getTime()}/480/854`,
+      imageHint: "video thumbnail",
+      originalUrl: videoUrl,
+      platform,
+      categoryId: selectedCategory.id,
+      duration: videoDetails.duration || '0:00',
+      notes: notes,
+      dateAdded: serverTimestamp(),
     };
 
     try {
-        await setDoc(newVideoRef, videoData);
-        
-        toast({
-          title: 'Video Kaydedildi! ✨',
-          description: 'Videonuz koleksiyonunuza eklendi.',
-        });
-        
-        onOpenChange(false);
-    } catch(serverError: any) {
-         const permissionError = new FirestorePermissionError({
-            path: newVideoRef.path,
-            operation: 'create',
-            requestResourceData: { ...videoData, id: newVideoRef.id },
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        // Also show a toast to the user
-        toast({
-          variant: 'destructive',
-          title: 'Kaydedilemedi',
-          description: 'Video kaydedilirken bir hata oluştu. İzinlerinizi kontrol edin.'
-        });
+      await setDoc(newVideoRef, videoData);
+
+      toast({
+        title: 'Video Kaydedildi! ✨',
+        description: 'Videonuz koleksiyonunuza eklendi.',
+      });
+
+      onOpenChange(false);
+    } catch (serverError: any) {
+      const permissionError = new FirestorePermissionError({
+        path: newVideoRef.path,
+        operation: 'create',
+        requestResourceData: { ...videoData, id: newVideoRef.id },
+      });
+      errorEmitter.emit('permission-error', permissionError);
+      // Also show a toast to the user
+      toast({
+        variant: 'destructive',
+        title: 'Kaydedilemedi',
+        description: 'Video kaydedilirken bir hata oluştu. İzinlerinizi kontrol edin.'
+      });
     } finally {
-        setIsSaving(false);
+      setIsSaving(false);
     }
   };
-  
+
   const isLoading = isFetching || isSaving;
 
   return (
@@ -223,9 +229,9 @@ export function AddVideoDialog({
                     </div>
                   )}
                   <p className="font-semibold text-sm">{videoDetails.title}</p>
-                   {videoDetails.duration && (
+                  {videoDetails.duration && (
                     <p className="text-xs text-muted-foreground">Süre: {videoDetails.duration}</p>
-                   )}
+                  )}
                 </div>
               )}
 
@@ -233,22 +239,22 @@ export function AddVideoDialog({
                 <Label>Kategori seç</Label>
                 <div className="flex flex-wrap gap-2">
                   {categoriesLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
+                    <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
-                      categories?.map(cat => (
-                          <Button
-                              key={cat.id}
-                              variant={
-                              selectedCategory?.id === cat.id ? 'default' : 'outline'
-                              }
-                              size="sm"
-                              onClick={() => setSelectedCategory(cat)}
-                              className="transition-all"
-                              disabled={isLoading}
-                          >
-                              {cat.emoji} {cat.name}
-                          </Button>
-                      ))
+                    categories?.map(cat => (
+                      <Button
+                        key={cat.id}
+                        variant={
+                          selectedCategory?.id === cat.id ? 'default' : 'outline'
+                        }
+                        size="sm"
+                        onClick={() => setSelectedCategory(cat)}
+                        className="transition-all"
+                        disabled={isLoading}
+                      >
+                        {cat.emoji} {cat.name}
+                      </Button>
+                    ))
                   )}
                   <Button variant="outline" size="sm" disabled>
                     <PlusCircle className="mr-2 h-4 w-4" /> Yeni Kategori
