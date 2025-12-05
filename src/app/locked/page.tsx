@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2, Lock, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useUnlockedCategories } from '@/hooks/use-unlocked-categories';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 
@@ -20,6 +21,7 @@ function LockedCategoryContent() {
     const firestore = useFirestore();
     const router = useRouter();
     const { toast } = useToast();
+    const { unlockCategory, isCategoryUnlocked } = useUnlockedCategories();
 
     const [pin, setPin] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
@@ -36,10 +38,13 @@ function LockedCategoryContent() {
     }, []);
 
     useEffect(() => {
-        if (!isLoading && category && !category.isLocked) {
-            router.replace(`/?categoryId=${categoryId}`);
+        if (!isLoading && category && categoryId) {
+            // If category is not locked, or is already unlocked in session, redirect
+            if (!category.isLocked || isCategoryUnlocked(categoryId)) {
+                router.replace(`/?categoryId=${categoryId}`);
+            }
         }
-    }, [category, categoryId, router, isLoading]);
+    }, [category, categoryId, router, isLoading, isCategoryUnlocked]);
 
     const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
         const value = e.target.value;
@@ -76,6 +81,10 @@ function LockedCategoryContent() {
         setIsVerifying(true);
         setTimeout(() => { // Simulate network delay
             if (currentPin === category.pin) {
+                // Mark category as unlocked in session
+                if (categoryId) {
+                    unlockCategory(categoryId);
+                }
                 toast({ title: 'Kilit Açıldı!', description: `"${category.name}" kategorisine hoş geldiniz.` });
                 router.push(`/?categoryId=${categoryId}`);
             } else {

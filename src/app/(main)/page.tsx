@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/logo';
 import QRCode from 'react-qr-code';
+import { useUnlockedCategories } from '@/hooks/use-unlocked-categories';
 
 import {
   DropdownMenu,
@@ -57,6 +58,7 @@ function HomeContent() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { isCategoryUnlocked } = useUnlockedCategories();
 
   const [isAddVideoOpen, setAddVideoOpen] = useState(false);
   const [isMobileAppOpen, setMobileAppOpen] = useState(false);
@@ -105,10 +107,11 @@ function HomeContent() {
 
   useEffect(() => {
     if (categoriesLoading || !selectedCategoryId || !selectedCategory) return;
-    if (selectedCategory?.isLocked) {
+    // Only redirect to locked page if category is locked AND not unlocked in session
+    if (selectedCategory?.isLocked && !isCategoryUnlocked(selectedCategoryId)) {
       router.replace(`/locked?categoryId=${selectedCategoryId}`);
     }
-  }, [selectedCategory, selectedCategoryId, categoriesLoading, router]);
+  }, [selectedCategory, selectedCategoryId, categoriesLoading, router, isCategoryUnlocked]);
 
   // Fetch videos for the user
   const videosQuery = useMemoFirebase(() => {
@@ -128,7 +131,7 @@ function HomeContent() {
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
 
-    if (selectedCategory?.isLocked) {
+    if (selectedCategory?.isLocked && !isCategoryUnlocked(selectedCategoryId || '')) {
       return [];
     }
 
@@ -215,7 +218,7 @@ function HomeContent() {
     setSelectedCategoryId(categoryId);
     const category = categories?.find(c => c.id === categoryId);
 
-    if (category?.isLocked) {
+    if (category?.isLocked && !isCategoryUnlocked(categoryId || '')) {
       router.push(`/locked?categoryId=${categoryId}`);
       return;
     }
@@ -445,20 +448,20 @@ function HomeContent() {
           <DialogHeader>
             <DialogTitle>Mobil Uygulamayı İndir</DialogTitle>
             <DialogDescription>
-              Android uygulamasını indirmek için aşağıdaki QR kodu telefonunuzun kamerasıyla okutun. (Sürüm: v1.0.19)
+              Android uygulamasını indirmek için aşağıdaki QR kodu telefonunuzun kamerasıyla okutun. (Sürüm: v1.0.20)
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center justify-center p-6 space-y-4">
             <div className="bg-white p-4 rounded-xl shadow-sm border">
               <QRCode
-                value="https://github.com/kibrit74/videokoleks/releases/download/v1.0.19/app-debug.apk"
+                value="https://github.com/kibrit74/videokoleks/releases/download/v1.0.20/app-debug.apk"
                 size={200}
                 style={{ height: "auto", maxWidth: "100%", width: "100%" }}
                 viewBox={`0 0 256 256`}
               />
             </div>
             <p className="text-sm text-muted-foreground text-center">
-              Veya <a href="https://github.com/kibrit74/videokoleks/releases/download/v1.0.19/app-debug.apk" className="text-primary hover:underline font-medium">buraya tıklayarak</a> indirebilirsiniz.
+              Veya <a href="https://github.com/kibrit74/videokoleks/releases/download/v1.0.20/app-debug.apk" className="text-primary hover:underline font-medium">buraya tıklayarak</a> indirebilirsiniz.
             </p>
           </div>
         </DialogContent>

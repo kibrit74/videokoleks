@@ -8,7 +8,6 @@ const withPWA = withPWAInit({
   // cacheOnFrontEndNav: true,
   // aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
-  swcMinify: true,
   workboxOptions: {
     disableDevLogs: true,
   },
@@ -24,6 +23,16 @@ const nextConfig: NextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  // Exclude capacitor-plugin-send-intent from server-side processing
+  // This plugin is only used on Android and has corrupted UTF-8 in web.js
+  serverExternalPackages: ['capacitor-plugin-send-intent'],
+  webpack: (config, { isServer }) => {
+    // Only process capacitor plugins on client-side
+    if (isServer) {
+      config.resolve.alias['capacitor-plugin-send-intent'] = false;
+    }
+    return config;
   },
   images: {
     unoptimized: true,
