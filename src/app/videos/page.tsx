@@ -200,15 +200,21 @@ function VideoDetailContent() {
 
         return (
             <div className="flex-1 relative flex items-center justify-center bg-zinc-900">
-                <Image
-                    src={currentVideo.thumbnailUrl}
-                    alt={currentVideo.title}
-                    fill
-                    sizes="100vw"
-                    priority
-                    className="object-contain"
-                    data-ai-hint={currentVideo.imageHint}
-                />
+                {currentVideo.thumbnailUrl ? (
+                    <Image
+                        src={currentVideo.thumbnailUrl}
+                        alt={currentVideo.title}
+                        fill
+                        sizes="100vw"
+                        priority
+                        className="object-contain"
+                        data-ai-hint={currentVideo.imageHint}
+                    />
+                ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center">
+                        <PlatformIcon className="h-24 w-24 text-white/50" />
+                    </div>
+                )}
                 <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center text-center p-4">
                     <p className="text-white font-semibold mb-4">Bu video uygulama içinde oynatılamıyor.</p>
                     <Button asChild size="lg" className="mt-4">

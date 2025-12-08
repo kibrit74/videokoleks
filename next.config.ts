@@ -1,6 +1,12 @@
 import type { NextConfig } from 'next';
 import withPWAInit from "@ducanh2912/next-pwa";
 
+// Bypass SSL verification issues (network proxy/antivirus interference)
+// WARNING: This should only be used in development
+if (process.env.NODE_ENV === 'development') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
+
 const withPWA = withPWAInit({
   dest: "public",
   disable: false, // PWA'yı her zaman aktif tut

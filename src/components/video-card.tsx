@@ -128,16 +128,25 @@ export function VideoCard({ video, isSelectionMode = false, isSelected = false, 
               />
             </div>
           )}
-          <Image
-            src={video.thumbnailUrl}
-            alt={video.title}
-            fill
-            className={cn(
-              "object-cover transition-transform duration-300",
-              !isSelectionMode && "group-hover:scale-105"
-            )}
-            data-ai-hint={video.imageHint}
-          />
+          {video.thumbnailUrl ? (
+            <Image
+              src={video.thumbnailUrl}
+              alt={video.title}
+              fill
+              className={cn(
+                "object-cover transition-transform duration-300",
+                !isSelectionMode && "group-hover:scale-105"
+              )}
+              data-ai-hint={video.imageHint}
+            />
+          ) : (
+            <div className={cn(
+              "absolute inset-0 bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center",
+              !isSelectionMode && "transition-transform duration-300 group-hover:scale-105"
+            )}>
+              <PlatformIcon className="h-12 w-12 text-white/50" />
+            </div>
+          )}
           <div
             className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"
           />

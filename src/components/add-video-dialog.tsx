@@ -86,32 +86,35 @@ export function AddVideoDialog({
         const metadata = await getVideoMetadata(videoUrl);
 
         if (metadata && metadata.title) {
-          // Simple duration formatting - unfurl doesn't provide it
-          const formatDuration = (seconds: number | undefined) => {
-            if (!seconds) return undefined;
-            const minutes = Math.floor(seconds / 60);
-            const remainingSeconds = Math.floor(seconds % 60);
-            return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-          };
-
           setVideoDetails({
             title: metadata.title,
             thumbnailUrl: metadata.thumbnail,
-            duration: formatDuration(metadata.duration)
+            duration: metadata.duration || '0:00'
           });
         } else {
           toast({
-            variant: 'destructive',
+            variant: 'default',
             title: 'Detaylar Alınamadı',
-            description: 'Bu video için başlık bulunamadı. Lütfen URL’yi kontrol edin.',
+            description: 'Başlık otomatik bulunamadı, lütfen manuel girin.',
+          });
+          setVideoDetails({
+            title: '',
+            thumbnailUrl: undefined,
+            duration: undefined
           });
         }
       } catch (error) {
         console.error('Fetch metadata error:', error);
         toast({
-          variant: 'destructive',
-          title: 'Detaylar Alınamadı',
-          description: 'Lütfen URL’yi kontrol edin veya farklı bir video deneyin.',
+          variant: 'default',
+          title: 'Otomatik Bilgi Alınamadı',
+          description: 'Lütfen başlığı manuel olarak girin.',
+        });
+        // Allow manual entry even on error
+        setVideoDetails({
+          title: '',
+          thumbnailUrl: undefined,
+          duration: undefined
         });
       } finally {
         setIsFetching(false);
@@ -147,8 +150,8 @@ export function AddVideoDialog({
 
     const videoData: Omit<Video, 'id'> = {
       title: videoDetails.title,
-      thumbnailUrl: videoDetails.thumbnailUrl || `https://picsum.photos/seed/${new Date().getTime()}/480/854`,
-      imageHint: "video thumbnail",
+      thumbnailUrl: videoDetails.thumbnailUrl || '', // No random fallback, allow empty/manual
+      imageHint: videoDetails.thumbnailUrl ? "video thumbnail" : "no-image",
       originalUrl: videoUrl,
       platform,
       categoryId: selectedCategory.id,
@@ -216,24 +219,50 @@ export function AddVideoDialog({
                 </div>
               )}
 
-              {videoDetails && (
-                <div className="space-y-4">
-                  {videoDetails.thumbnailUrl && (
-                    <div className="relative aspect-video w-full overflow-hidden rounded-md">
-                      <Image
-                        src={videoDetails.thumbnailUrl}
-                        alt="Video thumbnail"
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  )}
-                  <p className="font-semibold text-sm">{videoDetails.title}</p>
-                  {videoDetails.duration && (
-                    <p className="text-xs text-muted-foreground">Süre: {videoDetails.duration}</p>
-                  )}
+              {/* Allow manual title entry always, populated by fetch */}
+              <div className="space-y-4">
+                {videoDetails?.thumbnailUrl && videoDetails.thumbnailUrl.startsWith('http') && (
+                  <div className="relative aspect-video w-full overflow-hidden rounded-md group">
+                    <Image
+                      src={videoDetails.thumbnailUrl}
+                      alt="Video thumbnail"
+                      fill
+                      className="object-cover"
+                      unoptimized={true} // Allow external images without next.config setup
+                    />
+                  </div>
+                )}
+
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="video-title">Video Başlığı</Label>
+                    <Input
+                      id="video-title"
+                      value={videoDetails?.title || ''}
+                      onChange={(e) => setVideoDetails(prev => ({ ...prev!, title: e.target.value }))}
+                      placeholder="Video başlığını girin..."
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="video-thumb">Kapak Resmi URL (Opsiyonel)</Label>
+                    <Input
+                      id="video-thumb"
+                      value={videoDetails?.thumbnailUrl || ''}
+                      onChange={(e) => setVideoDetails(prev => ({ ...prev!, thumbnailUrl: e.target.value }))}
+                      placeholder="https://..."
+                      disabled={isLoading}
+                      className="text-xs text-muted-foreground"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Otomatik bulunamazsa buraya resim linki yapıştırabilirsiniz.</p>
+                  </div>
                 </div>
-              )}
+
+                {videoDetails?.duration && (
+                  <p className="text-xs text-muted-foreground">Süre: {videoDetails.duration}</p>
+                )}
+              </div>
 
               <div className="space-y-2">
                 <Label>Kategori seç</Label>
