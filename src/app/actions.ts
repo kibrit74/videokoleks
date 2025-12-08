@@ -1,6 +1,8 @@
-'use server';
 
-// Helper function to decode HTML entities (server-side compatible)
+// Removed 'use server' to support static export
+// import https from 'https'; // NOT supported in browser
+
+// Helper function to decode HTML entities (client-side compatible)
 function decodeHtmlEntities(text: string): string {
   if (!text) return text;
 
@@ -46,15 +48,13 @@ function isValidTitle(title: string | undefined | null): boolean {
   return true;
 }
 
-// Helper to extract meta content using regex (Server-side compatible)
+// Helper to extract meta content using regex
 function extractMeta(html: string, property: string): string | undefined {
   // Try both orderings: property/name before content, and content before property/name
-  // Order 1: <meta property="..." content="..." />
   const regex1 = new RegExp(`<meta\\s+(?:property|name)=["']${property}["']\\s+content=["']([^"']*?)["']`, 'i');
   const match1 = html.match(regex1);
   if (match1) return match1[1];
 
-  // Order 2: <meta content="..." property="..." />
   const regex2 = new RegExp(`<meta\\s+content=["']([^"']*?)["']\\s+(?:property|name)=["']${property}["']`, 'i');
   const match2 = html.match(regex2);
   if (match2) return match2[1];
@@ -67,68 +67,36 @@ function extractTitle(html: string): string | undefined {
   return match ? match[1] : undefined;
 }
 
-
-import https from 'https';
-import { IncomingMessage } from 'http';
-
-// Helper function to fetch an image and convert it to base64 data URL
+// Helper function to fetch an image and convert it to base64 data URL (Client-Side)
 async function fetchImageAsBase64(imageUrl: string): Promise<string | undefined> {
   if (!imageUrl) return undefined;
 
-  return new Promise((resolve) => {
-    // Parse the URL
-    let parsedUrl;
-    try {
-      parsedUrl = new URL(imageUrl);
-    } catch {
-      console.warn('Invalid URL for image fetch');
-      resolve(undefined);
-      return;
-    }
+  try {
+    // Use proxy to avoid CORS on images (especially Instagram/Facebook)
+    // Note: corsproxy.io is a public proxy, might have limits.
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(imageUrl)}`;
 
-    const options = {
-      hostname: parsedUrl.hostname,
-      path: parsedUrl.pathname + parsedUrl.search,
-      method: 'GET',
-      headers: {
-        'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
-      }
-    };
+    const response = await fetch(proxyUrl);
+    if (!response.ok) return undefined;
 
-    console.log(`[Base64] Fetching image: ${imageUrl}`);
+    const blob = await response.blob();
 
-    const req = https.request(options, (res: IncomingMessage) => {
-      if (res.statusCode !== 200) {
-        console.warn(`[Base64] Native https image fetch failed with status: ${res.statusCode} ${res.statusMessage}`);
-        // console.warn(`[Base64] Headers:`, JSON.stringify(res.headers));
-        res.resume(); // Consume response to free memory
-        resolve(undefined);
-        return;
-      }
-
-      const chunks: Buffer[] = [];
-      res.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-      res.on('end', () => {
-        const buffer = Buffer.concat(chunks);
-        const base64 = buffer.toString('base64');
-        const contentType = res.headers['content-type'] || 'image/jpeg';
-        resolve(`data:${contentType};base64,${base64}`);
-      });
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(undefined);
+      reader.readAsDataURL(blob);
     });
-
-    req.on('error', (e) => {
-      console.warn('Native https image fetch error:', e);
-      resolve(undefined);
-    });
-
-    req.end();
-  });
+  } catch (e) {
+    console.warn('[Base64] Conversion failed:', e);
+    return undefined;
+  }
 }
 
 async function getYoutubeMetadata(url: string) {
   try {
     const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
-    const response = await fetch(oembedUrl);
+    const response = await fetch(oembedUrl); // YouTube oEmbed supports CORS usually
     if (!response.ok) return null;
     const data = await response.json();
 
@@ -144,7 +112,7 @@ async function getYoutubeMetadata(url: string) {
       duration: undefined,
     };
   } catch (error) {
-    console.error(`Error fetching YouTube oEmbed for ${url}:`, error);
+    console.warn(`Error fetching YouTube oEmbed for ${url}:`, error);
     return null;
   }
 }
@@ -152,6 +120,7 @@ async function getYoutubeMetadata(url: string) {
 async function getTikTokMetadata(url: string) {
   try {
     const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
+    // TikTok oEmbed usually supports CORS
     const response = await fetch(oembedUrl);
 
     let title: string | undefined;
@@ -183,8 +152,7 @@ async function getTikTokMetadata(url: string) {
 }
 
 async function getFacebookMetadata(url: string) {
-  // Facebook uses similar logic to Instagram (shared infrastructure)
-  const normalizedUrl = url.replace(/\?.*$/, ''); // Remove query params
+  const normalizedUrl = url.replace(/\?.*$/, '');
 
   // Helper function to extract metadata
   const extractFromHtml = (html: string): { title: string; thumbnail?: string } | null => {
@@ -193,7 +161,6 @@ async function getFacebookMetadata(url: string) {
 
     if (!title) title = extractTitle(html);
 
-    // Facebook specific: sometimes title is just "Facebook" or "Log In"
     if (title && (title === 'Facebook' || title === 'Log in or sign up to view')) return null;
 
     if (title) {
@@ -204,31 +171,38 @@ async function getFacebookMetadata(url: string) {
     return null;
   };
 
-  // Direct Fetch with Facebook Bot UA
-  try {
-    const response = await fetch(normalizedUrl, {
-      headers: {
-        'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-      }
-    });
+  // Browser cannot do "User-Agent" spoofing directly. We MUST use Proxies.
+  const proxies = [
+    {
+      // corsproxy.io simply tunnels the request. It uses its own UA. 
+      // It often bypasses some basic checks or allows CORS.
+      getUrl: (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+      extractHtml: async (res: Response) => await res.text()
+    },
+    {
+      // allorigins.win returns JSON
+      getUrl: (u: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
+      extractHtml: async (res: Response) => (await res.json()).contents
+    }
+  ];
 
-    if (response.ok) {
-      const html = await response.text();
+  for (const proxy of proxies) {
+    try {
+      const res = await fetch(proxy.getUrl(normalizedUrl));
+      if (!res.ok) continue;
+      const html = await proxy.extractHtml(res);
+      if (!html) continue;
+
       const result = extractFromHtml(html);
       if (result) {
         let thumbnailBase64: string | undefined;
         if (result.thumbnail) {
-          // Same entity decode fix as Instagram
           const cleanThumbnailUrl = decodeHtmlEntities(result.thumbnail).replace(/&amp;/g, '&');
           thumbnailBase64 = await fetchImageAsBase64(cleanThumbnailUrl);
         }
         return { title: result.title, thumbnail: thumbnailBase64, duration: undefined };
       }
-    }
-  } catch (e) {
-    console.warn('Facebook direct fetch failed:', e);
+    } catch (e) { console.warn('FB Proxy failed', e); }
   }
 
   return null;
@@ -236,7 +210,7 @@ async function getFacebookMetadata(url: string) {
 
 async function getTwitterMetadata(url: string) {
   try {
-    // 1. Try api.fxtwitter.com (Best for media/thumbnails)
+    // 1. Try api.fxtwitter.com (Best for media/thumbnails, usually CORS friendly)
     const tweetIdMatch = url.match(/\/status\/(\d+)/);
     const tweetId = tweetIdMatch ? tweetIdMatch[1] : null;
     let thumbnail: string | undefined;
@@ -244,51 +218,40 @@ async function getTwitterMetadata(url: string) {
 
     if (tweetId) {
       try {
-        const fxResponse = await fetch(`https://api.fxtwitter.com/status/${tweetId}`, {
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)' }
-        });
+        // api.fxtwitter.com supports CORS
+        const fxResponse = await fetch(`https://api.fxtwitter.com/status/${tweetId}`);
         if (fxResponse.ok) {
           const fxData = await fxResponse.json();
           if (fxData.tweet) {
             title = fxData.tweet.text;
-            // Prioritize video thumbnail
             if (fxData.tweet.media?.videos?.[0]?.thumbnail_url) {
               thumbnail = fxData.tweet.media.videos[0].thumbnail_url;
             } else if (fxData.tweet.media?.photos?.[0]?.url) {
               thumbnail = fxData.tweet.media.photos[0].url;
             }
-            console.log(`[Twitter] Fetched via fxtwitter: ${title?.substring(0, 20)}...`);
           }
         }
       } catch (fxErr) {
-        console.warn('[Twitter] fxtwitter failed, falling back to oEmbed:', fxErr);
+        console.warn('[Twitter] fxtwitter failed', fxErr);
       }
     }
 
-    // 2. Fallback to official oEmbed if fxtwitter failed
+    // 2. Fallback to official oEmbed (Usually supports CORS)
     if (!title) {
       const publishUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}`;
-      const response = await fetch(publishUrl);
+      const response = await fetch(publishUrl); // CORS?
       if (response.ok) {
         const data = await response.json();
         title = data.title;
-        // oEmbed usually doesn't have video thumbnails, but check anyway
         if (!thumbnail && data.thumbnail_url) thumbnail = data.thumbnail_url;
 
-        if (!title && data.html) {
-          const match = data.html.match(/<p lang=".*?" dir=".*?">(.*?)<\/p>/);
-          if (match && match[1]) {
-            title = match[1].replace(/<br>/g, ' ').replace(/<a.*?>(.*?)<\/a>/g, '$1').substring(0, 100);
-          }
-        }
         if (!title) title = `Tweet by ${data.author_name}`;
       }
     }
 
-    // 3. Convert thumbnail to Base64 (The "Same System" as Instagram)
+    // 3. Convert thumbnail to Base64
     let thumbnailBase64: string | undefined;
     if (thumbnail) {
-      console.log(`[Twitter] Fetching thumbnail: ${thumbnail}`);
       thumbnailBase64 = await fetchImageAsBase64(thumbnail);
     }
 
@@ -306,130 +269,50 @@ async function getTwitterMetadata(url: string) {
 }
 
 async function getInstagramMetadata(url: string) {
-  // Instagram oEmbed API now requires authentication, so we scrape OG meta tags instead
+  const normalizedUrl = url.replace(/\?.*$/, '');
 
-  // Normalize Instagram URL to ensure we get the embed-friendly version
-  const normalizedUrl = url.replace(/\?.*$/, ''); // Remove query params
-
-  // Helper function to extract metadata from HTML
   const extractFromHtml = (html: string): { title: string; thumbnail?: string } | null => {
-    // Extract OG meta tags from the HTML
-    let title = extractMeta(html, 'og:title');
-    let thumbnail = extractMeta(html, 'og:image');
+    let title = extractMeta(html, 'og:title') || extractMeta(html, 'twitter:title');
+    let thumbnail = extractMeta(html, 'og:image') || extractMeta(html, 'twitter:image');
 
-    // Also try twitter:title as fallback
-    if (!title) {
-      title = extractMeta(html, 'twitter:title');
-    }
-    if (!thumbnail) {
-      thumbnail = extractMeta(html, 'twitter:image');
-    }
-
-    // Try to extract from JSON-LD script if OG tags are missing
+    // JSON-LD backup
     if (!title || !thumbnail) {
       const jsonLdMatch = html.match(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
       if (jsonLdMatch && jsonLdMatch[1]) {
         try {
-          const jsonData = JSON.parse(jsonLdMatch[1]);
-          if (jsonData.name && !title) title = jsonData.name;
-          if (jsonData.description && !title) title = jsonData.description.substring(0, 100);
-          if (jsonData.thumbnailUrl && !thumbnail) thumbnail = jsonData.thumbnailUrl;
-          if (jsonData.image && !thumbnail) thumbnail = typeof jsonData.image === 'string' ? jsonData.image : jsonData.image.url;
-        } catch {
-          // JSON-LD parsing failed, continue
-        }
-      }
-    }
-
-    // Try to find description as title fallback
-    if (!title) {
-      // Try both attribute orderings for description
-      const descMatch = html.match(/<meta\s+(?:property|name)=["'](?:og:description|description)["']\s+content=["']([^"']*?)["']/i) ||
-        html.match(/<meta\s+content=["']([^"']*?)["']\s+(?:property|name)=["'](?:og:description|description)["']/i);
-      if (descMatch && descMatch[1]) {
-        // Truncate description to reasonable title length
-        title = descMatch[1].substring(0, 100);
-        if (descMatch[1].length > 100) title += '...';
+          const j = JSON.parse(jsonLdMatch[1]);
+          if (j.name && !title) title = j.name;
+          if (j.thumbnailUrl && !thumbnail) thumbnail = j.thumbnailUrl;
+        } catch { }
       }
     }
 
     if (title && isValidTitle(title)) {
-      // Decode HTML entities
+      // Clean title
       let cleanTitle = decodeHtmlEntities(title);
-
-      // Clean up Instagram-specific title patterns like "Username on Instagram: "
-      cleanTitle = cleanTitle.replace(/ on Instagram:?\s*[""]?/i, ': ');
-      cleanTitle = cleanTitle.replace(/^.*? on Instagram:?\s*/i, '');
-
-      // Remove trailing quotes if present
-      cleanTitle = cleanTitle.replace(/[""]$/, '').trim();
-
+      cleanTitle = cleanTitle.replace(/ on Instagram:?\s*[""]?/i, ': ').replace(/^.*? on Instagram:?\s*/i, '').replace(/[""]$/, '').trim();
       return { title: cleanTitle, thumbnail };
     }
     return null;
   };
 
-  // Method 1: Try direct fetch from server with Facebook Bot headers
-  try {
-    const response = await fetch(normalizedUrl, {
-      headers: {
-        'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-      }
-    });
-
-    if (response.ok) {
-      const html = await response.text();
-      const result = extractFromHtml(html);
-      if (result) {
-        // Fetch image as base64 to bypass client-side CORS/403
-        let thumbnailBase64: string | undefined;
-        if (result.thumbnail) {
-          // CRITICAL: decode HTML entities (e.g. &amp;) in URL or signature validation fails (403)
-          // We use explicit replace in addition to helper to be 100% sure
-          const cleanThumbnailUrl = decodeHtmlEntities(result.thumbnail).replace(/&amp;/g, '&');
-
-          console.log(`[Instagram] Decoded URL for fetch: ${cleanThumbnailUrl}`);
-          thumbnailBase64 = await fetchImageAsBase64(cleanThumbnailUrl);
-        }
-
-        console.log('Instagram metadata extracted via direct fetch:', {
-          title: result.title,
-          thumbnail: thumbnailBase64 ? 'converted to base64' : 'failed to convert'
-        });
-
-        return { title: result.title, thumbnail: thumbnailBase64, duration: undefined };
-      }
-    }
-  } catch (e) {
-    console.warn('Instagram direct fetch failed:', e);
-  }
-
-  // Method 2: Try proxy services as fallback
+  // Browser/Client-Side: Must use Proxy
   const proxies = [
-    {
-      name: 'allorigins',
-      getUrl: (u: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-      extractHtml: async (response: Response) => await response.text()
-    },
     {
       name: 'corsproxy',
       getUrl: (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
       extractHtml: async (response: Response) => await response.text()
     },
     {
-      name: 'codetabs',
-      getUrl: (u: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+      name: 'allorigins',
+      getUrl: (u: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
       extractHtml: async (response: Response) => await response.text()
     }
   ];
 
   for (const proxy of proxies) {
     try {
-      const proxyUrl = proxy.getUrl(normalizedUrl);
-      const response = await fetch(proxyUrl);
-
+      const response = await fetch(proxy.getUrl(normalizedUrl));
       if (!response.ok) continue;
 
       const html = await proxy.extractHtml(response);
@@ -437,16 +320,11 @@ async function getInstagramMetadata(url: string) {
 
       const result = extractFromHtml(html);
       if (result) {
-        // Fetch image as base64 to bypass client-side CORS/403
         let thumbnailBase64: string | undefined;
         if (result.thumbnail) {
-          thumbnailBase64 = await fetchImageAsBase64(result.thumbnail);
+          const cleanThumbnailUrl = decodeHtmlEntities(result.thumbnail).replace(/&amp;/g, '&');
+          thumbnailBase64 = await fetchImageAsBase64(cleanThumbnailUrl);
         }
-
-        console.log(`Instagram metadata extracted via ${proxy.name}:`, {
-          title: result.title,
-          thumbnail: thumbnailBase64 ? 'converted to base64' : 'failed to convert'
-        });
         return { title: result.title, thumbnail: thumbnailBase64, duration: undefined };
       }
     } catch (e) {
@@ -455,18 +333,15 @@ async function getInstagramMetadata(url: string) {
     }
   }
 
-  console.warn('All Instagram metadata extraction methods failed for:', url);
   return null;
 }
 
 export async function getVideoMetadata(url: string) {
-  try {
-    // NOTE: This function is now a Server Action ('use server' at top).
-    // Requests originate from the Next.js server, avoiding browser CORS.
+  // Reverted to Client-Side function (No 'use server')
 
+  try {
     let metadata: { title: string; thumbnail?: string; duration?: string | undefined } | null = null;
 
-    // 1. Platform Specific Checks
     if (url.includes('youtube.com') || url.includes('youtu.be')) {
       metadata = await getYoutubeMetadata(url);
     } else if (url.includes('twitter.com') || url.includes('x.com')) {
@@ -483,19 +358,17 @@ export async function getVideoMetadata(url: string) {
       return metadata;
     }
 
-    // 2. Try Noembed (Generic fallback)
+    // Generic Fallback (Noembed)
     try {
       const noembedUrl = `https://noembed.com/embed?url=${encodeURIComponent(url)}`;
       const response = await fetch(noembedUrl);
       if (response.ok) {
         const data = await response.json();
         if (data.title && isValidTitle(data.title)) {
-          // Attempt Base64 conversion even for generic fallbacks
           let thumbnailBase64 = data.thumbnail_url || data.thumbnail;
           if (thumbnailBase64 && !thumbnailBase64.startsWith('data:')) {
             thumbnailBase64 = await fetchImageAsBase64(thumbnailBase64);
           }
-
           return {
             title: data.title,
             thumbnail: thumbnailBase64,
@@ -503,60 +376,12 @@ export async function getVideoMetadata(url: string) {
           };
         }
       }
-    } catch (e) {
-      // console.warn('Noembed failed:', e);
-    }
+    } catch (e) { }
 
-    // 3. Last Result: Scrape Open Graph data using proxies
-    const proxies = [
-      (u: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
-      (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-    ];
-
-    let html: string | null = null;
-
-    for (const proxyGen of proxies) {
-      try {
-        const proxyUrl = proxyGen(url);
-        const response = await fetch(proxyUrl);
-        if (response.ok) {
-          if (proxyUrl.includes('allorigins')) {
-            const data = await response.json();
-            html = data.contents;
-          } else {
-            html = await response.text();
-          }
-          if (html) break;
-        }
-      } catch (e) {
-        // console.warn(`Proxy failed:`, e);
-      }
-    }
-
-    if (!html) return null;
-
-    // Server-side parsing using Regex instead of DOMParser
-    const title = extractMeta(html, 'og:title') || extractTitle(html);
-    const thumbnail = extractMeta(html, 'og:image');
-
-    if (!title || !isValidTitle(title)) {
-      return null;
-    }
-
-    // Attempt Base64 for generic fallback too
-    let thumbnailBase64 = thumbnail;
-    if (thumbnailBase64) {
-      thumbnailBase64 = await fetchImageAsBase64(thumbnailBase64);
-    }
-
-    return {
-      title,
-      thumbnail: thumbnailBase64,
-      duration: undefined,
-    };
+    return null;
 
   } catch (error) {
-    console.error(`Error fetching metadata for ${url}:`, error);
+    console.warn(`Error fetching metadata for ${url}:`, error);
     return null;
   }
 }
